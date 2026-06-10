@@ -21,6 +21,7 @@ Documentation is kept in the `docs` directory:
 | `docs/adr`     | Proper ADR-style decision records. Official.                     |
 | `docs/archive` | Where outdated documentation and implemented plans are archived. |
 | `docs/design`  | Design documents. Should have a long expected lifetime.          |
+| `docs/teebs`   | Founding notes from the teebs predecessor. Read-only for Claude. |
 | `docs/journal` | Date-stamped filenames that record specific sessions.            |
 | `docs/plans`   | Where active plans live.                                         |
 

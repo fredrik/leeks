@@ -2,13 +2,14 @@
 
 Each kind of document has its own directory and lifecycle:
 
-| Directory  | Contains                                                                                 | Lifecycle                                             |
-| ---------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `adr/`     | Decision records, numbered `NNNN-short-title.md`                                         | Append-only: never edited, superseded by a new record |
-| `design/`  | Design documents — the current source of truth                                           | Living: edited in place as the design evolves         |
-| `plans/`   | Implementation plans for active work                                                     | Transient: moved to `archive/` when implemented       |
-| `journal/` | Session records, `YYYY-MM-DD-topic.md`                                                   | Append-only log of notable events                     |
-| `archive/` | Implemented plans, superseded design docs. Placed in sub-directories (`docs/plans`, etc) | Read-only history                                     |
+| Directory  | Contains                                                                                                                                                    | Lifecycle                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `adr/`     | Decision records, numbered `NNNN-short-title.md`                                                                                                            | Append-only: never edited, superseded by a new record |
+| `design/`  | Design documents — the current source of truth                                                                                                              | Living: edited in place as the design evolves         |
+| `plans/`   | Implementation plans for active work                                                                                                                        | Transient: moved to `archive/` when implemented       |
+| `journal/` | Session records, `YYYY-MM-DD-topic.md`                                                                                                                      | Append-only log of notable events                     |
+| `teebs/`   | Founding notes carried over from [teebs@b817be9](https://github.com/fredrik/teebs/commit/b817be920652fddf5d35af09536ae23d33fd3aaf), the predecessor project | Edited only by Fredrik; read-only for Claude          |
+| `archive/` | Implemented plans, superseded design docs. Placed in sub-directories (`docs/plans`, etc)                                                                    | Read-only history                                     |
 
 ## Conventions
 

@@ -24,6 +24,9 @@ project.
 **History is append-mostly.** Every mutation lands in a change log; prior states are reconstructible. A bad match must
 be undoable.
 
+**Originals are never modified.** Import copies files into the library; it never moves or rewrites the source. Tag
+writing, renaming, and moving library files are explicit, separate actions — never a side effect of import or matching.
+
 **Imports never block on matching.** Every file enters the library unconditionally; matching is a separate, retryable
 step. The files that most need management are the ones with the worst metadata — gating them out at import defeats the
 purpose.
