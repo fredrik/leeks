@@ -51,13 +51,23 @@ The project uses Python and uv. Never use pip, pip install, or python -m venv di
 - `uv sync` — install/sync dependencies
 - `uv add <pkg>` / `uv add --dev <pkg>` — add dependencies (never edit pyproject.toml dependency lists by hand)
 - `uv run <cmd>` — run anything inside the project environment
-- Python >=3.14, build backend: hatchling
+- Python: compatibility floor is >=3.12 (`requires-python` in pyproject.toml); development runs on 3.14, pinned in `.python-version` via `uv python pin 3.14`. Only raise the floor when code actually uses a newer-version feature
+- Build backend: uv_build
 
 ### Quality gates (run all three before considering a task done)
 - `uv run ruff format .` — formatting
 - `uv run ruff check --fix .` — linting
 - `uv run ty check` — type checking (ty, not mypy/pyright)
 - `uv run pytest` — tests; new behaviour requires new tests
+
+Verify the gates run:
+
+```sh
+uv run ruff format --check .
+uv run ruff check .
+uv run ty check
+uv run pytest
+```
 
 ### Database
 - SQLAlchemy 2.0 style only (Mapped[] / mapped_column, select(); no legacy Query API)

@@ -7,8 +7,25 @@ authors = [
     { name = "Fredrik Möllerstrand", email = "leeks@2880p.se" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "alembic>=1.18.4",
+    "click>=8.4.1",
+    "jellyfish>=1.2.1",
+    "lap>=0.5.13",
+    "mediafile>=0.17.0",
+    "musicbrainzngs>=0.7.1",
+    "numpy>=2.4.6",
+    "pydantic>=2.13.4",
+    "sqlalchemy>=2.0.50",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.19,<0.12.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.16",
+    "ty>=0.0.47",
+]
