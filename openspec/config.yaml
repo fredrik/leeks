@@ -1,8 +1,17 @@
 schema: spec-driven
 
 context: |
-  leeks is a music library organiser and spiritual successor to beets.
-  Tech stack: Python, managed with uv. Source lives in src/leeks.
-  Design principles: keep it simple; don't add when you can delete.
-  Decisions are recorded as ADRs in docs/adr; design docs in docs/design.
-  Tests must run fast — the feedback loop should be as tight as possible.
+  leeks is a music library organiser, spiritual successor to beets.
+  Album-centric and top-down: albums are real entities, not derived
+  from files. Layered metadata sources with precedence (file tags,
+  MusicBrainz, tracker metadata). Append-mostly history of every
+  change — like git for your music library's metadata.
+
+  Stack: Python >=3.14, uv, hatchling, click, SQLAlchemy 2.0 + SQLite,
+  Alembic, Pydantic v2, mediafile, musicbrainzngs.
+
+  Boundary rule: Pydantic models (TrackInfo, AlbumInfo) are the
+  pipeline lingua franca. SQLAlchemy ORM models are persistence only.
+  These layers never leak into each other.
+
+  Tooling: ruff, ty, pytest. uv-first — never pip.
