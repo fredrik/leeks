@@ -25,6 +25,8 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "mdformat>=1.0.0",
+    "mdformat-gfm>=1.0.0",
     "pytest>=9.0.3",
     "ruff>=0.15.16",
     "ty>=0.0.47",
