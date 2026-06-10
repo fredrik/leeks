@@ -1,0 +1,14 @@
+[project]
+name = "leeks"
+version = "0.0.0"
+description = "leeks is a music library organiser and spiritual successor to beets"
+readme = "README.md"
+authors = [
+    { name = "Fredrik Möllerstrand", email = "leeks@2880p.se" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.11.19,<0.12.0"]
+build-backend = "uv_build"
