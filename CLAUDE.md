@@ -31,6 +31,8 @@ Claude should archive outdated documentation and plans that are already implemen
 
 This project follows a spec-driven approach. The human coder is steering spec and plan, the agent is implementing.
 
+We use [OpenSpec](https://github.com/Fission-AI/OpenSpec) to manage changes. Change artifacts (proposal, design, tasks) and specs live in the `openspec` directory. The workflow is driven by the `/opsx:*` commands: `explore`, `propose`, `apply`, `sync`, `archive`. OpenSpec changes are the working plans; `docs/adr` remains the home for durable decisions that outlive a change.
+
 
 ## Local harness
 
