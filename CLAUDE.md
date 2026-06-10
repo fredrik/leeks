@@ -38,10 +38,34 @@ We use [OpenSpec](https://github.com/Fission-AI/OpenSpec) to manage changes. Cha
 
 Claude should strive to use an efficient local test harness to run and verify the code. The feedback loop should be as tight as possible. Insist on improving the tooling if deemed less than perfect.
 
-## Tooling
-
-The project uses Python and uv.
-
 ## Code
 
 Remove dead code.
+
+
+## Tooling
+
+The project uses Python and uv. Never use pip, pip install, or python -m venv directly.
+
+### Environment & packages
+- `uv sync` — install/sync dependencies
+- `uv add <pkg>` / `uv add --dev <pkg>` — add dependencies (never edit pyproject.toml dependency lists by hand)
+- `uv run <cmd>` — run anything inside the project environment
+- Python >=3.14, build backend: hatchling
+
+### Quality gates (run all three before considering a task done)
+- `uv run ruff format .` — formatting
+- `uv run ruff check --fix .` — linting
+- `uv run ty check` — type checking (ty, not mypy/pyright)
+- `uv run pytest` — tests; new behaviour requires new tests
+
+### Database
+- SQLAlchemy 2.0 style only (Mapped[] / mapped_column, select(); no legacy Query API)
+- Schema changes always go through Alembic: `uv run alembic revision --autogenerate -m "..."` then review the generated migration by hand before committing
+- Never modify the SQLite schema outside a migration
+
+### Conventions
+- CLI: click. Entry point is `leek` (singular)
+- Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only. Never pass ORM objects through pipeline code, never put business logic on ORM models
+- File tag I/O goes through mediafile; MusicBrainz access through musicbrainzngs
+- Matching utilities: jellyfish, lap, numpy
