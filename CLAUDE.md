@@ -47,6 +47,8 @@ Remove dead code.
 
 The project uses Python and uv. Never use pip, pip install, or python -m venv directly.
 
+Developer tools (uv, just) are declared in `mise.toml`; each developer installs mise once globally. Python is managed by uv via `.python-version`, not by mise, so there's a single source of truth for the interpreter version.
+
 ### Environment & packages
 - `uv sync` — install/sync dependencies
 - `uv add <pkg>` / `uv add --dev <pkg>` — add dependencies (never edit pyproject.toml dependency lists by hand)
@@ -54,20 +56,11 @@ The project uses Python and uv. Never use pip, pip install, or python -m venv di
 - Python: compatibility floor is >=3.12 (`requires-python` in pyproject.toml); development runs on 3.14, pinned in `.python-version` via `uv python pin 3.14`. Only raise the floor when code actually uses a newer-version feature
 - Build backend: uv_build
 
-### Quality gates (run all three before considering a task done)
-- `uv run ruff format .` — formatting
-- `uv run ruff check --fix .` — linting
-- `uv run ty check` — type checking (ty, not mypy/pyright)
-- `uv run pytest` — tests; new behaviour requires new tests
+### Quality gates (run before considering a task done)
+- `just fix` — apply formatting and lint autofixes, then type-check and test
+- `just check` — read-only verification of the same gates (what CI runs)
 
-Verify the gates run:
-
-```sh
-uv run ruff format --check .
-uv run ruff check .
-uv run ty check
-uv run pytest
-```
+The recipes live in the `justfile` and wrap: `ruff format`, `ruff check`, `ty check` (ty, not mypy/pyright), and `pytest`. New behaviour requires new tests.
 
 ### Database
 - SQLAlchemy 2.0 style only (Mapped[] / mapped_column, select(); no legacy Query API)
