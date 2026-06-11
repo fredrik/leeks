@@ -1,0 +1,116 @@
+# Fixture metadata corpus for the leeks test suite.
+#
+# All artists, albums, and tracks are FICTIONAL — invented so tests never
+# accidentally match real MusicBrainz data. Several quirks are deliberate;
+# see tests/fixtures/README.md before "fixing" anything here.
+
+# ---------------------------------------------------------------------------
+# Tin Hatch Choir — Cartography for Sleepwalkers (2019)
+# Fully and cleanly tagged.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "Cartography for Sleepwalkers"
+artist = "Tin Hatch Choir"
+year = 2019
+genre = "Indie Rock"
+tracktotal = 5
+
+[[albums.tracks]]
+title = "Inventory of Small Storms"
+track = 1
+
+[[albums.tracks]]
+title = "Glass Harbour"
+track = 2
+
+[[albums.tracks]]
+title = "Margins of the Sleeping Map"
+track = 3
+
+[[albums.tracks]]
+title = "Telegraph Moss"
+track = 4
+
+[[albums.tracks]]
+title = "Counting Backwards from the Sea"
+track = 5
+
+# ---------------------------------------------------------------------------
+# Tin Hatch Choir — Salt Meridian (2022)
+# Fully and cleanly tagged. Contains the raw multi-artist credit track.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "Salt Meridian"
+artist = "Tin Hatch Choir"
+year = 2022
+genre = "Dream Pop"
+tracktotal = 4
+
+[[albums.tracks]]
+title = "Meridian Line"
+track = 1
+
+[[albums.tracks]]
+title = "Anorak Weather"
+track = 2
+
+# Deliberate: raw multi-artist string, exactly as a file tag would hold it.
+[[albums.tracks]]
+title = "Lowland Frequencies"
+track = 3
+artist = "Tin Hatch Choir feat. Vesna Holloway"
+
+[[albums.tracks]]
+title = "Salt Meridian (Reprise)"
+track = 4
+
+# ---------------------------------------------------------------------------
+# Vesna Holloway — Paper Lung Atlas (2017)
+# Fully and cleanly tagged. "Glass Harbour" deliberately duplicates a title
+# from Cartography for Sleepwalkers — same string, different song.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "Paper Lung Atlas"
+artist = "Vesna Holloway"
+year = 2017
+genre = "Folk"
+tracktotal = 4
+
+[[albums.tracks]]
+title = "Atlas of Held Breath"
+track = 1
+
+[[albums.tracks]]
+title = "Glass Harbour"
+track = 2
+
+[[albums.tracks]]
+title = "Thread the Compass Rose"
+track = 3
+
+[[albums.tracks]]
+title = "Paper Lung Lullaby"
+track = 4
+
+# ---------------------------------------------------------------------------
+# Polder Arcade — Tape Hiss Archipelago
+# Deliberately sparse/badly tagged: no year, no genre, no tracktotal, and
+# two tracks missing track numbers. Do not complete these fields.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "Tape Hiss Archipelago"
+artist = "Polder Arcade"
+
+[[albums.tracks]]
+title = "Arcade Rain"
+track = 1
+
+[[albums.tracks]]
+title = "Sodium Light Study"
+
+[[albums.tracks]]
+title = "Pylon Hum"
+
+[[albums.tracks]]
+title = "Dust on the Faders"
+track = 4
