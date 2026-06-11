@@ -1,7 +1,7 @@
 # teebs research
 
-The complete documentary record of teebs, leeks' predecessor. Everything in this directory was carried over from the
-teebs repo; leeks' [core positions](../../design/core-positions.md) and
+The complete documentary record of teebs, leeks' predecessor. Everything in this directory was carried over from
+[the teebs repo](https://github.com/fredrik/teebs); leeks' [core positions](../../design/core-positions.md) and
 [project principles](../../design/project-principles.md) descend from this material. The factual research about beets
 that grounds it lives in [research/beets](../beets/).
 
