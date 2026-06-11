@@ -16,6 +16,10 @@ fix:
     uv run --quiet ty check --quiet
     uv run --quiet pytest --quiet
 
+# Land a feature branch: semi-linear merge marker, then clean up the branch.
+land branch:
+    ./scripts/land {{branch}}
+
 clean:
     find . -name .venv -prune -o -type d -name __pycache__ -prune -exec rm -rf {} +
     rm -rf .pytest_cache .ruff_cache
