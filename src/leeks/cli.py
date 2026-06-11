@@ -12,8 +12,8 @@ from leeks import theme
 
 theme.apply()
 
-SPARKLE_SECONDS = 2.0
-SPARKLE_FPS = 20
+SPARKLE_SECONDS = 1.2
+SPARKLE_FPS = 24
 
 
 def _version_line(version: str, offset: int) -> Text:
