@@ -2,6 +2,10 @@
 
 import rich_click as click
 
+from leeks import theme
+
+theme.apply()
+
 
 # invoke_without_command: click's default no_args_is_help exits with code 2;
 # a bare `leek` should greet with help and exit 0.
