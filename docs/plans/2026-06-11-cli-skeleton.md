@@ -32,8 +32,8 @@ them; this slice exists so that every later slice lands on a surface that alread
   for years.
 - `[project.scripts] leek = "leeks.cli:leek"` in `pyproject.toml`.
 - Help text: the one-line project description, written to be worth reading. Fredrik wants leeks quite colourful, and the
-  joy ethos backs him up — the help screen is the first thing leeks ever shows anyone, so it should already look like
-  something you'd want to use.
+  joy rule (pathos, per the [project principles](../design/project-principles.md)) backs him up — the help screen is the
+  first thing leeks ever shows anyone, so it should already look like something you'd want to use.
 
 ## Exclusions and punts
 
