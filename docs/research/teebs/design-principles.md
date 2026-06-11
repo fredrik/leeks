@@ -1,7 +1,7 @@
 # teebs Design Principles
 
 > Carried over from teebs@c761a9b, lightly edited. This is the rhetorical bridge of the teebs design phase: it sits
-> between the raw annoyances ([docs/teebs](../../teebs/), [research/beets](../beets/)) and the full design
+> between the raw annoyances ([notes/](notes/), [research/beets](../beets/)) and the full design
 > ([vision.md](vision.md), [data-model.md](data-model.md)), arguing each architectural departure as *what beets does →
 > what teebs does → why*. leeks' [core-positions](../../design/core-positions.md) descend from this document.
 

@@ -24,7 +24,6 @@ Documentation is kept in the `docs` directory:
 | `docs/journal`  | Date-stamped filenames that record specific sessions.            |
 | `docs/plans`    | Where active plans live.                                         |
 | `docs/research` | Background research and analysis that informs design.            |
-| `docs/teebs`    | Founding notes from the teebs predecessor. Read-only for Claude. |
 
 Claude should religiously use `docs` to document design decisions and other notable events.
 
@@ -78,6 +77,7 @@ Markdown is formatted with mdformat (120-column wrap). When editing markdown, ru
 ### Conventions
 
 - Core design constraints live in `docs/design/core-positions.md`. Read it before architectural work
+- `docs/research/teebs/notes/*.txt` are Fredrik's primary sources. Read-only for Claude
 - Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
 - CLI: click. Entry point is `leek` (singular)
 - Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only.
