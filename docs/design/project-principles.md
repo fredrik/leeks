@@ -47,9 +47,10 @@ port starts with a beets-parity harness (fixture inputs, beets' known outputs, t
 porting. In teebs, the highest-risk work landed at the same pace as the plumbing and nothing would have noticed if it
 was wrong; the harness is what notices.
 
-## Ethos
+## Ethos and pathos
 
-Newer than the teebs lessons above — added as the build itself began.
+Newer than the teebs lessons above — added as the build itself began. The first is ethos, character: how we work. The
+second is pathos, feeling: what working on leeks should feel like.
 
 **All work happens on a feature branch in its own worktree.** The main checkout is never edited directly, and main's
 history stays linear — branches rebase onto main and fast-forward in, never merge-commit. A branch waits unmerged until
