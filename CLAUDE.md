@@ -42,7 +42,9 @@ or commit to main directly. Claude creates the worktree with its worktree toolin
 branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. main's history is
 semi-linear: branches are rebased onto main, then landed by Fredrik with a single `--no-ff` merge marker — an imperative
 title, plus a label when there is something to cite, like `Add CLI skeleton (Slice 0)` — so `git log --first-parent`
-stays linear.
+stays linear. Fredrik lands with `just land`, which offers marker-title suggestions: when Claude declares a branch
+ready, it writes three candidate titles (one per line) to `.git/info/land-suggestions/<branch>` so landing never waits
+on a model call.
 
 ## Local harness
 
