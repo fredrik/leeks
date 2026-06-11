@@ -5,7 +5,8 @@
 `leek add <path>` adds a single album to the library, non-interactively. It accepts a directory only if it looks like
 exactly one album; otherwise it errors and points at the batch command — "this looks like 12 albums, use `leek import`".
 `leek import` arrives later as a separate command that iterates a tree of directories and calls the same single-album
-pipeline per directory, owning the bulk UX (progress, resume, a skip-on-error journal) without polluting `add`.
+pipeline per directory, owning the bulk UX (progress, resume, a skip-on-error journal) without polluting `add` (ADR
+0005).
 
 `add` records what it knows and never forces a human decision at ingest time. Low confidence never blocks — that is the
 "imports never block on matching" core position taken seriously at the UX level, not just the schema level.

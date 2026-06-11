@@ -1,4 +1,4 @@
-# 0006 — The source layer stores claims, not measurements
+# 0007 — The source layer stores claims, not measurements
 
 ## Decision
 

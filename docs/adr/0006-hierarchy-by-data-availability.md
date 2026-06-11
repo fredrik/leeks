@@ -1,4 +1,4 @@
-# 0005 — The entity hierarchy is realised as its data arrives
+# 0006 — The entity hierarchy is realised as its data arrives
 
 ## Decision
 
