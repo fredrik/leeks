@@ -6,6 +6,7 @@ them entirely when output is piped or NO_COLOR is set.
 """
 
 import rich_click.rich_click as rc
+from rich.text import Text
 
 # Accents
 ROSEWATER = "#f5e0dc"
@@ -35,6 +36,18 @@ OVERLAY0 = "#6c7086"
 SURFACE2 = "#585b70"
 SURFACE1 = "#45475a"
 SURFACE0 = "#313244"
+
+
+# The accent cycle for rainbow sparkle, in spectral order.
+RAINBOW = [RED, PEACH, YELLOW, GREEN, SAPPHIRE, MAUVE]
+
+
+def rainbow(text: str, offset: int = 0) -> Text:
+    """Colour each character from the accent cycle, starting at offset."""
+    out = Text()
+    for i, char in enumerate(text):
+        out.append(char, style=f"bold {RAINBOW[(i + offset) % len(RAINBOW)]}")
+    return out
 
 
 def apply() -> None:

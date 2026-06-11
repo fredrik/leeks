@@ -4,6 +4,7 @@ import subprocess
 
 from click.testing import CliRunner
 
+from leeks import theme
 from leeks.cli import leek
 
 
@@ -36,6 +37,14 @@ def test_help_wears_mocha_when_colour_is_forced():
     assert result.returncode == 0
     # Catppuccin Mocha mauve (#cba6f7) as a truecolor escape sequence.
     assert "38;2;203;166;247" in result.stdout
+
+
+def test_rainbow_cycles_the_accent_palette():
+    text = theme.rainbow("leek", offset=1)
+    assert text.plain == "leek"
+    styles = [span.style for span in text.spans]
+    cycle = theme.RAINBOW
+    assert styles == [f"bold {cycle[(i + 1) % len(cycle)]}" for i in range(4)]
 
 
 def test_console_script_resolves():
