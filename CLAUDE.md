@@ -39,8 +39,10 @@ code and design change, and archive what is outdated or implemented.
 
 All work happens on a feature branch in its own worktree — always, even for small changes. Never edit the main checkout
 or commit to main directly. Claude creates the worktree with its worktree tooling (EnterWorktree), commits on the
-branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. main's history
-stays linear: branches are rebased onto main and fast-forwarded, never merge-committed.
+branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. main's history is
+semi-linear: branches are rebased onto main, then landed by Fredrik with a single `--no-ff` merge marker — an imperative
+title, plus a label when there is something to cite, like `Add CLI skeleton (Slice 0)` — so `git log --first-parent`
+stays linear.
 
 ## Local harness
 
