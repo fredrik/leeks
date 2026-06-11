@@ -77,7 +77,7 @@ Markdown is formatted with mdformat (120-column wrap). When editing markdown, ru
 ### Conventions
 
 - Core design constraints live in `docs/design/core-positions.md`. Read it before architectural work
-- `docs/research/teebs/notes/*.txt` are Fredrik's primary sources. Read-only for Claude
+- `docs/research/teebs/notes/` holds Fredrik's primary sources. Edit them only on his explicit request
 - Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
 - CLI: click. Entry point is `leek` (singular)
 - Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only.

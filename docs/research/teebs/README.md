@@ -30,15 +30,15 @@ documents below; the raw drafts remain in teebs history at c761a9b.
 
 ## Files
 
-**Inputs** — primary sources. Everything else in this directory derives from these. Edited only by Fredrik; the `.txt`
-files are read-only for Claude.
+**Inputs** — primary sources. Everything else in this directory derives from these. Converted to markdown from Fredrik's
+original `.txt` notes (verbatim originals in git history); edited only on Fredrik's request.
 
-| File                         | What and why                                                                 |
-| ---------------------------- | ---------------------------------------------------------------------------- |
-| `notes/annoyances.txt`       | The founding grievances: beets annoyances ANN-001…029, grouped and ranked    |
-| `notes/design-decisions.txt` | The first design decisions: normalization, layers, copy-on-import, no gates  |
-| `notes/features.txt`         | The feature wishlist: batching, genres/moods, source mixing, re-polling      |
-| `notes/tech-decisions.txt`   | The tech stack and why: Python, SQLite, Pydantic, SQLAlchemy, Alembic, click |
+| File                        | What and why                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `notes/annoyances.md`       | The founding grievances: beets annoyances ANN-001…029, grouped and ranked    |
+| `notes/design-decisions.md` | The first design decisions: normalization, layers, copy-on-import, no gates  |
+| `notes/features.md`         | The feature wishlist: batching, genres/moods, source mixing, re-polling      |
+| `notes/tech-decisions.md`   | The tech stack and why: Python, SQLite, Pydantic, SQLAlchemy, Alembic, click |
 
 **Design** — what teebs should be.
 
