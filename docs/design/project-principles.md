@@ -53,8 +53,9 @@ Newer than the teebs lessons above — added as the build itself began. The firs
 second is pathos, feeling: what working on leeks should feel like.
 
 **All work happens on a feature branch in its own worktree.** The main checkout is never edited directly, and main's
-history stays linear — branches rebase onto main and fast-forward in, never merge-commit. A branch waits unmerged until
-Fredrik integrates it.
+history is semi-linear — branches rebase onto main, then land with a single `--no-ff` merge marker: an imperative title,
+plus a label when there is something to cite — `Add CLI skeleton (Slice 0)`. The first-parent history stays linear and
+reads like the roadmap. A branch waits unmerged until Fredrik integrates it.
 
 **leeks is a thrill and a joy to work with.** Joy is a requirement, not a garnish. The CLI earns it with output worth
 reading and help worth asking for; the project earns it with fast feedback loops and code that is a pleasure to change.
