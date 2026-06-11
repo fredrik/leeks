@@ -50,3 +50,14 @@ Deferred in the vision ("design later"); the seed:
 Deferred in the vision ("design later"); the seed: play counts, last played, and similar listening data should be
 first-class when they arrive — designed into the model, not bolted on the way beets plugins graft them into flexible
 attributes.
+
+## Attachments beyond cover art
+
+The vision's defer row covers only an album-art table (multiple images); the seed is wider: N associated files per
+album/track, of any kind — covers (front, back, disc), booklets, liner notes, cue sheets, rip logs. The non-image kinds
+matter for provenance-rich collections, where the log is part of what the album is.
+
+## User-defined labels
+
+Distinct from genres, moods, and themes, which the model covers as source-provided taxonomy: free-form personal labels
+like "good for running" or "party music". User-assigned, never fetched, never overwritten by a source.
