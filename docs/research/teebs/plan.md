@@ -1,7 +1,8 @@
 # teebs implementation plan
 
-> Carried over verbatim from teebs@b85f579 (2026-04-01). The closing artifact of the teebs design phase: the 8-phase
-> plan for building the design in [vision.md](vision.md) and [data-model.md](data-model.md). Companion to
+> Carried over verbatim from teebs@b85f579 (2026-04-01). The 8-phase plan for building the design in
+> [vision.md](vision.md) and [data-model.md](data-model.md). Superseded twenty minutes later by
+> [plan-simplified.md](plan-simplified.md), the version that was actually built. Companion to
 > [assessment.md](assessment.md).
 
 Claude's plan for building teebs, based on Fredrik's design notes.

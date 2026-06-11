@@ -78,6 +78,7 @@ Markdown is formatted with mdformat (120-column wrap). When editing markdown, ru
 ### Conventions
 
 - Core design constraints live in `docs/design/core-positions.md`. Read it before architectural work
+- Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
 - CLI: click. Entry point is `leek` (singular)
 - Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only.
   Never pass ORM objects through pipeline code, never put business logic on ORM models
