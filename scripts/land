@@ -45,7 +45,9 @@ shortlog="$(git log "main..$branch" --oneline --reverse)"
     exit 1
 }
 
+echo
 echo "Landing $branch:"
+echo
 sed 's/^/  /' <<<"$shortlog"
 echo
 
@@ -96,7 +98,9 @@ fi
     exit 1
 }
 
-git merge --no-ff --log=20 -m "$title" "$branch"
+echo
+git merge --no-ff -m "$title" "$branch"
+echo
 
 # Clean up the branch and its worktree. The non-force variants refuse dirty
 # worktrees and unmerged branches, so nothing not already on main can be lost.
@@ -108,4 +112,5 @@ fi
 git branch -d "$branch"
 rm -f "$cache"
 
+echo
 echo "Landed: $(git log --oneline -1)"
