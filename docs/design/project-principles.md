@@ -46,3 +46,15 @@ to `add` then `list`/`info` before anything clever, and dogfood from the first s
 port starts with a beets-parity harness (fixture inputs, beets' known outputs, the port must reproduce them) before any
 porting. In teebs, the highest-risk work landed at the same pace as the plumbing and nothing would have noticed if it
 was wrong; the harness is what notices.
+
+## Ethos
+
+Newer than the teebs lessons above — added as the build itself began.
+
+**All work happens on a feature branch in its own worktree.** The main checkout is never edited directly, and main's
+history stays linear — branches rebase onto main and fast-forward in, never merge-commit. A branch waits unmerged until
+Fredrik integrates it.
+
+**leeks is a thrill and a joy to work with.** Joy is a requirement, not a garnish. The CLI earns it with output worth
+reading and help worth asking for; the project earns it with fast feedback loops and code that is a pleasure to change.
+When something about leeks feels like a chore, treat it as a bug.
