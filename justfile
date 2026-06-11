@@ -17,9 +17,9 @@ fix:
     uv run --quiet pytest --quiet
 
 # Land a feature branch: semi-linear merge marker, then clean up the branch.
-# Without an argument, fzf picks the branch.
-land branch='':
-    ./scripts/land {{branch}}
+# Without an argument, fzf picks the branch. --ff and --squash change the mode.
+land *args:
+    ./scripts/land {{args}}
 
 clean:
     find . -name .venv -prune -o -type d -name __pycache__ -prune -exec rm -rf {} +

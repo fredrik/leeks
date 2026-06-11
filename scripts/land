@@ -7,17 +7,34 @@
 # to cite, like 'Add CLI skeleton (Slice 0)'. Suggests titles via Haiku when
 # the claude CLI is available, then cleans up the branch and its worktree.
 #
-# Usage: just land <branch>
+# Usage: just land [--ff|--squash] [branch]
+#
+# Default is the marker merge. --ff fast-forwards instead — no marker, no
+# title — for branches whose commits stand on their own in the first-parent
+# history. --squash collapses a branch whose history is noise into a single
+# commit bearing the chosen title.
 set -euo pipefail
 
-branch="${1:-}"
+mode="merge"
+branch=""
+for arg in "$@"; do
+    case "$arg" in
+    --ff) mode="ff" ;;
+    --squash) mode="squash" ;;
+    -*)
+        echo "land: unknown option: $arg" >&2
+        exit 1
+        ;;
+    *) branch="$arg" ;;
+    esac
+done
 if [ -z "$branch" ] && command -v fzf >/dev/null 2>&1; then
     branch="$(git branch --format='%(refname:short)' | grep -vx main |
         fzf --prompt='land> ' --height=40% \
             --preview 'git log --oneline --reverse main..{}' || true)"
 fi
 if [ -z "$branch" ]; then
-    echo "usage: just land <branch>" >&2
+    echo "usage: just land [--ff|--squash] [branch]" >&2
     exit 1
 fi
 
@@ -51,11 +68,14 @@ echo
 sed 's/^/  /' <<<"$shortlog"
 echo
 
-# The agent that readied the branch may have left title suggestions behind;
-# only ask Haiku live when it didn't.
+# A fast-forward writes no new commit, so there is no title to choose.
+# Otherwise: the agent that readied the branch may have left title
+# suggestions behind; only ask Haiku live when it didn't.
 suggestions=""
 cache="$(git rev-parse --git-common-dir)/info/land-suggestions/$branch"
-if [ -f "$cache" ]; then
+if [ "$mode" = "ff" ]; then
+    :
+elif [ -f "$cache" ]; then
     suggestions="$(head -3 "$cache")"
 elif command -v claude >/dev/null 2>&1; then
     suggestions="$(claude -p --model haiku \
@@ -70,7 +90,9 @@ elif command -v claude >/dev/null 2>&1; then
 fi
 
 title=""
-if [ -n "$suggestions" ] && command -v fzf >/dev/null 2>&1; then
+if [ "$mode" = "ff" ]; then
+    :
+elif [ -n "$suggestions" ] && command -v fzf >/dev/null 2>&1; then
     # --print-query emits the typed query on line 1, the pick (if any) on
     # line 2 — so picking a suggestion and typing your own use one widget.
     picked="$(fzf --print-query --prompt='title> ' --height=8 \
@@ -93,23 +115,43 @@ elif [ -n "$suggestions" ]; then
 else
     read -r -p "Title: " title
 fi
-[ -n "$title" ] || {
+if [ "$mode" != "ff" ] && [ -z "$title" ]; then
     echo "land: no title, nothing landed" >&2
     exit 1
-}
+fi
 
 echo
-git merge --no-ff -m "$title" "$branch"
+case "$mode" in
+merge) git merge --no-ff -m "$title" "$branch" ;;
+ff) git merge --ff-only "$branch" ;;
+squash)
+    git merge --squash "$branch"
+    git commit --quiet -m "$title"
+    ;;
+esac
 echo
 
 # Clean up the branch and its worktree. The non-force variants refuse dirty
 # worktrees and unmerged branches, so nothing not already on main can be lost.
+# A squashed branch is never ancestry-merged, so -d would always refuse it;
+# tree equality proves main now holds everything the branch had, making -D
+# equally lossless.
+if [ "$mode" = "squash" ]; then
+    if ! git diff --quiet "$branch" HEAD; then
+        echo "land: squash result differs from $branch — leaving the branch in place" >&2
+        exit 1
+    fi
+fi
 worktree="$(git worktree list --porcelain | grep -B2 "^branch refs/heads/$branch$" |
-    sed -n 's/^worktree //p')"
+    sed -n 's/^worktree //p' || true)"
 if [ -n "$worktree" ]; then
     git worktree remove "$worktree"
 fi
-git branch -d "$branch"
+if [ "$mode" = "squash" ]; then
+    git branch -D "$branch"
+else
+    git branch -d "$branch"
+fi
 rm -f "$cache"
 
 echo
