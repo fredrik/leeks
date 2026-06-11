@@ -1,15 +1,17 @@
 # Quality gates. `just` alone runs check.
 
+set quiet
+
 check:
-    uv run ruff format --check .
-    uv run ruff check .
-    uv run mdformat --check .
-    uv run ty check
-    uv run pytest
+    uv run --quiet ruff format --check --quiet .
+    uv run --quiet ruff check --quiet .
+    uv run --quiet mdformat --check .
+    uv run --quiet ty check --quiet
+    uv run --quiet pytest --quiet
 
 fix:
-    uv run ruff format .
-    uv run ruff check --fix .
-    uv run mdformat .
-    uv run ty check
-    uv run pytest
+    uv run --quiet ruff format --quiet .
+    uv run --quiet ruff check --fix --quiet .
+    uv run --quiet mdformat .
+    uv run --quiet ty check --quiet
+    uv run --quiet pytest --quiet

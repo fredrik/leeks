@@ -16,14 +16,15 @@ Don't add when you can delete.
 
 Documentation is kept in the `docs` directory:
 
-| Path           | Purpose                                                          |
-| -------------- | ---------------------------------------------------------------- |
-| `docs/adr`     | Proper ADR-style decision records. Official.                     |
-| `docs/archive` | Where outdated documentation and implemented plans are archived. |
-| `docs/design`  | Design documents. Should have a long expected lifetime.          |
-| `docs/teebs`   | Founding notes from the teebs predecessor. Read-only for Claude. |
-| `docs/journal` | Date-stamped filenames that record specific sessions.            |
-| `docs/plans`   | Where active plans live.                                         |
+| Path            | Purpose                                                          |
+| --------------- | ---------------------------------------------------------------- |
+| `docs/adr`      | Proper ADR-style decision records. Official.                     |
+| `docs/archive`  | Where outdated documentation and implemented plans are archived. |
+| `docs/design`   | Design documents. Should have a long expected lifetime.          |
+| `docs/journal`  | Date-stamped filenames that record specific sessions.            |
+| `docs/plans`    | Where active plans live.                                         |
+| `docs/research` | Background research and analysis that informs design.            |
+| `docs/teebs`    | Founding notes from the teebs predecessor. Read-only for Claude. |
 
 Claude should religiously use `docs` to document design decisions and other notable events.
 
