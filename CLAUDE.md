@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project
 
 leeks is a music library organiser and spiritual successor to beets.
@@ -14,27 +12,17 @@ Don't add when you can delete.
 
 ## Documentation
 
-Documentation is kept in the `docs` directory:
+Documentation lives in `docs/` — see `docs/README.md` for the directory taxonomy and lifecycles.
 
-| Path            | Purpose                                                          |
-| --------------- | ---------------------------------------------------------------- |
-| `docs/adr`      | Proper ADR-style decision records. Official.                     |
-| `docs/archive`  | Where outdated documentation and implemented plans are archived. |
-| `docs/design`   | Design documents. Should have a long expected lifetime.          |
-| `docs/journal`  | Date-stamped filenames that record specific sessions.            |
-| `docs/plans`    | Where active plans live.                                         |
-| `docs/research` | Background research and analysis that informs design.            |
-
-Claude should religiously use `docs` to document design decisions and other notable events.
-
-Claude should keep existing documentation updated when code, design, etc is changed.
-
-Claude should archive outdated documentation and plans that are already implemented.
+Claude should religiously document design decisions and notable events in `docs`, keep existing documentation updated as
+code and design change, and archive what is outdated or implemented.
 
 ## Local harness
 
-Claude should strive to use an efficient local test harness to run and verify the code. The feedback loop should be as
-tight as possible. Insist on improving the tooling if deemed less than perfect.
+The ambition is a really good agentic feedback loop: Claude should be able to run, verify, and inspect everything
+locally and fast. Today that is `just fix` / `just check`; as leeks grows, the harness grows with it — fixture audio
+files, a scratch library to import into, parity harnesses for risky ports. When a feedback loop feels slow or blind,
+improve the tooling before continuing with the task.
 
 ## Code
 
@@ -61,11 +49,11 @@ uv via `.python-version`, not by mise, so there's a single source of truth for t
 - `just fix` — apply formatting and lint autofixes, then type-check and test
 - `just check` — read-only verification of the same gates (what CI runs)
 
-The recipes live in the `justfile` and wrap: `ruff format`, `ruff check`, `mdformat` (markdown formatting, configured in
-`.mdformat.toml`), `ty check` (ty, not mypy/pyright), and `pytest`. New behaviour requires new tests.
+The recipes live in the `justfile` and wrap: `ruff format`, `ruff check`, `mdformat`, `ty check` (ty, not mypy/pyright),
+and `pytest`. New behaviour requires new tests.
 
-Markdown is formatted with mdformat (120-column wrap). When editing markdown, run `uv run mdformat <file>` (or
-`just fix`) before considering the edit done.
+Markdown is formatted with mdformat (120-column wrap, configured in `.mdformat.toml`). When editing markdown, run
+`uv run mdformat <file>` (or `just fix`) before considering the edit done.
 
 ### Database
 
