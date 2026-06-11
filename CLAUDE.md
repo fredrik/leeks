@@ -35,6 +35,13 @@ Documentation lives in `docs/` — see `docs/README.md` for the directory taxono
 Claude should religiously document design decisions and notable events in `docs`, keep existing documentation updated as
 code and design change, and archive what is outdated or implemented.
 
+## Workflow
+
+All work happens on a feature branch in its own worktree — always, even for small changes. Never edit the main checkout
+or commit to main directly. Claude creates the worktree with its worktree tooling (EnterWorktree), commits on the
+branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. main's history
+stays linear: branches are rebased onto main and fast-forwarded, never merge-committed.
+
 ## Local harness
 
 The ambition is a really good agentic feedback loop: Claude should be able to run, verify, and inspect everything
