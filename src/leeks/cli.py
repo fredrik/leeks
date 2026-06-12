@@ -2,13 +2,16 @@
 
 import importlib.metadata
 import time
+from pathlib import Path
 
 import rich_click as click
 from rich.console import Console
 from rich.live import Live
 from rich.text import Text
 
-from leeks import theme
+from leeks import library, theme
+from leeks.detect import NotOneAlbum
+from leeks.library import AlreadyAdded
 
 theme.apply()
 
@@ -72,6 +75,50 @@ def version() -> None:
             pass  # the sparkle is skippable; the version is already on screen
     else:
         click.echo(f"leek, version {installed}")
+
+
+def _print_added(added: library.Added) -> None:
+    console = Console()
+    details = " · ".join(
+        part
+        for part in (
+            added.artist,
+            str(added.year) if added.year else None,
+            f"{added.tracks} tracks",
+        )
+        if part
+    )
+    console.print(
+        Text.assemble(
+            ("✓ ", f"bold {theme.GREEN}"),
+            ("added ", theme.SUBTEXT0),
+            (added.title, f"bold {theme.TEXT}"),
+        )
+    )
+    console.print(Text(f"  {details}", style=theme.SUBTEXT1))
+    console.print(
+        Text.assemble(("  → ", theme.SUBTEXT0), (str(added.destination), theme.BLUE))
+    )
+    console.print(
+        Text(f"  {added.claims} claims recorded from file tags", style=theme.SUBTEXT0)
+    )
+
+
+@leek.command()
+@click.argument(
+    "directory", type=click.Path(exists=True, file_okay=False, path_type=Path)
+)
+def add(directory: Path) -> None:
+    """Add one album to the library.
+
+    The directory must hold exactly one album; for a tree of many,
+    leek import will arrive later. Bad metadata never blocks: the
+    album enters with whatever its tags claim.
+    """
+    try:
+        _print_added(library.add(directory))
+    except (NotOneAlbum, AlreadyAdded) as refusal:
+        raise click.ClickException(str(refusal)) from refusal
 
 
 @leek.command(name="help")
