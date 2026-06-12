@@ -31,11 +31,14 @@ This is the first read verb, and the first time the merged view earns its name: 
 columns directly and never touches the source layer — that separation is the point of having a merged view at all
 (`info`, which deliberately exposes the source layer, is the designed exception).
 
-beets' query language is the scar tissue here. It is powerful and loved, but it grew by accretion into the stringly-
-typed field machinery: every query passes through string parsing, every field comparison negotiates types at query time,
-and the language's grammar was never designed — it accumulated. The lesson is not "no query language"; it is that a
-query language is a designed artifact, and designing one before knowing what queries leeks users actually reach for is
-speculation. Bare terms cover the dogfooding need (find an album, eyeball the shelf) at near-zero design cost and
+beets' query language informs this punt from both sides. Its surface is genuinely good and well loved — bare terms,
+`field:value`, ranges: terse, guessable ideas that earned their keep, and a future leeks grammar should preserve what
+makes them enjoyable. The cautionary half is *how* that language came to be: it was never designed, it accumulated —
+regex, ranges, OR, negation each grafted on over the years — so its semantics live in the parser (a colon inside a
+search term silently becomes a field query; case rules differ between query types) and every comparison negotiates the
+stringly-typed substrate at query time. The lesson is not "no query language", nor "beets' was wrong"; it is that a
+query language is a designed artifact — write the grammar down deliberately, on typed columns, once real queries show
+what to design. Bare terms cover the dogfooding need (find an album, eyeball the shelf) at near-zero design cost and
 constrain nothing: any future grammar can keep `leek list radiohead` meaning what it obviously means.
 
 ## Alternatives considered
