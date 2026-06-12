@@ -30,14 +30,19 @@ def corpus() -> dict[str, Any]:
         return tomllib.load(handle)
 
 
+def _dashed(text: str) -> str:
+    # Dashes, not spaces, in materialised paths: kinder to shells.
+    return text.replace(" ", "-")
+
+
 def materialise_album(album: dict[str, Any], dest: Path) -> Path:
     """Write a corpus album as a directory of tagged audio files."""
-    directory = dest / album["title"]
+    directory = dest / _dashed(album["title"])
     directory.mkdir(parents=True)
     for position, track in enumerate(album["tracks"]):
         fmt = FORMATS[position % len(FORMATS)]
         tone = AUDIO / f"tone-{position % TONE_COUNT:03d}.{fmt}"
-        path = directory / f"{position + 1:02d} {track['title']}.{fmt}"
+        path = directory / f"{position + 1:02d}-{_dashed(track['title'])}.{fmt}"
         shutil.copyfile(tone, path)
         tags = MediaFile(str(path))
         tags.title = track["title"]

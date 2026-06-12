@@ -43,7 +43,7 @@ def test_sparse_fields_are_truly_absent(corpus, materialise):
 def test_feat_credit_is_verbatim(corpus, materialise):
     album = by_title(corpus, "Salt Meridian")
     directory = materialise(album)
-    path = next(p for p in directory.iterdir() if "Lowland Frequencies" in p.name)
+    path = next(p for p in directory.iterdir() if "Lowland-Frequencies" in p.name)
     tags = MediaFile(str(path))
     assert tags.artist == "Tin Hatch Choir feat. Vesna Holloway"
     assert tags.albumartist == "Tin Hatch Choir"

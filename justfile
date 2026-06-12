@@ -25,7 +25,7 @@ land *args:
 materialise dest="/tmp/leeks-scratch":
     uv run python tests/fixtures/materialise.py {{dest}}
     echo
-    echo 'try: LEEKS_ROOT={{dest}}-library leek add "{{dest}}/Salt Meridian"'
+    echo 'try: LEEKS_ROOT={{dest}}-library leek add {{dest}}/Salt-Meridian'
 
 clean:
     find . -name .venv -prune -o -type d -name __pycache__ -prune -exec rm -rf {} +
