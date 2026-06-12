@@ -22,6 +22,13 @@ built. New behaviour requires new tests; risky behaviour requires a harness.
 **Decisions that outlive a slice go to ADRs.** Plans get archived; rationale that must survive lives in
 [docs/adr](../adr/).
 
+**teebs is precedent, not blueprint.** The teebs record ([docs/research/teebs](../research/teebs/)) preserves
+*decisions* and their reasons — the source layer, import-everything, non-destructive defaults. Its schemas, models, and
+plans were speculative maximalist noodling written before contact with implementation, and they anchor: slice 1's detail
+plan inherited a credits table from the teebs data model that carried no information (ADR 0009), and the parity-twin
+experiment could not catch it because both twins read the same plan. Design every component from local information — the
+data this slice actually has — then consult teebs for the scar tissue, never the table layouts.
+
 ## Slicing rules
 
 **Slice by data availability.** Infrastructure arrives with the data that justifies it: the merge machinery arrives with

@@ -70,6 +70,15 @@ source — directory names like `The Avalanches - Since I Left You (2001) [FLAC]
 enters as analyzer claims once merge machinery can host a second source. All three are recorded as
 [ADR 0008](../adr/0008-claims-record-what-sources-say.md).
 
+## The credits table, and what the experiment could not see
+
+After three review rounds, Fredrik caught what none of them did: the `artist_credits` table was day-one ceremony — its
+`role` column fully determined by which FK was set, its `position` always 0 — inherited by the detail plan from the
+teebs data model and faithfully built by both twins. Dropped in favour of direct artist links (ADR 0009); the credits
+table returns with MusicBrainz. The methodological lesson: parity twins detect *ambiguity* in a plan, not *error* in it
+— anchoring that lives in the plan itself is invisible to the experiment. Recorded as a project principle: teebs is
+precedent, not blueprint.
+
 ## Open ends
 
 The punts recorded in the plan stand: re-add disambiguation (`--force`, hashes), raw artist strings awaiting

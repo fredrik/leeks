@@ -95,6 +95,8 @@ Markdown is formatted with mdformat (120-column wrap, configured in `.mdformat.t
 
 - Core design constraints live in `docs/design/core-positions.md`. Read it before architectural work
 - `docs/research/teebs/notes/` holds Fredrik's primary sources. Edit them only on his explicit request
+- teebs is precedent, not blueprint: learn from its decisions and lessons, never copy its schemas, models, or plans —
+  they were speculative design written before contact. Design from local information (see project-principles)
 - Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
 - CLI: click. Entry point is `leek` (singular)
 - Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only.
