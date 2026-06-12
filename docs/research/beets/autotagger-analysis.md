@@ -125,7 +125,7 @@ teebs/autotag/
 
    Your teebs `TrackInfo` Pydantic model already satisfies most of this.
 
-1. **Weights as a dataclass, not config.** Replace all `config["match"]` reads with a `MatchConfig` object:
+2. **Weights as a dataclass, not config.** Replace all `config["match"]` reads with a `MatchConfig` object:
 
    ```python
    @dataclass
@@ -143,7 +143,7 @@ teebs/autotag/
        ignored: list[str] = field(default_factory=list)
    ```
 
-1. **Candidate source as a callable.** Instead of `metadata_plugins.candidates()`:
+3. **Candidate source as a callable.** Instead of `metadata_plugins.candidates()`:
 
    ```python
    CandidateSource = Callable[[str, str, bool], Iterable[AlbumCandidate]]
@@ -151,7 +151,7 @@ teebs/autotag/
 
    MusicBrainz, Discogs, etc. each implement this interface.
 
-1. **Drop `data_source` penalty** initially. With a single source (MusicBrainz), it's irrelevant.
+4. **Drop `data_source` penalty** initially. With a single source (MusicBrainz), it's irrelevant.
 
 ### Phase 2: Adapt to teebs Data Model
 

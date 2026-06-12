@@ -41,13 +41,13 @@ albums:
 ## Build order
 
 1. Fixture harness — corpus loader and album materialiser (tag the tones from `corpus.toml`).
-1. Schema — ORM models and Alembic migration 0001, with the database created at the library root.
-1. Pipeline models — slice-sized `AlbumInfo` / `TrackInfo` (ADR 0001: Pydantic in the pipeline, ORM at rest).
-1. Tag reading — mediafile → pipeline models; claims separated from measurements (ADR 0007).
-1. Detection — the single-album validator (ADR 0004).
-1. Write path — source_values, identity merge, copy-on-import, all in one transactional pipeline.
-1. CLI — `leek add` wired through click, with a summary card that earns the joy requirement.
-1. Docs — journal entry; archive this plan.
+2. Schema — ORM models and Alembic migration 0001, with the database created at the library root.
+3. Pipeline models — slice-sized `AlbumInfo` / `TrackInfo` (ADR 0001: Pydantic in the pipeline, ORM at rest).
+4. Tag reading — mediafile → pipeline models; claims separated from measurements (ADR 0007).
+5. Detection — the single-album validator (ADR 0004).
+6. Write path — source_values, identity merge, copy-on-import, all in one transactional pipeline.
+7. CLI — `leek add` wired through click, with a summary card that earns the joy requirement.
+8. Docs — journal entry; archive this plan.
 
 ## Punts
 

@@ -63,16 +63,16 @@ small frozen dataclass) consumed only by `library.py` when writing file rows.
    directory (audio in subdirectories → "looks like more than one album, try `leek import`"), and at most one distinct
    non-empty album tag across files (two album tags → refusal naming both). Returns the parsed per-file tags so the
    pipeline reads each file once.
-1. **Assemble** (`tags.py`): per-file claims become `TrackInfo`s ordered by track number then filename; album claims are
+2. **Assemble** (`tags.py`): per-file claims become `TrackInfo`s ordered by track number then filename; album claims are
    the consensus of the files' album-level tags. Absent tags are absent fields — never empty strings.
-1. **Refuse re-adds** (`library.py`): any source path already in `files.source_path` → "already added", no writes.
-1. **Write** (`library.py`, one transaction): create the album row (its id names the copy directory), artists, tracks,
+3. **Refuse re-adds** (`library.py`): any source path already in `files.source_path` → "already added", no writes.
+4. **Write** (`library.py`, one transaction): create the album row (its id names the copy directory), artists, tracks,
    credits, genres; write every claim as a `source_values` row; run the identity merge — a real `merge(entity)` function
    that reads all of an entity's source_values and writes merged columns, trivial today, the seam tomorrow.
-1. **Copy** files into `<root>/album-<id>/<track>-<title>.<ext>` (track number zero-padded; title slugified ASCII-ish,
+5. **Copy** files into `<root>/album-<id>/<track>-<title>.<ext>` (track number zero-padded; title slugified ASCII-ish,
    collisions suffixed). Hash and probe each copy for the measurements; write file rows. A copy failure rolls back the
    transaction and removes the partial directory — originals are never touched either way.
-1. **Report**: a summary card — album, artist, year, track count, where it landed, and a note of how many claims were
+6. **Report**: a summary card — album, artist, year, track count, where it landed, and a note of how many claims were
    recorded. Output worth reading is the requirement.
 
 ## Tests
