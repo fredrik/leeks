@@ -2,7 +2,7 @@
 
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
-from sqlalchemy import create_engine, inspect, select
+from sqlalchemy import create_engine, inspect, select, text
 
 from leeks import db, orm
 
@@ -31,6 +31,12 @@ def test_migrate_is_idempotent():
     db.migrate()
     with db.session() as session:
         assert len(session.scalars(select(orm.Source)).all()) == 1
+
+
+def test_foreign_keys_are_enforced():
+    # SQLite ships with foreign keys off; db.py must switch them on.
+    with db.session() as session:
+        assert session.execute(text("PRAGMA foreign_keys")).scalar() == 1
 
 
 def test_migration_matches_orm_metadata():

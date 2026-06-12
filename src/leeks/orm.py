@@ -96,6 +96,7 @@ class ArtistCredit(Base):
     __tablename__ = "artist_credits"
     __table_args__ = (
         CheckConstraint("(album_id IS NULL) != (track_id IS NULL)", name="one_owner"),
+        CheckConstraint("role IN ('albumartist', 'artist')", name="role"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -137,6 +138,7 @@ class SourceValue(Base):
     __tablename__ = "source_values"
     __table_args__ = (
         UniqueConstraint("source_id", "entity_type", "entity_id", "field"),
+        CheckConstraint("entity_type IN ('album', 'track')", name="entity_type"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

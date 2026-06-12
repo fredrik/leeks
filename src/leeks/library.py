@@ -125,7 +125,8 @@ def _refuse_readds(session: Session, info: AlbumInfo) -> None:
         select(File.source_path).where(File.source_path.in_(sources))
     ).all()
     if known:
-        raise AlreadyAdded(f"already added ({len(known)} of these files are known)")
+        more = f" (+{len(known) - 1} more)" if len(known) > 1 else ""
+        raise AlreadyAdded(f"already added: {known[0]}{more}")
 
 
 def _get_or_create[R: (Artist, Genre)](

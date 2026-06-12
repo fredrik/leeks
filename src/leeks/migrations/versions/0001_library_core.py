@@ -101,6 +101,9 @@ def upgrade() -> None:
             "(album_id IS NULL) != (track_id IS NULL)",
             name="ck_artist_credits_one_owner",
         ),
+        sa.CheckConstraint(
+            "role IN ('albumartist', 'artist')", name="ck_artist_credits_role"
+        ),
     )
     op.create_table(
         "album_genres",
@@ -137,6 +140,9 @@ def upgrade() -> None:
             "entity_id",
             "field",
             name="uq_source_values_source_id",
+        ),
+        sa.CheckConstraint(
+            "entity_type IN ('album', 'track')", name="ck_source_values_entity_type"
         ),
     )
     # file_tags exists from day one: it is the source every library starts with.

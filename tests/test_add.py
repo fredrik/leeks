@@ -117,6 +117,29 @@ def test_artists_are_not_duplicated_across_albums(corpus, materialise):
         assert names.count("Tin Hatch Choir") == 1
 
 
+def test_copy_failure_rolls_everything_back(
+    corpus, materialise, leeks_root, monkeypatch
+):
+    directory = materialise(by_title(corpus, "Salt Meridian"))
+    before = {
+        p: hashlib.sha256(p.read_bytes()).hexdigest() for p in directory.iterdir()
+    }
+
+    def explode(path):
+        raise RuntimeError("disk on fire")
+
+    monkeypatch.setattr("leeks.tags.measure", explode)
+    with pytest.raises(RuntimeError, match="disk on fire"):
+        library.add(directory)
+
+    with db.session() as session:
+        for model in (orm.Album, orm.Track, orm.File, orm.SourceValue):
+            assert rows(session, model) == []
+    assert not list(leeks_root.glob("album-*"))
+    for path, digest in before.items():
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
+
+
 def test_readd_is_refused(corpus, materialise):
     album = by_title(corpus, "Paper Lung Atlas")
     directory = materialise(album)

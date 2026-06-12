@@ -10,7 +10,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session
 
 MIGRATIONS = Path(__file__).parent / "migrations"
@@ -37,6 +37,14 @@ def migrate() -> None:
     config.set_main_option("script_location", str(MIGRATIONS))
     config.set_main_option("sqlalchemy.url", database_url())
     command.upgrade(config, "head")
+
+
+@event.listens_for(Engine, "connect")
+def _enforce_foreign_keys(connection, _record) -> None:
+    # SQLite ships with foreign keys off; real foreign keys are a core position.
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 def session() -> Session:

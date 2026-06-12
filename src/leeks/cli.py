@@ -3,15 +3,17 @@
 import importlib.metadata
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import rich_click as click
 from rich.console import Console
 from rich.live import Live
 from rich.text import Text
 
-from leeks import library, theme
-from leeks.detect import NotOneAlbum
-from leeks.library import AlreadyAdded
+from leeks import theme
+
+if TYPE_CHECKING:
+    from leeks.library import Added
 
 theme.apply()
 
@@ -77,7 +79,7 @@ def version() -> None:
         click.echo(f"leek, version {installed}")
 
 
-def _print_added(added: library.Added) -> None:
+def _print_added(added: "Added") -> None:
     console = Console()
     details = " · ".join(
         part
@@ -115,9 +117,13 @@ def add(directory: Path) -> None:
     leek import will arrive later. Bad metadata never blocks: the
     album enters with whatever its tags claim.
     """
+    # Imported here so a bare `leek` never pays the pipeline's startup cost.
+    from leeks import library
+    from leeks.detect import NotOneAlbum
+
     try:
         _print_added(library.add(directory))
-    except (NotOneAlbum, AlreadyAdded) as refusal:
+    except (NotOneAlbum, library.AlreadyAdded) as refusal:
         raise click.ClickException(str(refusal)) from refusal
 
 
