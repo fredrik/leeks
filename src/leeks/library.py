@@ -227,15 +227,11 @@ def _copy_files(
     now: datetime,
 ) -> None:
     destination.mkdir(parents=True)
-    taken: set[str] = set()
     for track, row in zip(info.tracks, tracks):
         name = _slug(row.title)
         if row.track is not None:
             name = f"{row.track:02d}-{name}"
-        if name in taken:
-            name = f"{name}-{row.id}"
-        taken.add(name)
-        copy = destination / f"{name}{track.path.suffix.lower()}"
+        copy = _vacant(destination, name, track.path.suffix.lower())
         sha256 = _copy_and_hash(track.path, copy)
         facts = tags.measure(copy)
         session.add(
@@ -254,6 +250,16 @@ def _copy_files(
                 added=now,
             )
         )
+
+
+def _vacant(directory: Path, name: str, suffix: str) -> Path:
+    """The first free path for this name; collisions count up from -2."""
+    candidate = directory / f"{name}{suffix}"
+    counter = 2
+    while candidate.exists():
+        candidate = directory / f"{name}-{counter}{suffix}"
+        counter += 1
+    return candidate
 
 
 def _copy_and_hash(source: Path, copy: Path) -> str:

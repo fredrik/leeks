@@ -117,6 +117,18 @@ def test_artists_are_not_duplicated_across_albums(corpus, materialise):
         assert names.count("Tin Hatch Choir") == 1
 
 
+def test_copy_name_collisions_are_suffixed(materialise):
+    # Two unnumbered tracks with the same title and format must both land.
+    album = {
+        "title": "Echoes of Echoes",
+        "artist": "Polder Arcade",
+        "tracks": [{"title": "Echo"}, {"title": "Filler"}, {"title": "Echo"}],
+    }
+    added = library.add(materialise(album))
+    names = sorted(p.name for p in added.destination.iterdir())
+    assert names == ["echo-2.flac", "echo.flac", "filler.mp3"]
+
+
 def test_copy_failure_rolls_everything_back(
     corpus, materialise, leeks_root, monkeypatch
 ):
