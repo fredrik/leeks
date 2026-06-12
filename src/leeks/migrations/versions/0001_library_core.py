@@ -16,17 +16,22 @@ depends_on = None
 
 def upgrade() -> None:
     op.create_table(
-        "albums",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("title", sa.String, nullable=False),
-        sa.Column("year", sa.Integer),
-        sa.Column("added", sa.DateTime, nullable=False),
-    )
-    op.create_table(
         "artists",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("name", sa.String, nullable=False),
         sa.UniqueConstraint("name", name="uq_artists_name"),
+    )
+    op.create_table(
+        "albums",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("title", sa.String, nullable=False),
+        sa.Column(
+            "artist_id",
+            sa.Integer,
+            sa.ForeignKey("artists.id", name="fk_albums_artist_id_artists"),
+        ),
+        sa.Column("year", sa.Integer),
+        sa.Column("added", sa.DateTime, nullable=False),
     )
     op.create_table(
         "genres",
@@ -50,6 +55,11 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("title", sa.String, nullable=False),
+        sa.Column(
+            "artist_id",
+            sa.Integer,
+            sa.ForeignKey("artists.id", name="fk_tracks_artist_id_artists"),
+        ),
         sa.Column("track", sa.Integer),
         sa.Column("added", sa.DateTime, nullable=False),
     )
@@ -75,35 +85,6 @@ def upgrade() -> None:
         sa.Column("added", sa.DateTime, nullable=False),
         sa.UniqueConstraint("path", name="uq_files_path"),
         sa.UniqueConstraint("source_path", name="uq_files_source_path"),
-    )
-    op.create_table(
-        "artist_credits",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column(
-            "artist_id",
-            sa.Integer,
-            sa.ForeignKey("artists.id", name="fk_artist_credits_artist_id_artists"),
-            nullable=False,
-        ),
-        sa.Column(
-            "album_id",
-            sa.Integer,
-            sa.ForeignKey("albums.id", name="fk_artist_credits_album_id_albums"),
-        ),
-        sa.Column(
-            "track_id",
-            sa.Integer,
-            sa.ForeignKey("tracks.id", name="fk_artist_credits_track_id_tracks"),
-        ),
-        sa.Column("role", sa.String, nullable=False),
-        sa.Column("position", sa.Integer, nullable=False),
-        sa.CheckConstraint(
-            "(album_id IS NULL) != (track_id IS NULL)",
-            name="ck_artist_credits_one_owner",
-        ),
-        sa.CheckConstraint(
-            "role IN ('albumartist', 'artist')", name="ck_artist_credits_role"
-        ),
     )
     op.create_table(
         "album_genres",
@@ -152,10 +133,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("source_values")
     op.drop_table("album_genres")
-    op.drop_table("artist_credits")
     op.drop_table("files")
     op.drop_table("tracks")
     op.drop_table("sources")
     op.drop_table("genres")
-    op.drop_table("artists")
     op.drop_table("albums")
+    op.drop_table("artists")

@@ -39,8 +39,9 @@ def test_add_clean_album(corpus, materialise, leeks_root):
 
         (artist,) = rows(session, orm.Artist)
         assert artist.name == album["artist"]
-        (credit,) = rows(session, orm.ArtistCredit)
-        assert (credit.album_id, credit.role) == (album_row.id, "albumartist")
+        assert album_row.artist_id == artist.id
+        # Track artist links are overrides only; nothing overrides here.
+        assert all(t.artist_id is None for t in tracks)
 
         (genre,) = rows(session, orm.Genre)
         assert genre.name == album["genre"]
@@ -90,12 +91,11 @@ def test_add_feat_credit(corpus, materialise):
     with db.session() as session:
         names = {a.name for a in rows(session, orm.Artist)}
         assert names == {"Tin Hatch Choir", "Tin Hatch Choir feat. Vesna Holloway"}
-        (track_credit,) = [
-            c for c in rows(session, orm.ArtistCredit) if c.track_id is not None
-        ]
-        track = session.get(orm.Track, track_credit.track_id)
-        assert track is not None and track.title == "Lowland Frequencies"
-        assert track_credit.artist.name == "Tin Hatch Choir feat. Vesna Holloway"
+        (overridden,) = [t for t in rows(session, orm.Track) if t.artist_id]
+        assert overridden.title == "Lowland Frequencies"
+        featured = session.get(orm.Artist, overridden.artist_id)
+        assert featured is not None
+        assert featured.name == "Tin Hatch Choir feat. Vesna Holloway"
 
 
 def test_add_duplicate_titles_stay_distinct(corpus, materialise):

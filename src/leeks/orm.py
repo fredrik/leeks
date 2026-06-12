@@ -34,6 +34,9 @@ class Album(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str]
+    # A single artist link; the credits table (roles, ordering, join
+    # phrases) arrives with the MusicBrainz data that populates it.
+    artist_id: Mapped[int | None] = mapped_column(ForeignKey("artists.id"))
     year: Mapped[int | None]
     added: Mapped[datetime]
 
@@ -51,6 +54,8 @@ class Track(Base):
     # NOT NULL: add is single-album and singletons are excluded, per the punt.
     album_id: Mapped[int] = mapped_column(ForeignKey("albums.id"))
     title: Mapped[str]
+    # Set only when the track's artist overrides the album's.
+    artist_id: Mapped[int | None] = mapped_column(ForeignKey("artists.id"))
     track: Mapped[int | None]
     added: Mapped[datetime]
 
@@ -88,25 +93,6 @@ class Artist(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(unique=True)
-
-
-class ArtistCredit(Base):
-    """Who is credited on an album or a track, in display order."""
-
-    __tablename__ = "artist_credits"
-    __table_args__ = (
-        CheckConstraint("(album_id IS NULL) != (track_id IS NULL)", name="one_owner"),
-        CheckConstraint("role IN ('albumartist', 'artist')", name="role"),
-    )
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    artist_id: Mapped[int] = mapped_column(ForeignKey("artists.id"))
-    album_id: Mapped[int | None] = mapped_column(ForeignKey("albums.id"))
-    track_id: Mapped[int | None] = mapped_column(ForeignKey("tracks.id"))
-    role: Mapped[str]  # "albumartist" on albums, "artist" on tracks
-    position: Mapped[int]
-
-    artist: Mapped[Artist] = relationship()
 
 
 class Genre(Base):

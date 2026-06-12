@@ -25,7 +25,6 @@ from leeks.orm import (
     Album,
     AlbumGenre,
     Artist,
-    ArtistCredit,
     File,
     Genre,
     Source,
@@ -89,9 +88,10 @@ def add(directory: Path) -> Added:
 
         # The directory name is the fallback for the NOT NULL title, not a claim.
         album = Album(title=info.title or directory.name, added=now)
+        if info.artist:
+            album.artist_id = _get_or_create(session, Artist, info.artist).id
         session.add(album)
         session.flush()
-        _credit_artists(session, info, album)
         _link_genre(session, info, album)
         tracks = _create_tracks(session, info, album, now)
 
@@ -140,16 +140,6 @@ def _get_or_create[R: (Artist, Genre)](
     return row
 
 
-def _credit_artists(session: Session, info: AlbumInfo, album: Album) -> None:
-    if info.artist:
-        artist = _get_or_create(session, Artist, info.artist)
-        session.add(
-            ArtistCredit(
-                artist_id=artist.id, album_id=album.id, role="albumartist", position=0
-            )
-        )
-
-
 def _link_genre(session: Session, info: AlbumInfo, album: Album) -> None:
     if info.genre:
         genre = _get_or_create(session, Genre, info.genre)
@@ -168,15 +158,10 @@ def _create_tracks(
             track=track.track,
             added=now,
         )
+        if track.artist:
+            row.artist_id = _get_or_create(session, Artist, track.artist).id
         session.add(row)
         session.flush()
-        if track.artist:
-            artist = _get_or_create(session, Artist, track.artist)
-            session.add(
-                ArtistCredit(
-                    artist_id=artist.id, track_id=row.id, role="artist", position=0
-                )
-            )
         rows.append(row)
     return rows
 

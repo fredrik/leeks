@@ -11,7 +11,6 @@ TABLES = {
     "tracks",
     "files",
     "artists",
-    "artist_credits",
     "genres",
     "album_genres",
     "sources",
