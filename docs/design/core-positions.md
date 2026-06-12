@@ -32,6 +32,11 @@ writing, renaming, and moving library files are explicit, separate actions — n
 step. The files that most need management are the ones with the worst metadata — gating them out at import defeats the
 purpose.
 
+**The library tree is for humans.** Paths derive from merged metadata at copy time and read like a record shelf — artist
+/ year title / nn title ([ADR 0010](../adr/0010-the-library-tree-is-for-humans.md)). Metadata changes never rename
+files: paths go stale honestly, and reorganisation is an explicit action. The database is the source of truth; the tree
+is its human-readable projection.
+
 ## Architecture
 
 The two-layer model — Pydantic v2 for the pipeline, SQLAlchemy 2.0 for persistence, mapped at the boundary — is
