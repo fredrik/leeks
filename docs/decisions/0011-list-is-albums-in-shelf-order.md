@@ -18,7 +18,9 @@ anywhere in the album's artist, title, or year. Terms match *data*, never displa
 claim is not found by searching `unknown`. LIKE metacharacters are escaped — a term is text, not a pattern.
 
 Scriptability is the primitive's job: albums go to stdout, one per line; the empty-library and no-match notes go to
-stderr and point at the right verb (`leek add`). Exit code 0 either way — an empty shelf is an answer, not an error.
+stderr and point at the right verb (`leek add`). Exit code 0 either way — an empty shelf is an answer, not an error. One
+per line is literal: a terminal gets the aligned, themed table; a pipe gets one tab-separated record per album, never
+wrapped — a record folded across physical lines would break `leek list | grep`.
 
 Deliberately undecided: how queries grow. Field-qualified terms (`year:2019`), comparisons, negation, and per-track
 search are all plausible; none is designed. The punt: bare substring terms only, until a real query demands more.

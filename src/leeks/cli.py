@@ -14,7 +14,7 @@ from rich.text import Text
 from leeks import theme
 
 if TYPE_CHECKING:
-    from leeks.library import Added
+    from leeks.library import Added, Listed
 
 theme.apply()
 
@@ -128,6 +128,16 @@ def add(directory: Path) -> None:
         raise click.ClickException(str(refusal)) from refusal
 
 
+def _shelf_fields(album: "Listed") -> tuple[str, str, str, str]:
+    """Artist, year, title, track count: the four columns of the shelf."""
+    return (
+        album.artist or "Unknown Artist",
+        str(album.year) if album.year else "",
+        album.title,
+        f"{album.tracks} track" if album.tracks == 1 else f"{album.tracks} tracks",
+    )
+
+
 @leek.command(name="list")
 @click.argument("terms", nargs=-1)
 def list_command(terms: tuple[str, ...]) -> None:
@@ -149,24 +159,29 @@ def list_command(terms: tuple[str, ...]) -> None:
         # Notes go to stderr: stdout stays a clean list of albums.
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
         return
+    console = Console()
+    # The table is for eyes only: it wraps long rows at the console
+    # width, and a record folded across lines breaks `leek list | grep`.
+    # Pipes get one tab-separated record per album (ADR 0011).
+    if not console.is_terminal:
+        for album in albums:
+            click.echo("\t".join(_shelf_fields(album)))
+        return
     shelf = Table(box=None, show_header=False, pad_edge=False)
     shelf.add_column(style=theme.TEXT)
     shelf.add_column(style=theme.SUBTEXT0, justify="right")
     shelf.add_column(style=f"bold {theme.TEXT}")
     shelf.add_column(style=theme.SUBTEXT0)
     for album in albums:
-        artist = (
-            Text(album.artist)
+        artist, year, title, tracks = _shelf_fields(album)
+        styled = (
+            Text(artist)
             if album.artist
             # The bucket, visibly a fallback and not data (ADR 0010).
-            else Text("Unknown Artist", style=f"italic {theme.OVERLAY1}")
+            else Text(artist, style=f"italic {theme.OVERLAY1}")
         )
-        tracks = (
-            f"{album.tracks} track" if album.tracks == 1 else f"{album.tracks} tracks"
-        )
-        year = str(album.year) if album.year else ""
-        shelf.add_row(artist, year, album.title, tracks)
-    Console().print(shelf)
+        shelf.add_row(styled, year, title, tracks)
+    console.print(shelf)
 
 
 @leek.command(name="help")

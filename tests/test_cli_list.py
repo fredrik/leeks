@@ -51,6 +51,25 @@ def test_fallbacks_render_but_are_visibly_not_data(shelve):
     assert "1 track" in result.stdout
 
 
+def test_piped_albums_are_one_line_each(shelve):
+    # Long enough that the table rendering would wrap it at width 80.
+    shelve(
+        "An Album Title That Goes On Considerably Longer Than Anyone Would "
+        "Reasonably Expect (Deluxe)",
+        artist="The Extraordinarily Long-Winded Orchestral Collective of "
+        "Greater Scandinavia",
+        year=2021,
+    )
+    result = CliRunner().invoke(leek, ["list"])
+    lines = result.stdout.splitlines()
+    assert len(lines) == 1
+    artist, year, title, tracks = lines[0].split("\t")
+    assert artist.startswith("The Extraordinarily")
+    assert year == "2021"
+    assert title.endswith("(Deluxe)")
+    assert tracks == "1 track"
+
+
 def test_list_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "list" in result.output

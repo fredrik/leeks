@@ -81,6 +81,10 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
     statement = (
         select(Album, Artist.name, func.count(Track.id))
         .outerjoin(Artist, Album.artist_id == Artist.id)
+        # INNER join leans on an invariant: every album has at least one
+        # track, because add creates them together. A future verb that
+        # deletes tracks must revisit this, or empty albums silently
+        # vanish from the shelf.
         .join(Track, Track.album_id == Album.id)
         .group_by(Album.id)
         .order_by(
