@@ -10,7 +10,7 @@ never modified; copies land under <root>/album-<id>/.
 
 import re
 import shutil
-import unicodedata
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -88,8 +88,9 @@ def add(directory: Path) -> Added:
 
         # The directory name is the fallback for the NOT NULL title, not a claim.
         album = Album(title=info.title or directory.name, added=now)
-        if info.artist:
-            album.artist_id = _get_or_create(session, Artist, info.artist).id
+        artist = _get_or_create(session, Artist, info.artist) if info.artist else None
+        if artist is not None:
+            album.artist_id = artist.id
         session.add(album)
         session.flush()
         _link_genre(session, info, album)
@@ -100,14 +101,14 @@ def add(directory: Path) -> Added:
         for row in tracks:
             merge(session, "track", row.id, row)
 
-        destination = root / f"album-{album.id}"
+        destination = _destination(root, album, artist.name if artist else None)
         try:
             _copy_files(session, info, tracks, destination, now)
             session.commit()
             return Added(
                 album_id=album.id,
                 title=album.title,
-                artist=info.artist,
+                artist=artist.name if artist else None,
                 year=album.year,
                 tracks=len(tracks),
                 claims=claims,
@@ -116,6 +117,8 @@ def add(directory: Path) -> Added:
         except BaseException:
             session.rollback()
             shutil.rmtree(destination, ignore_errors=True)
+            with suppress(OSError):  # the artist shelf, if this add created it
+                destination.parent.rmdir()
             raise
 
 
@@ -199,9 +202,17 @@ def _record_claims(
     return len(claimed)
 
 
-def _slug(title: str) -> str:
-    ascii_ish = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode()
-    return re.sub(r"[^A-Za-z0-9]+", "-", ascii_ish).strip("-").lower() or "track"
+def _pathsafe(text: str) -> str:
+    """Filesystem-safe but human (ADR 0010): replace hostile characters only."""
+    cleaned = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", text)
+    return cleaned.strip().rstrip(".") or "_"
+
+
+def _destination(root: Path, album: Album, artist: str | None) -> Path:
+    """<Album Artist>/<Year> <Album Title>, collision-suffixed (ADR 0010)."""
+    shelf = root / _pathsafe(artist or "Unknown Artist")
+    name = f"{album.year} {album.title}" if album.year else album.title
+    return _vacant(shelf, _pathsafe(name))
 
 
 def _copy_files(
@@ -213,9 +224,9 @@ def _copy_files(
 ) -> None:
     destination.mkdir(parents=True)
     for track, row in zip(info.tracks, tracks):
-        name = _slug(row.title)
+        name = _pathsafe(row.title)
         if row.track is not None:
-            name = f"{row.track:02d}-{name}"
+            name = f"{row.track:02d} {name}"
         copy = _vacant(destination, name, track.path.suffix.lower())
         shutil.copyfile(track.path, copy)
         facts = tags.measure(copy)
@@ -237,11 +248,20 @@ def _copy_files(
         )
 
 
-def _vacant(directory: Path, name: str, suffix: str) -> Path:
-    """The first free path for this name; collisions count up from -2."""
-    candidate = directory / f"{name}{suffix}"
+def _vacant(directory: Path, name: str, suffix: str = "") -> Path:
+    """The first free path for this name; collisions count up from -2.
+
+    Compared case-insensitively even on case-sensitive filesystems: the
+    library must survive being copied to one that folds case (ADR 0010).
+    """
+    taken = (
+        {p.name.casefold() for p in directory.iterdir()}
+        if directory.exists()
+        else set()
+    )
+    candidate = f"{name}{suffix}"
     counter = 2
-    while candidate.exists():
-        candidate = directory / f"{name}-{counter}{suffix}"
+    while candidate.casefold() in taken:
+        candidate = f"{name}-{counter}{suffix}"
         counter += 1
-    return candidate
+    return directory / candidate

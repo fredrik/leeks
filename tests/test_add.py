@@ -26,7 +26,11 @@ def test_add_clean_album(corpus, materialise, leeks_root):
     assert added.artist == album["artist"]
     assert added.year == album["year"]
     assert added.tracks == len(album["tracks"])
-    assert added.destination == leeks_root / f"album-{added.album_id}"
+    # ADR 0010: <Album Artist>/<Year> <Album Title>/<NN> <Title>.<ext>
+    assert added.destination == (
+        leeks_root / "Tin Hatch Choir" / "2019 Cartography for Sleepwalkers"
+    )
+    assert (added.destination / "01 Inventory of Small Storms.flac").exists()
 
     with db.session() as session:
         (album_row,) = rows(session, orm.Album)
@@ -68,10 +72,14 @@ def test_add_clean_album(corpus, materialise, leeks_root):
         assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
 
 
-def test_add_sparse_album(corpus, materialise):
+def test_add_sparse_album(corpus, materialise, leeks_root):
     album = by_title(corpus, "Tape Hiss Archipelago")
     added = library.add(materialise(album))
     assert added.year is None
+    # No year: the component and its separator vanish. No track number: bare title.
+    assert added.destination == leeks_root / "Polder Arcade" / "Tape Hiss Archipelago"
+    assert (added.destination / "Pylon Hum.flac").exists()
+    assert (added.destination / "01 Arcade Rain.flac").exists()
     with db.session() as session:
         (album_row,) = rows(session, orm.Album)
         assert album_row.year is None
@@ -126,7 +134,40 @@ def test_copy_name_collisions_are_suffixed(materialise):
     }
     added = library.add(materialise(album))
     names = sorted(p.name for p in added.destination.iterdir())
-    assert names == ["echo-2.flac", "echo.flac", "filler.mp3"]
+    assert names == ["Echo-2.flac", "Echo.flac", "Filler.mp3"]
+
+
+def test_album_dir_collisions_fold_case(tmp_path, leeks_root):
+    from fixtures.materialise import materialise_album
+
+    one = {"title": "Salt Mine", "artist": "Polder Arcade", "tracks": [{"title": "A"}]}
+    two = {"title": "SALT MINE", "artist": "Polder Arcade", "tracks": [{"title": "B"}]}
+    library.add(materialise_album(one, tmp_path / "s1"))
+    added = library.add(materialise_album(two, tmp_path / "s2"))
+    # Case-folded collision: a library copied to a case-insensitive
+    # filesystem must not merge two album directories (ADR 0010).
+    assert added.destination == leeks_root / "Polder Arcade" / "SALT MINE-2"
+
+
+def test_unknown_artist_bucket(tmp_path, leeks_root):
+    import shutil
+
+    from fixtures.materialise import AUDIO
+    from mediafile import MediaFile
+
+    source = tmp_path / "src" / "mystery"
+    source.mkdir(parents=True)
+    path = source / "track.flac"
+    shutil.copyfile(AUDIO / "tone-000.flac", path)
+    media = MediaFile(str(path))
+    media.album = "Mystery Tape"
+    media.title = "Side A"
+    media.save()
+
+    added = library.add(source)
+    assert added.artist is None
+    assert added.destination == leeks_root / "Unknown Artist" / "Mystery Tape"
+    assert (added.destination / "Side A.flac").exists()
 
 
 def test_copy_failure_rolls_everything_back(
@@ -147,7 +188,8 @@ def test_copy_failure_rolls_everything_back(
     with db.session() as session:
         for model in (orm.Album, orm.Track, orm.File, orm.SourceValue):
             assert rows(session, model) == []
-    assert not list(leeks_root.glob("album-*"))
+    # Nothing left on disk but the database — the artist shelf included.
+    assert [p.name for p in leeks_root.iterdir()] == ["leeks.db"]
     for path, digest in before.items():
         assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
 
