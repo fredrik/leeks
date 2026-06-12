@@ -5,6 +5,11 @@ The complete documentary record of teebs, leeks' predecessor. Everything in this
 [project principles](../../design/project-principles.md) descend from this material. The factual research about beets
 that grounds it lives in [research/beets](../beets/).
 
+**How to use this material: precedent, not blueprint.** These documents preserve decisions and their reasons. The
+schemas, models, and plans in them are speculative maximalist design written in one evening, before contact with
+implementation — copying their details has already bitten once (the credits table, ADR 0009). Design each component from
+the data the current slice actually has; come here for the scar tissue, not the table layouts.
+
 ## The teebs design phase
 
 The entire phase ran one evening — 2026-04-01, roughly 19:30 to 23:20:

@@ -84,11 +84,11 @@ path, based on domain analysis of MusicBrainz, Discogs, FRBR, and the Music Onto
 
 1. **ReleaseGroup** — separates "the album concept" from "a specific edition." Enables deduplication across pressings,
    anniversary editions, regional variants. Populated from MB's release group ID during autotagging.
-1. **Recording** — the audio itself, independent of which album it appears on. Enables "how many copies of this track do
+2. **Recording** — the audio itself, independent of which album it appears on. Enables "how many copies of this track do
    I have?" across compilations, soundtracks, best-ofs. Populated from MB's recording ID.
-1. **Work** — the composition, independent of who performed it. Self-referential `parent_id` handles movements
+3. **Work** — the composition, independent of who performed it. Self-referential `parent_id` handles movements
    (classical) and also enables cover/remix tracking for non-classical music. Populated from MB's work ID.
-1. **join_phrase on ArtistCredit** — enables lossless reconstruction of multi-artist display strings ("X feat. Y", "X &
+4. **join_phrase on ArtistCredit** — enables lossless reconstruction of multi-artist display strings ("X feat. Y", "X &
    Y", "X, Y and Z") without string parsing heuristics.
 
 This gives teebs the ability to answer relational questions locally — "what other editions of this album do I own?",
@@ -825,28 +825,28 @@ class ReplayGainORM(Base):
 
 ## Key Differences from beets
 
-1. **Sources are layered, not overwritten.** Every source's data is preserved per-field with confidence and provenance.
-   The merged view is computed from source data by configurable rules.
-1. **Import everything, gate nothing.** Confidence never blocks import; it feeds merge rules and the review queue.
-1. **Changes are reviewed, not imposed.** New or changed source data enters `pending_changes` for human or agent review
-   (or auto-accept rules), instead of silently rewriting the library.
-1. **No denormalization.** Album fields live on albums only. Access via `track.album.year`, not duplicated onto every
-   track row.
-1. **Artists are entities.** One `artists` table, linked via `artist_credits` with role, ordering, and join phrase. Not
-   17 flattened string columns.
-1. **Release groups.** "I own OK Computer on CD and vinyl" is a query, not a guess. Anniversary editions, regional
-   variants, remasters all group together.
-1. **Recordings.** "Karma Police appears on 3 of my albums" is a JOIN, not fuzzy title matching.
-1. **Works.** "Show me all performances of Clair de Lune I own" works. Movements nest via `parent_id`. Non-classical
-   users pay zero cost.
-1. **Join phrases.** "DJ Koze feat. Apparat" is reconstructed from data, not parsed from a string.
-1. **External IDs are generic.** One table for MusicBrainz, Discogs, ISRC, AcoustID, ASIN. New sources need zero schema
-   changes.
-1. **Genres are normalized.** Junction tables, not delimiter-separated strings.
-1. **Flex attrs are typed.** A `type` column means plugins can store integers as integers.
-1. **Validation is separate from storage.** Pydantic models validate data throughout the pipeline. ORM models just
-   persist it.
-1. **Alembic for migrations.** Not "add columns, never remove them."
+01. **Sources are layered, not overwritten.** Every source's data is preserved per-field with confidence and provenance.
+    The merged view is computed from source data by configurable rules.
+02. **Import everything, gate nothing.** Confidence never blocks import; it feeds merge rules and the review queue.
+03. **Changes are reviewed, not imposed.** New or changed source data enters `pending_changes` for human or agent review
+    (or auto-accept rules), instead of silently rewriting the library.
+04. **No denormalization.** Album fields live on albums only. Access via `track.album.year`, not duplicated onto every
+    track row.
+05. **Artists are entities.** One `artists` table, linked via `artist_credits` with role, ordering, and join phrase. Not
+    17 flattened string columns.
+06. **Release groups.** "I own OK Computer on CD and vinyl" is a query, not a guess. Anniversary editions, regional
+    variants, remasters all group together.
+07. **Recordings.** "Karma Police appears on 3 of my albums" is a JOIN, not fuzzy title matching.
+08. **Works.** "Show me all performances of Clair de Lune I own" works. Movements nest via `parent_id`. Non-classical
+    users pay zero cost.
+09. **Join phrases.** "DJ Koze feat. Apparat" is reconstructed from data, not parsed from a string.
+10. **External IDs are generic.** One table for MusicBrainz, Discogs, ISRC, AcoustID, ASIN. New sources need zero schema
+    changes.
+11. **Genres are normalized.** Junction tables, not delimiter-separated strings.
+12. **Flex attrs are typed.** A `type` column means plugins can store integers as integers.
+13. **Validation is separate from storage.** Pydantic models validate data throughout the pipeline. ORM models just
+    persist it.
+14. **Alembic for migrations.** Not "add columns, never remove them."
 
 ## Example: Import + Source Fetch Lifecycle
 

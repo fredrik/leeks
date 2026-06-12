@@ -11,7 +11,8 @@ album is never a label derived from grouping track tags.
 
 **The entity hierarchy is release group → release → track/recording → file.** All four are modelled. A release is a
 specific pressing or edition; a file is bytes on disk that realise a track. Artists are first-class rows, not strings in
-tags.
+tags. This describes the finished model: each entity is realised by the time the data that populates it exists
+([ADR 0006](../adr/0006-hierarchy-by-data-availability.md)).
 
 **Metadata sources are layers, never overwrites.** File tags, MusicBrainz, Discogs, tracker upload metadata, manual
 edits: each adds a layer, all are preserved. The library view is a merge on read; precedence rules are separate from
@@ -30,6 +31,11 @@ writing, renaming, and moving library files are explicit, separate actions — n
 **Imports never block on matching.** Every file enters the library unconditionally; matching is a separate, retryable
 step. The files that most need management are the ones with the worst metadata — gating them out at import defeats the
 purpose.
+
+**The library tree is for humans.** Paths derive from merged metadata at copy time and read like a record shelf — artist
+/ year title / nn title ([ADR 0010](../adr/0010-the-library-tree-is-for-humans.md)). Metadata changes never rename
+files: paths go stale honestly, and reorganisation is an explicit action. The database is the source of truth; the tree
+is its human-readable projection.
 
 ## Architecture
 

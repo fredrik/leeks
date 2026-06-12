@@ -81,21 +81,21 @@ number) instead of getting silently flattened or replaced the next time somethin
 1. **The album is the model, not the file.** Tracks, releases (specific pressings), and files hang off the album as
    related entities. Artists too: a first-class row with its own identity, not a string that happens to appear in a tag.
 
-1. **Import everything, gate nothing.** Every file enters the library unconditionally. The files that most need
+2. **Import everything, gate nothing.** Every file enters the library unconditionally. The files that most need
    management are the ones with the worst metadata. Gating them out at import defeats the purpose. Re-fetching from
    matched sources later can only improve what's there; it never has to recover from a failed import.
 
-1. **Sources are layers, not overwrites.** File tags, MusicBrainz, Discogs, tracker upload metadata, your own edits: all
+3. **Sources are layers, not overwrites.** File tags, MusicBrainz, Discogs, tracker upload metadata, your own edits: all
    stored in separate layers, all preserved. The library view is a merge according to configurable priority rules. A
    wrong match is a low-confidence layer you can ignore or delete; nothing irreversible happened.
 
-1. **Every edit is versioned.** All changes (source fetches, user edits, automated updates) are kept with full event
+4. **Every edit is versioned.** All changes (source fetches, user edits, automated updates) are kept with full event
    history. The data model is append-mostly: nothing overwrites, everything accumulates. You can see what MusicBrainz
    said about an album in 2024 versus 2026, when you corrected a track title, what the tracker upload originally
    claimed.
 
-1. **Background fetch, foreground review.** Source fetching runs in the background. Changes land in a pending queue.
+5. **Background fetch, foreground review.** Source fetching runs in the background. Changes land in a pending queue.
    Review is a separate step: human, agent, or automated rule.
 
-1. **Non-destructive by default.** Tag writing, renaming, and moving files are explicit and separate actions, never a
+6. **Non-destructive by default.** Tag writing, renaming, and moving files are explicit and separate actions, never a
    side effect of import.

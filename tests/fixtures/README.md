@@ -5,6 +5,9 @@ Two halves that combine into a tagged test library:
 - `audio/generate.py` synthesizes tiny **tagless** audio files (FLAC and MP3 sine tones).
 - `corpus.toml` is the **metadata corpus** those files are tagged with.
 
+`materialise.py` is the combiner: the test suite imports it, and `just materialise [dest]` (or running the script
+directly) writes the corpus as real tagged albums for playing with `leek` by hand.
+
 ## The corpus
 
 Everything in `corpus.toml` is fictional — invented artists, albums, and titles chosen so tests never accidentally match
@@ -34,10 +37,10 @@ The corpus exists to exercise the import pipeline's edge cases. Each quirk below
 1. **Raw multi-artist credit** — *Lowland Frequencies* on *Salt Meridian* carries
    `artist = "Tin Hatch Choir feat. Vesna Holloway"`: a single raw string, exactly as a real file tag would hold it. It
    exercises artist-credit splitting. Do not normalise it into structured fields.
-1. **Sparse album** — *Tape Hiss Archipelago* has no `year`, no `genre`, no `tracktotal`, and two tracks (*Sodium Light
+2. **Sparse album** — *Tape Hiss Archipelago* has no `year`, no `genre`, no `tracktotal`, and two tracks (*Sodium Light
    Study*, *Pylon Hum*) without `track` numbers. It represents the badly-tagged music a library organiser most needs to
    handle. Do not complete the missing fields.
-1. **Duplicate track title** — *Glass Harbour* appears on both *Cartography for Sleepwalkers* and *Paper Lung Atlas*.
+3. **Duplicate track title** — *Glass Harbour* appears on both *Cartography for Sleepwalkers* and *Paper Lung Atlas*.
    Same title string, different songs. It exercises title-based matching that must not assume titles are unique. Do not
    rename either one.
 

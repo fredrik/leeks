@@ -122,12 +122,12 @@ ______________________________________________________________________
 ## Simplification Opportunities
 
 1. **Replace dbcore with an ORM** (SQLAlchemy or Peewee) — beets rolls its own; a clone doesn't need to.
-1. **Use `click`** instead of the custom optparse subcommand parser.
-1. **Hardcode MusicBrainz** as the only metadata source — skip the pluggable `MetadataSourcePlugin` interface.
-1. **Drop flexible attributes** initially — they add significant complexity for plugin extensibility that a simple
+2. **Use `click`** instead of the custom optparse subcommand parser.
+3. **Hardcode MusicBrainz** as the only metadata source — skip the pluggable `MetadataSourcePlugin` interface.
+4. **Drop flexible attributes** initially — they add significant complexity for plugin extensibility that a simple
    system doesn't need.
-1. **Sequential import** — skip the threaded pipeline; a simple loop works fine for most libraries.
-1. **Use `mediafile`** (extracted from beets itself) for reading/writing audio file tags.
+5. **Sequential import** — skip the threaded pipeline; a simple loop works fine for most libraries.
+6. **Use `mediafile`** (extracted from beets itself) for reading/writing audio file tags.
 
 ______________________________________________________________________
 

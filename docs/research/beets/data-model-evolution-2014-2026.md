@@ -209,10 +209,10 @@ PR #4743 was opened as an issue long before 2023. The fundamental tension was:
    single tag frame*. ID3v2.4 uses null bytes to truly separate values. Many players don't support v2.4. Beets had to
    support both via its existing `id3v23` config toggle.
 
-1. **Backward compatibility**: Every query, template, plugin, and display path that touched `artist` had to keep
+2. **Backward compatibility**: Every query, template, plugin, and display path that touched `artist` had to keep
    working. The solution was additive — new fields alongside old ones, never replacing them.
 
-1. **The join-phrase problem**: MusicBrainz credits include join phrases ("feat.", "&", "and"). The joined `artist`
+3. **The join-phrase problem**: MusicBrainz credits include join phrases ("feat.", "&", "and"). The joined `artist`
    string includes these; the split `artists` list does not. Which is "correct" depends on context (display vs. lookup
    vs. matching), so both representations are needed.
 
@@ -231,9 +231,9 @@ bursts of schema expansion**, each driven by a specific external motivation:
 
 1. **2018 burst** (Discogs + MusicBrainz works): Driven by users wanting richer metadata sources beyond basic
    MusicBrainz release data.
-1. **2020 burst** (encoding metadata + multi-value types): Driven by audiophile users wanting bitrate mode, encoder
+2. **2020 burst** (encoding metadata + multi-value types): Driven by audiophile users wanting bitrate mode, encoder
    details, and the realization that fields like `albumtype` are inherently multi-valued.
-1. **2023–2025 burst** (multi-value artists, then genres): The long-awaited acknowledgment that a track can have
+3. **2023–2025 burst** (multi-value artists, then genres): The long-awaited acknowledgment that a track can have
    multiple artists — a fundamental limitation of the original single-string `artist` field that took 15 years to
    properly address. Multi-value genres followed 2 years later using the same pattern.
 
@@ -275,15 +275,15 @@ SQLite didn't *cause* the denormalization — it made it the path of least resis
    `albumartist` as flat strings on every file. Beets' data model mirrors the file format, which makes the read/write
    roundtrip trivial. A normalized schema would require decomposing and recomposing on every read/write cycle.
 
-1. **Application simplicity.** Beets was a solo-developer project for most of its life. A normalized schema with
+2. **Application simplicity.** Beets was a solo-developer project for most of its life. A normalized schema with
    `artists`, `artist_items`, `albums`, `album_artists` tables plus proper foreign key constraints means more complex
    ORM code, more complex migration logic, more complex query generation. The flat schema made the `Item` class a
    glorified dict with dirty tracking — dead simple.
 
-1. **Write-through semantics.** Setting `album.genre = 'Rock'` cascades to all items. With the denormalized design, you
+3. **Write-through semantics.** Setting `album.genre = 'Rock'` cascades to all items. With the denormalized design, you
    never need to JOIN to display an item's full metadata. For a tool where reads vastly outnumber writes, and writes
    happen in batch during import, this is a reasonable trade.
 
-1. **SQLite's characteristics.** No concurrent writers (simpler queries release the write lock sooner), no hash joins
+4. **SQLite's characteristics.** No concurrent writers (simpler queries release the write lock sooner), no hash joins
    (nested-loop joins make denormalized scans genuinely faster for the common case), no server process (no query cache
    warming — simpler queries perform more predictably in this cold-start model).

@@ -26,12 +26,12 @@ The foundation everything else builds on.
 **Deliverables:**
 
 1. SQLAlchemy ORM models for the merged view (14 tables)
-1. SQLAlchemy ORM models for the source layer (4 tables)
-1. Pydantic models for validation (TrackInfo, AlbumInfo, ArtistRef, etc.)
-1. `to_info()` and `update_from(info)` on ORM models
-1. Alembic setup with initial migration
-1. A `Database` class that manages the engine/session lifecycle
-1. Tests: round-trip ORM \<-> Pydantic, migration up/down
+2. SQLAlchemy ORM models for the source layer (4 tables)
+3. Pydantic models for validation (TrackInfo, AlbumInfo, ArtistRef, etc.)
+4. `to_info()` and `update_from(info)` on ORM models
+5. Alembic setup with initial migration
+6. A `Database` class that manages the engine/session lifecycle
+7. Tests: round-trip ORM \<-> Pydantic, migration up/down
 
 **Key decisions (from Fredrik's notes):**
 
@@ -66,12 +66,12 @@ Read music files, copy them into the library, extract tags.
 **Deliverables:**
 
 1. Tag reading via `mediafile` -- extract all standard tags into TrackInfo/AlbumInfo
-1. Directory scanning: walk a path, group files into albums (by directory)
-1. Copy files to library directory (configurable root)
-1. Create Track/Album rows in merged view
-1. Write file_tags source values for every extracted tag
-1. `teebs add /path/to/music` CLI command
-1. Tests with fixture audio files (short silent FLACs)
+2. Directory scanning: walk a path, group files into albums (by directory)
+3. Copy files to library directory (configurable root)
+4. Create Track/Album rows in merged view
+5. Write file_tags source values for every extracted tag
+6. `teebs add /path/to/music` CLI command
+7. Tests with fixture audio files (short silent FLACs)
 
 **Key decisions:**
 
@@ -98,10 +98,10 @@ The core architectural innovation. Makes the source layer actually work.
 **Deliverables:**
 
 1. Merge engine: given an entity, read all source_values, apply merge rules, write to merged view tables
-1. Default merge rules (priority-based for scalars, union for genres)
-1. `display_artist()` helper for reconstructing artist display strings
-1. Config file support (YAML or TOML) for merge rules + library path
-1. Tests: conflicting sources, priority resolution, confidence-based resolution, union merge for genres
+2. Default merge rules (priority-based for scalars, union for genres)
+3. `display_artist()` helper for reconstructing artist display strings
+4. Config file support (YAML or TOML) for merge rules + library path
+5. Tests: conflicting sources, priority resolution, confidence-based resolution, union merge for genres
 
 **Key decisions:**
 
@@ -129,9 +129,9 @@ Make the library queryable from the CLI.
 **Deliverables:**
 
 1. `teebs list` -- query and display albums/tracks
-1. `teebs info <album|track>` -- show detailed info including source layer data
-1. Simple query language: `field:value` matching on merged view
-1. Show source disagreements in `info` output
+2. `teebs info <album|track>` -- show detailed info including source layer data
+3. Simple query language: `field:value` matching on merged view
+4. Show source disagreements in `info` output
 
 **File layout:**
 
@@ -150,15 +150,15 @@ The hardest phase. Port beets' autotagger.
 **Deliverables:**
 
 1. Port `Distance` class (weighted scoring framework)
-1. Port `string_dist()` (Levenshtein + semantic adjustments)
-1. Port `track_distance()` and `album_distance()`
-1. Port `assign_items()` (LAP solver for track-to-track assignment)
-1. Port `_recommendation()` (threshold logic)
-1. MusicBrainz API client (search + lookup, rate-limited)
-1. `MetadataSource` protocol + MB implementation
-1. `teebs match` CLI command: run MB lookup against unmatched albums, create source_values and source_matches, generate
+2. Port `string_dist()` (Levenshtein + semantic adjustments)
+3. Port `track_distance()` and `album_distance()`
+4. Port `assign_items()` (LAP solver for track-to-track assignment)
+5. Port `_recommendation()` (threshold logic)
+6. MusicBrainz API client (search + lookup, rate-limited)
+7. `MetadataSource` protocol + MB implementation
+8. `teebs match` CLI command: run MB lookup against unmatched albums, create source_values and source_matches, generate
    pending_changes
-1. Tests with fixture MB responses
+9. Tests with fixture MB responses
 
 **Key decisions:**
 
@@ -191,10 +191,10 @@ ______________________________________________________________________
 **Deliverables:**
 
 1. `teebs review` -- interactive TUI for pending changes
-1. Accept / reject / edit individual changes
-1. Bulk accept/reject with filters
-1. Auto-accept and auto-reject rules from config
-1. On accept: trigger merge for affected entity
+2. Accept / reject / edit individual changes
+3. Bulk accept/reject with filters
+4. Auto-accept and auto-reject rules from config
+5. On accept: trigger merge for affected entity
 
 ______________________________________________________________________
 
@@ -203,10 +203,10 @@ ______________________________________________________________________
 **Deliverables:**
 
 1. Tag writing via `mediafile` -- write configured fields back to library files
-1. File renaming via path templates
-1. `teebs organize` CLI command
-1. `--dry-run` on every write operation
-1. Tag mapping documentation (which DB field -> which file tag)
+2. File renaming via path templates
+3. `teebs organize` CLI command
+4. `--dry-run` on every write operation
+5. Tag mapping documentation (which DB field -> which file tag)
 
 ______________________________________________________________________
 
@@ -215,8 +215,8 @@ ______________________________________________________________________
 **Deliverables:**
 
 1. `teebs import /path` = add + match + review + organize in sequence
-1. Album status state machine in DB (added -> matching -> matched -> review -> accepted -> organizing -> done)
-1. Resumable: quit and restart where you left off
+2. Album status state machine in DB (added -> matching -> matched -> review -> accepted -> organizing -> done)
+3. Resumable: quit and restart where you left off
 
 ______________________________________________________________________
 
@@ -241,9 +241,9 @@ These are explicitly deferred per Fredrik's notes. Tracked here so they don't ge
 From Fredrik's notes, distilled:
 
 1. **Opinionated.** One good way, not ten configurable ways.
-1. **Non-destructive.** Never modify source files. DB operations are reversible.
-1. **Import everything.** No gatekeeping. Confidence is metadata, not a gate.
-1. **Sources are layers.** All sources preserved independently.
-1. **Plain SQL.** No nested JSON, no application-specific encoding in the DB.
-1. **Test early.** Every phase has tests.
-1. **Sequential.** Build the simple version first. Optimize later.
+2. **Non-destructive.** Never modify source files. DB operations are reversible.
+3. **Import everything.** No gatekeeping. Confidence is metadata, not a gate.
+4. **Sources are layers.** All sources preserved independently.
+5. **Plain SQL.** No nested JSON, no application-specific encoding in the DB.
+6. **Test early.** Every phase has tests.
+7. **Sequential.** Build the simple version first. Optimize later.

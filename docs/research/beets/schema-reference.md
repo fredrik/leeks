@@ -237,7 +237,7 @@ Tracks which named migrations have been applied to which tables. Current migrati
 
 1. **`MultiGenreFieldMigration`** — Applied to both `items` and `albums`. Migrates legacy single-value `genre` field to
    multi-value `genres`.
-1. **`LyricsMetadataInFlexFieldsMigration`** — Applied to `items` only. Moves lyrics metadata (backend, URL, language)
+2. **`LyricsMetadataInFlexFieldsMigration`** — Applied to `items` only. Moves lyrics metadata (backend, URL, language)
    from hypothetical fixed fields into flex attributes.
 
 Schema evolution for adding new fixed columns uses `ALTER TABLE ADD COLUMN` at startup — if the Python model defines a
@@ -335,12 +335,12 @@ order; the first matching query wins, falling back to `default`.
 `Item.destination()` (`models.py:1195`) computes the target filesystem path:
 
 1. **Query matching** — Iterate `path_formats`, test each query against the item. Use the first match (or `default`).
-1. **Template evaluation** — Substitute all `$field` references using the item's formatted field values. Template
+2. **Template evaluation** — Substitute all `$field` references using the item's formatted field values. Template
    functions like `%upper{}`, `%if{}`, `%aunique{}` are available.
-1. **Path sanitization** — Unicode normalization (NFC/NFD), optional asciification, path separator replacement,
+3. **Path sanitization** — Unicode normalization (NFC/NFD), optional asciification, path separator replacement,
    character replacements.
-1. **Legalization** — Truncate path components to filesystem limits, replace illegal characters.
-1. **Join with library directory** — Prepend the library's base directory.
+4. **Legalization** — Truncate path components to filesystem limits, replace illegal characters.
+5. **Join with library directory** — Prepend the library's base directory.
 
 ### Relationship Between `path` Column and Templates
 

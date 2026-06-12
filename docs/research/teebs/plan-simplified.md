@@ -35,18 +35,18 @@ No release_groups, recordings, or works yet. Those arrive with MB matching.
 
 **What gets built:**
 
-1. SQLAlchemy ORM models for the 7 tables above
-1. Pydantic models: TrackInfo, AlbumInfo, ArtistRef
-1. `to_info()` / `update_from(info)` on ORM models
-1. `display_artist()` helper
-1. Alembic setup with initial migration
-1. Database class (engine/session lifecycle)
-1. Tag reading via `mediafile`
-1. Directory scanning: walk a path, group files into albums by directory
-1. Copy files to library directory
-1. `teebs add /path/to/music` CLI command
-1. Config: library path (single YAML or TOML file)
-1. Tests
+01. SQLAlchemy ORM models for the 7 tables above
+02. Pydantic models: TrackInfo, AlbumInfo, ArtistRef
+03. `to_info()` / `update_from(info)` on ORM models
+04. `display_artist()` helper
+05. Alembic setup with initial migration
+06. Database class (engine/session lifecycle)
+07. Tag reading via `mediafile`
+08. Directory scanning: walk a path, group files into albums by directory
+09. Copy files to library directory
+10. `teebs add /path/to/music` CLI command
+11. Config: library path (single YAML or TOML file)
+12. Tests
 
 **Key decisions:**
 
@@ -65,8 +65,8 @@ Make the library queryable.
 **What gets built:**
 
 1. `teebs list` -- show albums and tracks
-1. `teebs info` -- detailed view of an album or track
-1. Simple query: `field:value` matching
+2. `teebs info` -- detailed view of an album or track
+3. Simple query: `field:value` matching
 
 ______________________________________________________________________
 
@@ -85,12 +85,12 @@ This is when multiple sources exist, so this is when the source layer earns its 
 **What gets built:**
 
 1. Alembic migration adding the new tables
-1. Port beets' autotagger (Distance, string_dist, LAP solver, etc.)
-1. MusicBrainz API client
-1. `teebs match` CLI command
-1. Basic merge logic (priority-based for scalars, union for genres)
-1. `teebs review` -- accept/reject pending changes
-1. Auto-accept rules
+2. Port beets' autotagger (Distance, string_dist, LAP solver, etc.)
+3. MusicBrainz API client
+4. `teebs match` CLI command
+5. Basic merge logic (priority-based for scalars, union for genres)
+6. `teebs review` -- accept/reject pending changes
+7. Auto-accept rules
 
 ______________________________________________________________________
 
@@ -119,7 +119,7 @@ ______________________________________________________________________
 ## Principles
 
 1. **Opinionated.** One good way.
-1. **Non-destructive.** Never modify source files.
-1. **Import everything.** No gatekeeping.
-1. **Plain SQL.** No nested JSON, no application-specific encoding.
-1. **Simple first.** Build the v0 schema, evolve with Alembic.
+2. **Non-destructive.** Never modify source files.
+3. **Import everything.** No gatekeeping.
+4. **Plain SQL.** No nested JSON, no application-specific encoding.
+5. **Simple first.** Build the v0 schema, evolve with Alembic.
