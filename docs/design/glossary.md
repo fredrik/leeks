@@ -50,6 +50,8 @@ Coining a new term of art means adding it here in the same change.
 - **Copy time** — the step after write time when bytes enter the library: destination paths are derived from the (just
   merged) columns, files are copied, and each copy is measured. "Paths derive from metadata at copy time" means exactly
   this moment — and never again without `leek organize`.
+- **Term** — one word of a `leek list` query. Terms AND together; a term matches an album when it appears,
+  case-insensitively, in the album's artist, title, or year — data only, never display fallbacks (ADR 0011).
 
 ## On disk
 
@@ -59,6 +61,8 @@ Coining a new term of art means adding it here in the same change.
 - **The scheme** — the path derivation rule: `<Album Artist>/<Year> <Album Title>/<NN> <Title>.<ext>`, with the
   omission, bucket, replacement, and collision rules of ADR 0010.
 - **Shelf** — informally, an artist's directory under the root: where their albums sit.
+- **Shelf order** — artist (case-folded, Unknown Artist under U), then year with missing years last, then title: the
+  order of the library tree and of `leek list` (ADR 0011). The listing and the tree never disagree.
 - **Stale path** — a library path that no longer matches what the scheme would derive from current merged metadata.
   Stale is honest; `files.path` stays true, and `leek organize` reconciles on request.
 
