@@ -19,8 +19,13 @@ Coining a new term of art means adding it here in the same change.
   source has claimed.
 - **Merged view** — the computed "effective" library: the albums/tracks/artists/genres tables that queries, the CLI, and
   the path scheme read. Derived from claims; never authoritative over them.
+- **Scalar** — a single atomic value: one string, one number, one cell of one row. Album year is scalar; an album's
+  genres (a set, via junction rows) and its artist (a foreign key) are relational, not scalar. Scalars can be merged by
+  assigning a winning claim; relational fields must be merged by reconciling rows — a harder, still-open problem
+  deferred until the second source forces it.
 - **Merged column** — a scalar column in the merged view whose value `merge()` computes from the entity's claims (album
-  title and year; track title and number).
+  title and year; track title and number). Relational fields are written directly at write time and are not merged
+  columns.
 - **Merge** — recomputing merged columns from claims. **Identity merge** is its degenerate form while exactly one source
   exists: each claim copies through. Strategies, priorities, and confidence arrive with the second source.
 - **Fallback** (or **working value**) — the value filling a NOT NULL merged column when no claim exists: the directory
