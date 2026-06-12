@@ -1,5 +1,7 @@
 # 0002 — The CLI theme is Catppuccin Mocha
 
+Status: Decided (2026-06-11)
+
 ## Decision
 
 leeks' visual identity is the [Catppuccin Mocha](https://catppuccin.com/palette) palette. `leeks/theme.py` names the

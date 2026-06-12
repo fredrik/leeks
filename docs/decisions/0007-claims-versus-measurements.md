@@ -1,5 +1,7 @@
 # 0007 — The source layer stores claims, not measurements
 
+Status: Decided (2026-06-11)
+
 ## Decision
 
 Metadata divides in two, and only one half goes through the source layer.

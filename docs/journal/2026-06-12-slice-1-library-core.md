@@ -68,7 +68,7 @@ holes: the rules had lived only in conversation. Fredrik ruled on both (this bra
 never claims, consensus is unanimity-or-nothing) and added a third decision the discussion surfaced: the path is a
 source — directory names like `The Avalanches - Since I Left You (2001) [FLAC] {...}` carry release-level metadata that
 enters as analyzer claims once merge machinery can host a second source. All three are recorded as
-[ADR 0008](../adr/0008-claims-record-what-sources-say.md).
+[ADR 0008](../decisions/0008-claims-record-what-sources-say.md).
 
 ## The credits table, and what the experiment could not see
 

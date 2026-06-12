@@ -1,5 +1,7 @@
 # 0009 — Artist links now; the credits table arrives with MusicBrainz
 
+Status: Decided (2026-06-12)
+
 ## Decision
 
 Slice 1 links artists with two nullable foreign keys — `albums.artist_id` and `tracks.artist_id` (set only when a

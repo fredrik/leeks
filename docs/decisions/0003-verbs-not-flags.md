@@ -1,5 +1,7 @@
 # 0003 — Verbs, not flags: the leek top-level interface
 
+Status: Decided (2026-06-11)
+
 ## Decision
 
 leek's top level speaks in verbs. A bare `leek` prints a short *about* card — name, one-liner, a pointer to `leek help`.

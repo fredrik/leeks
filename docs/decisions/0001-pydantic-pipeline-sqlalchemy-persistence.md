@@ -1,6 +1,6 @@
 # 0001 — Pydantic models for the pipeline, SQLAlchemy models for persistence
 
-Status: accepted (2026-06-10)
+Status: Decided (2026-06-10)
 
 ## Context
 

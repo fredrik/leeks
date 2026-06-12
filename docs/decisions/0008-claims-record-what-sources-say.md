@@ -1,5 +1,7 @@
 # 0008 — Claims record what sources say; the path is a source
 
+Status: Decided (2026-06-12)
+
 ## Decision
 
 Two rulings from the slice 1 parity review, one principle: **the claim layer records only what a source actually says.**

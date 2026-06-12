@@ -20,14 +20,14 @@ leading: `CliRunner` tests plus one subprocess test, because `CliRunner` never e
 What landed:
 
 - The `leek` entry point as a rich-click group; version read from package metadata, no `__version__` to drift.
-- Catppuccin Mocha as the visual identity ([ADR 0002](../adr/0002-catppuccin-mocha-theme.md)): `leeks/theme.py` names
-  the palette, future styled output draws from the same constants. A behavioural test pins mauve's truecolor sequence
-  under `FORCE_COLOR`; piped output stays clean.
+- Catppuccin Mocha as the visual identity ([ADR 0002](../decisions/0002-catppuccin-mocha-theme.md)): `leeks/theme.py`
+  names the palette, future styled output draws from the same constants. A behavioural test pins mauve's truecolor
+  sequence under `FORCE_COLOR`; piped output stays clean.
 - The sparkle: `leek version` animates the word through the Mocha accents (1.2s at 24fps), terminal-only, Ctrl-C
   skippable. The rainbow is the theme's, not HSV's.
-- Verbs, not flags ([ADR 0003](../adr/0003-verbs-not-flags.md)): bare `leek` greets with a short about card, `version`
-  and `help` are subcommands, `--help` kept since it's free. About and help are different documents — the greeting stays
-  short while the reference grows.
+- Verbs, not flags ([ADR 0003](../decisions/0003-verbs-not-flags.md)): bare `leek` greets with a short about card,
+  `version` and `help` are subcommands, `--help` kept since it's free. About and help are different documents — the
+  greeting stays short while the reference grows.
 
 ## The conventions
 

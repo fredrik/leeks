@@ -1,5 +1,7 @@
 # 0004 — `leek add` ingests exactly one album
 
+Status: Decided (2026-06-11)
+
 ## Decision
 
 `leek add <path>` adds a single album to the library, non-interactively. It accepts a directory only if it looks like

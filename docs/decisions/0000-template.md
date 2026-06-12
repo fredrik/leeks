@@ -1,0 +1,33 @@
+# NNNN — Short imperative title
+
+Status: Proposed (YYYY-MM-DD)
+
+<!--
+Copy this file to the next number in sequence. Every record carries a Status line; it is the one line that may be
+edited after the record lands. The lifecycle:
+
+    Proposed → Decided | Declined → Deprecated | Superseded
+
+- Proposed (YYYY-MM-DD) — written, not yet settled.
+- Decided (YYYY-MM-DD) — the decision stands.
+- Declined (YYYY-MM-DD) — considered and decided against; the record stays as the reasoning.
+- Deprecated (YYYY-MM-DD) — no longer applies and nothing replaced it; say why in one sentence after the date.
+- Superseded by [NNNN](NNNN-title.md) (YYYY-MM-DD) — replaced by a newer record.
+
+The date is the date of the most recent status change.
+-->
+
+## Decision
+
+What was decided, stated plainly enough that someone could act on it without reading further. Lead with the decision —
+it is what a future reader came for.
+
+## Context
+
+The situation that forced a choice: the problem, the constraints, what made this worth recording. Write it so the
+decision above reads as the natural conclusion.
+
+## Alternatives considered
+
+- **The alternative** — and why it lost, in a sentence or two. Honest entries here are what make the record worth
+  keeping; "we never considered anything else" is also an honest entry.

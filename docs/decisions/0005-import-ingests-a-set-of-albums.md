@@ -1,5 +1,7 @@
 # 0005 — `leek import` ingests a set of albums
 
+Status: Decided (2026-06-11)
+
 ## Decision
 
 `leek import <path>` takes a directory tree holding a set of albums, finds the albums in it, and calls the same

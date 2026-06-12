@@ -1,5 +1,7 @@
 # 0006 — The entity hierarchy is realised as its data arrives
 
+Status: Decided (2026-06-11)
+
 ## Decision
 
 The core position "the entity hierarchy is release group → release → track/recording → file, all four are modelled"

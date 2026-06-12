@@ -1,5 +1,7 @@
 # 0010 — The library tree is for humans
 
+Status: Decided (2026-06-12)
+
 ## Decision
 
 The on-disk library is part of the product: browsable in a file manager, portable to other machines and players,

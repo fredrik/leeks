@@ -20,7 +20,7 @@ implement and verify in one session, and is archived when implemented. Never pla
 built. New behaviour requires new tests; risky behaviour requires a harness.
 
 **Decisions that outlive a slice go to ADRs.** Plans get archived; rationale that must survive lives in
-[docs/adr](../adr/).
+[docs/decisions](../decisions/).
 
 **teebs is precedent, not blueprint.** The teebs record ([docs/research/teebs](../research/teebs/)) preserves
 *decisions* and their reasons — the source layer, import-everything, non-destructive defaults. Its schemas, models, and
