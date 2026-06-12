@@ -61,13 +61,12 @@ and porting the twin's diffs, which was done: foreign-key enforcement (the twin'
 copy-failure rollback test (the twin treated the plan's test list as a floor; this side had anchored on it as a spec),
 enum CHECK constraints, lazy CLI imports, and named re-add refusals.
 
-Two forks remain open for Fredrik to rule on, both documentation holes the experiment exposed:
-
-- **Untagged albums**: this branch ingests them (directory-name/stem fallbacks fill NOT NULL columns, never recorded as
-  claims); the twin refused them. The fallback-not-claim rule lived only in conversation — the one design idea that
-  never made it into the plan is the one place the implementations meaningfully forked.
-- **Consensus semantics**: unanimity-or-nothing here, plurality-wins on the twin. The plan said "consensus" and meant
-  neither specifically.
+The experiment exposed two genuine design forks — untagged-album handling and consensus semantics — both documentation
+holes: the rules had lived only in conversation. Fredrik ruled on both (this branch's behaviour stands: fallbacks are
+never claims, consensus is unanimity-or-nothing) and added a third decision the discussion surfaced: the path is a
+source — directory names like `The Avalanches - Since I Left You (2001) [FLAC] {...}` carry release-level metadata that
+enters as analyzer claims once merge machinery can host a second source. All three are recorded as
+[ADR 0008](../adr/0008-claims-record-what-sources-say.md).
 
 ## Open ends
 
