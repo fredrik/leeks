@@ -94,6 +94,8 @@ Markdown is formatted with mdformat (120-column wrap, configured in `.mdformat.t
 ### Conventions
 
 - Core design constraints live in `docs/design/core-positions.md`. Read it before architectural work
+- Project vocabulary is pinned in `docs/design/glossary.md` and is normative: use its terms as defined, and add new
+  terms of art there in the same change that coins them
 - `docs/research/teebs/notes/` holds Fredrik's primary sources. Edit them only on his explicit request
 - teebs is precedent, not blueprint: learn from its decisions and lessons, never copy its schemas, models, or plans —
   they were speculative design written before contact. Design from local information (see project-principles)
