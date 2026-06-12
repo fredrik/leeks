@@ -49,9 +49,17 @@ on a model call.
 ## Local harness
 
 The ambition is a really good agentic feedback loop: Claude should be able to run, verify, and inspect everything
-locally and fast. Today that is `just fix` / `just check`; as leeks grows, the harness grows with it — fixture audio
-files, a scratch library to import into, parity harnesses for risky ports. When a feedback loop feels slow or blind,
-improve the tooling before continuing with the task.
+locally and fast. Today that is:
+
+- `just fix` / `just check` — the quality gates
+- the fixture corpus (`tests/fixtures/`): fictional albums with documented, load-bearing quirks, materialised into
+  genuinely tagged audio by the test harness
+- `just materialise [dest]` — write the corpus as real albums to play with by hand
+- `$LEEKS_ROOT` — point any `leek` invocation at a scratch library instead of the real `~/Music/leeks`; always set it
+  when dogfooding with fixtures
+
+As leeks grows, the harness grows with it — parity harnesses for risky ports (the matcher) are next. When a feedback
+loop feels slow or blind, improve the tooling before continuing with the task.
 
 ## Code
 
@@ -100,7 +108,9 @@ Markdown is formatted with mdformat (120-column wrap, configured in `.mdformat.t
 - teebs is precedent, not blueprint: learn from its decisions and lessons, never copy its schemas, models, or plans —
   they were speculative design written before contact. Design from local information (see project-principles)
 - Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
-- CLI: click. Entry point is `leek` (singular)
+- Decision records live in `docs/decisions/` (template: `0000-template.md`); decisions that outlive a slice get one
+- CLI: click. Entry point is `leek` (singular). The verbs are the user interface, curated in `docs/design/verbs.md` —
+  adding a verb is a design decision
 - Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only.
   Never pass ORM objects through pipeline code, never put business logic on ORM models
 - File tag I/O goes through mediafile; MusicBrainz access through musicbrainzngs
