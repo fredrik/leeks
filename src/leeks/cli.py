@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import rich_click as click
 from rich.console import Console
 from rich.live import Live
+from rich.table import Table
 from rich.text import Text
 
 from leeks import theme
@@ -125,6 +126,47 @@ def add(directory: Path) -> None:
         _print_added(library.add(directory))
     except (NotOneAlbum, library.AlreadyAdded) as refusal:
         raise click.ClickException(str(refusal)) from refusal
+
+
+@leek.command(name="list")
+@click.argument("terms", nargs=-1)
+def list_command(terms: tuple[str, ...]) -> None:
+    """List the library's albums, in shelf order.
+
+    Terms narrow the shelf: an album stays only when every term
+    appears in its artist, title, or year. No terms lists everything.
+    """
+    # Imported here so a bare `leek` never pays the pipeline's startup cost.
+    from leeks import library
+
+    albums = library.list_albums(terms)
+    if not albums:
+        note = (
+            "nothing on the shelf matches that"
+            if terms
+            else "the library is empty — leek add brings music in"
+        )
+        # Notes go to stderr: stdout stays a clean list of albums.
+        Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
+        return
+    shelf = Table(box=None, show_header=False, pad_edge=False)
+    shelf.add_column(style=theme.TEXT)
+    shelf.add_column(style=theme.SUBTEXT0, justify="right")
+    shelf.add_column(style=f"bold {theme.TEXT}")
+    shelf.add_column(style=theme.SUBTEXT0)
+    for album in albums:
+        artist = (
+            Text(album.artist)
+            if album.artist
+            # The bucket, visibly a fallback and not data (ADR 0010).
+            else Text("Unknown Artist", style=f"italic {theme.OVERLAY1}")
+        )
+        tracks = (
+            f"{album.tracks} track" if album.tracks == 1 else f"{album.tracks} tracks"
+        )
+        year = str(album.year) if album.year else ""
+        shelf.add_row(artist, year, album.title, tracks)
+    Console().print(shelf)
 
 
 @leek.command(name="help")

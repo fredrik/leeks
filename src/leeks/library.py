@@ -1,21 +1,25 @@
-"""The add pipeline: claims through the source layer, bytes into the library.
+"""The library's verbs: the add pipeline and the list query.
 
 The write-path discipline from the slice 1 plan: every claim lands as a
 source_values row and the merged columns are computed by merge() — an
 identity copy while file_tags is the only source, but a real seam.
 Structured fields (artists, genres) are written relationally at add
 time; their merge story arrives with the second source. Originals are
-never modified; copies land under <root>/album-<id>/.
+never modified; copies shelve per the scheme (ADR 0010).
+
+The read side is list_albums: the merged view in shelf order, never the
+source layer (ADR 0011).
 """
 
 import re
 import shutil
+from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session
 
 from leeks import db, tags
@@ -54,6 +58,57 @@ class Added:
     tracks: int
     claims: int
     destination: Path
+
+
+@dataclass(frozen=True)
+class Listed:
+    """One album of `leek list`'s shelf."""
+
+    album_id: int
+    artist: str | None
+    year: int | None
+    title: str
+    tracks: int
+
+
+def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
+    """The library's albums in shelf order, narrowed by terms (ADR 0011).
+
+    Terms AND together and match, case-insensitively, anywhere in the
+    album's artist, title, or year — the merged view's data, never
+    display fallbacks.
+    """
+    statement = (
+        select(Album, Artist.name, func.count(Track.id))
+        .outerjoin(Artist, Album.artist_id == Artist.id)
+        .join(Track, Track.album_id == Album.id)
+        .group_by(Album.id)
+        .order_by(
+            func.coalesce(Artist.name, "Unknown Artist").collate("NOCASE"),
+            Album.year.is_(None),
+            Album.year,
+            Album.title.collate("NOCASE"),
+        )
+    )
+    for term in terms:
+        statement = statement.where(
+            or_(
+                Artist.name.icontains(term, autoescape=True),
+                Album.title.icontains(term, autoescape=True),
+                cast(Album.year, String).icontains(term, autoescape=True),
+            )
+        )
+    with db.session() as session:
+        return [
+            Listed(
+                album_id=album.id,
+                artist=artist,
+                year=album.year,
+                title=album.title,
+                tracks=tracks,
+            )
+            for album, artist, tracks in session.execute(statement)
+        ]
 
 
 def merge(session: Session, entity_type: str, entity_id: int, row: object) -> None:
