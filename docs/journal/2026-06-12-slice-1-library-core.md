@@ -1,0 +1,58 @@
+# Slice 1: music enters the database
+
+Session record, 2026-06-11 to 2026-06-12. The slice was talked through before it was planned, planned in two passes
+before it was built, and built verification-first on the `leek-add` branch. Four ADRs and a fixture corpus came out of
+the design conversation; the slice itself landed as seven implementation commits, each leaving `just check` green.
+
+## The design conversation
+
+The slice began as a discussion of what slice 1 *wants to be*, which produced decisions that outlive it:
+
+- **ADR 0004** — `leek add` ingests exactly one album, non-interactively. Fredrik's decision; it turned the album-birth
+  heuristic from a clusterer into a validator of a human's claim.
+- **ADR 0005** — `leek import` ingests a set of albums and owns album-boundary detection. First drafted as "and is
+  interactive"; reworked when Fredrik observed the durable decision is the scope, not the interaction model.
+- **ADR 0006** — the entity hierarchy is realised as its data arrives. Resolved an apparent contradiction between
+  core-positions ("all four are modelled", never-violate) and the roadmap (release groups arrive with MusicBrainz);
+  core-positions gained its anchoring sentence.
+- **ADR 0007** — the source layer stores claims, not measurements. Refined twice in conversation: measurements attach to
+  byte-sets (album ReplayGain, later, is a set-level measurement), and computed-from-bytes is not sufficient — heuristic
+  analysis (BPM detection) is a claim by an analyzer source.
+
+## What was built
+
+The fixture corpus came first (landed separately as `Add basic fixtures`): a generator for tagless FLAC/MP3 tones plus
+`corpus.toml` — three fictional artists, four albums, seventeen tracks, with documented load-bearing quirks. The slice
+then followed the plan's build order:
+
+| Step       | What                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| Harness    | `materialise` combines tones with corpus metadata into genuinely tagged albums                    |
+| Schema     | Nine tables; migration 0001 hand-written, held in lockstep with the ORM by a parity test          |
+| Models     | `AlbumInfo`/`TrackInfo` carry claims only; `FileFacts` carries measurements, separately           |
+| Tags       | mediafile reading; assembly by consensus, per-track artist only as override                       |
+| Detect     | The single-album validator; refusals name what they saw and point at `leek import`                |
+| Write path | Claims → `source_values`, merged columns through the `merge()` seam, copy-on-import with rollback |
+| CLI        | `leek add` with a summary card; refusals as clean errors                                          |
+
+Verified end to end through the installed `leek` binary against a materialised album: card printed, re-add refused,
+copies laid out as `album-1/01-meridian-line.flac`, fourteen claims in `source_values`.
+
+## Judgement calls the plan did not dictate
+
+- NOT NULL fallbacks (directory name for album title, file stem for track title) are applied to merged columns at write
+  time and are **never recorded as claims** — the claim layer stays honest.
+- `assemble` lifts the artist to album level by consensus (albumartist tags first, unanimous artist tags second);
+  per-track artist claims exist only as overrides.
+- Conflicting album-level tags (e.g. two different years) yield **no claim** rather than a guess: consensus means
+  unanimity among the files that speak.
+- Track ordering is track-number-then-filename with unnumbered tracks last, read literally from the plan; the sparse
+  album therefore orders 1, 4, then the unnumbered pair by filename.
+- Constraint names follow a SQLAlchemy naming convention from day one, so future SQLite batch migrations can refer to
+  them.
+
+## Open ends
+
+The punts recorded in the plan stand: re-add disambiguation (`--force`, hashes), raw artist strings awaiting
+MusicBrainz, the hardcoded root, the dumb copy layout, singletons excluded, multi-disc deferred until the corpus grows a
+multi-disc album.
