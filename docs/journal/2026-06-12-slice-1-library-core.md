@@ -79,8 +79,24 @@ table returns with MusicBrainz. The methodological lesson: parity twins detect *
 — anchoring that lives in the plan itself is invisible to the experiment. Recorded as a project principle: teebs is
 precedent, not blueprint.
 
+## From database dump to record shelf
+
+First real use raised the right question: Fredrik found `album-1/` in `~/Music/leeks` and asked what it was. The
+dumb-layout punt died on contact with dogfooding — the tree is part of the product. ADR 0010 followed:
+`<Album Artist>/<Year> <Album Title>/<NN> <Title>.<ext>` derived from merged columns at copy time, omission for missing
+optional components, the `Unknown Artist` bucket, replacement over slugging, case-folded collision handling, and the
+rule that metadata changes never rename — `leek organize` reconciles stale paths explicitly, and tag write-back (a
+different blast radius: it changes bytes, breaking hashes and seeded torrents) becomes its own verb. Artist and genre
+identity fold case (NOCASE; first-seen spelling displays, claims stay verbatim; aliases later). `leek init` joined the
+roadmap to retire the hardcoded root.
+
+The same conversation produced two new living design docs: [verbs](../design/verbs.md) — the collection of verbs as a
+curated interface, with tag write-back deliberately unnamed — and the normative [glossary](../design/glossary.md), born
+from the observation that "consensus" had already drifted into two implementations, pinning copy time, merged columns,
+scalar, and the rest of the project's vocabulary.
+
 ## Open ends
 
-The punts recorded in the plan stand: re-add disambiguation (`--force`, hashes), raw artist strings awaiting
-MusicBrainz, the hardcoded root, the dumb copy layout, singletons excluded, multi-disc deferred until the corpus grows a
-multi-disc album.
+The punts still standing: re-add disambiguation (`--force`, hashes), raw artist strings awaiting MusicBrainz, the
+hardcoded root (until `leek init`), singletons excluded, multi-disc deferred until the corpus grows a multi-disc album.
+The dumb-copy-layout punt is retired by ADR 0010.
