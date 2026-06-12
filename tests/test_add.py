@@ -117,6 +117,35 @@ def test_add_duplicate_titles_stay_distinct(corpus, materialise):
         assert harbours[0].album_id != harbours[1].album_id
 
 
+def test_artist_case_variants_fold_to_first_seen(tmp_path, leeks_root):
+    from fixtures.materialise import materialise_album
+
+    one = {
+        "title": "Cave Songs",
+        "artist": "Tin Hatch Choir",
+        "tracks": [{"title": "A"}],
+    }
+    two = {
+        "title": "Attic Songs",
+        "artist": "TIN HATCH CHOIR",
+        "tracks": [{"title": "B"}],
+    }
+    library.add(materialise_album(one, tmp_path / "s1"))
+    added = library.add(materialise_album(two, tmp_path / "s2"))
+    with db.session() as session:
+        (artist,) = rows(session, orm.Artist)
+        assert artist.name == "Tin Hatch Choir"  # first-seen spelling displays
+        # The claim stays verbatim: file_tags really did say TIN HATCH CHOIR.
+        claims = {
+            (c.entity_type, c.field): c.value
+            for c in rows(session, orm.SourceValue)
+            if c.field == "artist"
+        }
+        assert "TIN HATCH CHOIR" in claims.values()
+    # The shelf reuses the first-seen spelling, so case variants share a directory.
+    assert added.destination == leeks_root / "Tin Hatch Choir" / "Attic Songs"
+
+
 def test_artists_are_not_duplicated_across_albums(corpus, materialise):
     library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
     library.add(materialise(by_title(corpus, "Salt Meridian")))

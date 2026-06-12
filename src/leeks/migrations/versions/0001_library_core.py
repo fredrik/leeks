@@ -18,7 +18,7 @@ def upgrade() -> None:
     op.create_table(
         "artists",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("name", sa.String, nullable=False),
+        sa.Column("name", sa.String(collation="NOCASE"), nullable=False),
         sa.UniqueConstraint("name", name="uq_artists_name"),
     )
     op.create_table(
@@ -36,7 +36,7 @@ def upgrade() -> None:
     op.create_table(
         "genres",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("name", sa.String, nullable=False),
+        sa.Column("name", sa.String(collation="NOCASE"), nullable=False),
         sa.UniqueConstraint("name", name="uq_genres_name"),
     )
     op.create_table(

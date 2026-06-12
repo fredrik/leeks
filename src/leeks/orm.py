@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, MetaData, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, MetaData, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 # Deterministic constraint names, so future migrations can refer to them.
@@ -92,14 +92,17 @@ class Artist(Base):
     __tablename__ = "artists"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(unique=True)
+    # NOCASE: "Daft Punk" and "Daft punk" are one artist, spelled as first
+    # seen (ADR 0010). ASCII folding only; aliases arrive later.
+    name: Mapped[str] = mapped_column(String(collation="NOCASE"), unique=True)
 
 
 class Genre(Base):
     __tablename__ = "genres"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(unique=True)
+    # NOCASE for the same reason as artists: "Indie Rock" is "indie rock".
+    name: Mapped[str] = mapped_column(String(collation="NOCASE"), unique=True)
 
 
 class AlbumGenre(Base):
