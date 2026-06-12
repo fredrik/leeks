@@ -16,14 +16,27 @@ tags. This describes the finished model: each entity is realised by the time the
 
 **Metadata sources are layers, never overwrites.** File tags, MusicBrainz, Discogs, tracker upload metadata, manual
 edits: each adds a layer, all are preserved. The library view is a merge on read; precedence rules are separate from
-storage. No source ever destroys what another source said.
+storage. No source ever destroys what another source said. The asymmetry is the test for every design choice: the merged
+view is derived and rebuildable from claims, so corrupting it is an inconvenience — losing claims is data loss.
+
+**Fetched payloads are kept.** When a source is fetched over the network, the raw response is stored alongside the
+claims parsed from it. Mapping a new field is then a local re-extraction, never a re-fetch across the library — beets
+made every new field a fresh round of `mbsync`, and `mbsync` is what clobbered edits. A cache is disposable; a payload
+is not.
+
+**Automation writes as its own source, never as the user.** Every automated writer — cron job, pipeline, agent — claims
+under its own name (`cron:lastfm-sync`, `agent:genre-tagger`), with precedence below `user`, and the change log records
+who wrote what; there are no anonymous writes. Automation can never clobber a human edit by construction, and a
+misbehaving writer's whole contribution is dropped by dropping its source. Only `user`-wins is fixed; precedence among
+the rest is merge policy, deliberately open.
 
 **The schema is normalised, with real foreign keys.** No denormalised flat table, no album data duplicated across track
 rows. Album-level edits propagate to tracks by construction — this failure in beets is the founding annoyance of the
 project.
 
 **History is append-mostly.** Every mutation lands in a change log; prior states are reconstructible. A bad match must
-be undoable.
+be undoable — and undo is forward motion: a compensating change appended to the log, never a rewrite. References to past
+states stay valid forever.
 
 **Originals are never modified.** Import copies files into the library; it never moves or rewrites the source. Tag
 writing, renaming, and moving library files are explicit, separate actions — never a side effect of import or matching.
@@ -41,3 +54,9 @@ is its human-readable projection.
 
 The two-layer model — Pydantic v2 for the pipeline, SQLAlchemy 2.0 for persistence, mapped at the boundary — is
 [ADR 0001](../decisions/0001-pydantic-pipeline-sqlalchemy-persistence.md).
+
+**One extension protocol.** A plugin is a source of claims behind one narrow protocol; MusicBrainz, Discogs, a path
+parser, and a scrobble fetcher all fit it. Lifecycle hooks are presumed wrong until a real extension cannot be a source
+— beets' plugin API grew by accretion, hook by hook, and the result constrained every core refactor for a decade.
+
+The storage engine is an implementation detail, kept replaceable by discipline — see [portability](portability.md).
