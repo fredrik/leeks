@@ -51,6 +51,24 @@ copies laid out as `album-1/01-meridian-line.flac`, fourteen claims in `source_v
 - Constraint names follow a SQLAlchemy naming convention from day one, so future SQLite batch migrations can refer to
   them.
 
+## The parity twin
+
+As an experiment in documentation sufficiency, a zero-context agent implemented the same two plan documents
+independently (branch `leek-add-plan`), and each side reviewed the other. The designs converged almost line for line —
+module names, schema, the merge() seam, even the commit shape — confirming the documents carried the design. The
+divergences clustered exactly where the plan was ambiguous or silent, and both reviews recommended landing this branch
+and porting the twin's diffs, which was done: foreign-key enforcement (the twin's catch — SQLite defaults it off), a
+copy-failure rollback test (the twin treated the plan's test list as a floor; this side had anchored on it as a spec),
+enum CHECK constraints, lazy CLI imports, and named re-add refusals.
+
+Two forks remain open for Fredrik to rule on, both documentation holes the experiment exposed:
+
+- **Untagged albums**: this branch ingests them (directory-name/stem fallbacks fill NOT NULL columns, never recorded as
+  claims); the twin refused them. The fallback-not-claim rule lived only in conversation — the one design idea that
+  never made it into the plan is the one place the implementations meaningfully forked.
+- **Consensus semantics**: unanimity-or-nothing here, plurality-wins on the twin. The plan said "consensus" and meant
+  neither specifically.
+
 ## Open ends
 
 The punts recorded in the plan stand: re-add disambiguation (`--force`, hashes), raw artist strings awaiting
