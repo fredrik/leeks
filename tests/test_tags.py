@@ -26,6 +26,18 @@ def test_read_tags_refuses_non_audio(tmp_path):
     assert tags.read_tags(not_audio) is None
 
 
+def test_whitespace_only_tags_are_absent(corpus, materialise):
+    from mediafile import MediaFile
+
+    album = by_title(corpus, "Paper Lung Atlas")
+    path = sorted(materialise(album).iterdir())[0]
+    media = MediaFile(str(path))
+    media.genre = "   "
+    media.save()
+    file_tags = tags.read_tags(path)
+    assert file_tags is not None and file_tags.genre is None
+
+
 def test_absent_tags_are_none(corpus, materialise):
     album = by_title(corpus, "Tape Hiss Archipelago")
     directory = materialise(album)

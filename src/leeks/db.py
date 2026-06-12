@@ -22,20 +22,16 @@ def library_root() -> Path:
     return base.expanduser()
 
 
-def database_path() -> Path:
-    return library_root() / "leeks.db"
+def database_url(root: Path) -> str:
+    return f"sqlite:///{root / 'leeks.db'}"
 
 
-def database_url() -> str:
-    return f"sqlite:///{database_path()}"
-
-
-def migrate() -> None:
-    """Create the root and bring the database to the latest schema."""
-    library_root().mkdir(parents=True, exist_ok=True)
+def migrate(root: Path) -> None:
+    """Create the root and bring its database to the latest schema."""
+    root.mkdir(parents=True, exist_ok=True)
     config = Config()
     config.set_main_option("script_location", str(MIGRATIONS))
-    config.set_main_option("sqlalchemy.url", database_url())
+    config.set_main_option("sqlalchemy.url", database_url(root))
     command.upgrade(config, "head")
 
 
@@ -47,7 +43,9 @@ def _enforce_foreign_keys(connection, _record) -> None:
     cursor.close()
 
 
-def session() -> Session:
-    """A session against the migrated library database."""
-    migrate()
-    return Session(create_engine(database_url()))
+def session(root: Path | None = None) -> Session:
+    """A session against the migrated library database at the root."""
+    if root is None:
+        root = library_root()
+    migrate(root)
+    return Session(create_engine(database_url(root)))

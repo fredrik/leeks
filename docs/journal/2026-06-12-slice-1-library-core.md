@@ -50,6 +50,8 @@ copies laid out as `album-1/01-meridian-line.flac`, fourteen claims in `source_v
   album therefore orders 1, 4, then the unnumbered pair by filename.
 - Constraint names follow a SQLAlchemy naming convention from day one, so future SQLite batch migrations can refer to
   them.
+- The Alembic environment lives at `src/leeks/migrations/`, not the plan's root-level `migrations/` — a deliberate
+  deviation: package-local migrations survive leeks shipping as a wheel; a repo-root directory does not.
 
 ## The parity twin
 

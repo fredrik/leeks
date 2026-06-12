@@ -5,6 +5,7 @@ two distinct things (ADR 0007): FileTags, the claims its tags make, and
 FileFacts, measurements of the bytes. They never mix.
 """
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -39,12 +40,13 @@ class FileFacts:
     channels: int | None
     duration: float | None
     size: int
+    sha256: str
     mtime: float
 
 
 def _text(value: str | None) -> str | None:
-    # An empty tag is an absent claim, never an empty string.
-    return value if value else None
+    # An empty or whitespace-only tag is an absent claim.
+    return value if value and value.strip() else None
 
 
 def read_tags(path: Path) -> FileTags | None:
@@ -70,6 +72,8 @@ def measure(path: Path) -> FileFacts:
     """Measurements of a readable audio file."""
     media = MediaFile(str(path))
     stat = path.stat()
+    with path.open("rb") as handle:
+        sha256 = hashlib.file_digest(handle, "sha256").hexdigest()
     return FileFacts(
         path=path,
         format=media.format,
@@ -78,6 +82,7 @@ def measure(path: Path) -> FileFacts:
         channels=media.channels,
         duration=media.length,
         size=stat.st_size,
+        sha256=sha256,
         mtime=stat.st_mtime,
     )
 

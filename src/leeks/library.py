@@ -8,7 +8,6 @@ time; their merge story arrives with the second source. Originals are
 never modified; copies land under <root>/album-<id>/.
 """
 
-import hashlib
 import re
 import shutil
 import unicodedata
@@ -80,7 +79,8 @@ def add(directory: Path) -> Added:
     """Ingest one album: detect, assemble, record claims, merge, copy."""
     directory = directory.expanduser().resolve()
     info = tags.assemble(detect(directory))
-    with db.session() as session:
+    root = db.library_root()
+    with db.session(root) as session:
         _refuse_readds(session, info)
         now = datetime.now(UTC).replace(tzinfo=None)
         file_tags = session.scalars(
@@ -100,7 +100,7 @@ def add(directory: Path) -> Added:
         for row in tracks:
             merge(session, "track", row.id, row)
 
-        destination = db.library_root() / f"album-{album.id}"
+        destination = root / f"album-{album.id}"
         try:
             _copy_files(session, info, tracks, destination, now)
             session.commit()
@@ -232,7 +232,7 @@ def _copy_files(
         if row.track is not None:
             name = f"{row.track:02d}-{name}"
         copy = _vacant(destination, name, track.path.suffix.lower())
-        sha256 = _copy_and_hash(track.path, copy)
+        shutil.copyfile(track.path, copy)
         facts = tags.measure(copy)
         session.add(
             File(
@@ -245,7 +245,7 @@ def _copy_files(
                 channels=facts.channels,
                 duration=facts.duration,
                 size=facts.size,
-                sha256=sha256,
+                sha256=facts.sha256,
                 mtime=facts.mtime,
                 added=now,
             )
@@ -260,12 +260,3 @@ def _vacant(directory: Path, name: str, suffix: str) -> Path:
         candidate = directory / f"{name}-{counter}{suffix}"
         counter += 1
     return candidate
-
-
-def _copy_and_hash(source: Path, copy: Path) -> str:
-    shutil.copyfile(source, copy)
-    digest = hashlib.sha256()
-    with copy.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()

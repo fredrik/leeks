@@ -12,7 +12,9 @@ target_metadata = Base.metadata
 
 def url() -> str:
     # The CLI (alembic.ini) leaves the url blank; default to the library.
-    return config.get_main_option("sqlalchemy.url") or db.database_url()
+    return config.get_main_option("sqlalchemy.url") or db.database_url(
+        db.library_root()
+    )
 
 
 def run_migrations_offline() -> None:
