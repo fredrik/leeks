@@ -62,6 +62,17 @@ shortlog="$(git log "main..$branch" --oneline --reverse)"
     exit 1
 }
 
+# Discover the branch's worktree up front and refuse if it is dirty: the
+# merge below is wasted work if the cleanup at the end can't remove a worktree
+# with modified or untracked files. Better to abort before touching main.
+worktree="$(git worktree list --porcelain | grep -B2 "^branch refs/heads/$branch$" |
+    sed -n 's/^worktree //p' || true)"
+if [ -n "$worktree" ] && [ -n "$(git -C "$worktree" status --porcelain)" ]; then
+    echo "land: $branch's worktree is dirty — commit or discard changes first" >&2
+    echo "      $worktree" >&2
+    exit 1
+fi
+
 echo
 echo "Landing $branch:"
 echo
@@ -142,8 +153,6 @@ if [ "$mode" = "squash" ]; then
         exit 1
     fi
 fi
-worktree="$(git worktree list --porcelain | grep -B2 "^branch refs/heads/$branch$" |
-    sed -n 's/^worktree //p' || true)"
 if [ -n "$worktree" ]; then
     git worktree remove "$worktree"
 fi
