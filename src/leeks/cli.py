@@ -325,14 +325,14 @@ def _emit(
     "--fields",
     "fields_spec",
     default=None,
-    help="Print only these fields, in order (comma-separated), e.g. artist,title.",
+    help="Print only these fields, in order, e.g. artist,title.",
 )
 @click.option(
     "--format",
     "output_format",
     type=click.Choice(["json"]),
     default=None,
-    help="Emit a structured shape instead of the table/record. Choice: json.",
+    help="Print machine-readable output instead, e.g. json.",
 )
 def list_command(
     terms: tuple[str, ...],
@@ -342,12 +342,14 @@ def list_command(
 ) -> None:
     """List the library, in shelf order — albums by default.
 
-    Terms narrow the listing: an item stays only when every term
-    matches. --albums, --tracks, and --artists choose the subject (one
-    at a time); with none, the subject is albums. --fields selects which
-    fields print, replacing the curated columns (ADR 0016); --format
-    chooses a structured shape, e.g. json (ADR 0017).
+    Terms narrow the listing: an album stays only when it matches all of
+    them. --albums, --tracks, and --artists choose what to list, one at a
+    time; with none, you get albums. --fields picks which fields to print,
+    in place of the usual columns. --format prints machine-readable output
+    instead, e.g. --format json.
     """
+    # --fields and --format are orthogonal: --format keys on the same
+    # fields --fields resolves, so the two compose (ADRs 0016, 0017).
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
 
