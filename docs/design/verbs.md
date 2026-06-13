@@ -25,23 +25,24 @@ words. `add`, not `ingest`; `review`, not `reconcile-pending-changes`.
 
 ## The collection
 
-| Verb        | Status            | Concern                                                                           |
-| ----------- | ----------------- | --------------------------------------------------------------------------------- |
-| *(bare)*    | shipped (slice 0) | The about card — greeting, not reference (ADR 0003)                               |
-| `version`   | shipped (slice 0) | The version, with the sparkle                                                     |
-| `help`      | shipped (slice 0) | The reference                                                                     |
-| `add`       | shipped (slice 1) | Ingest exactly one album, non-interactively (ADR 0004)                            |
-| `list`      | shipped (slice 2) | The library, made visible — albums by default, entity by option (ADRs 0011, 0013) |
-| `info`      | next (slice 2)    | One entity in depth — including its source layer, not just the merge              |
-| `match`     | planned (slice 4) | MusicBrainz matching, separate and retryable                                      |
-| `review`    | planned (slice 5) | The pending-changes queue: accept, reject, auto-accept rules                      |
-| `import`    | later             | Ingest a set of albums; owns boundary detection (ADR 0005)                        |
-| `init`      | later             | Create a library: location and config, retiring the hardcoded root                |
-| `organize`  | later             | Re-derive stale paths per ADR 0010 — beets' `move`, made explicit                 |
-| `remove`    | later             | Take an album out of the library (implied by ADR 0004's `--force`)                |
-| `dump`      | later             | The library as portable text: claims and history, never the merged view           |
-| `load`      | later             | Rebuild a library from a dump; merged view recomputed, not read                   |
-| *(unnamed)* | later             | Tag write-back — beets' `write`; deliberately unnamed until designed              |
+| Verb        | Status            | Concern                                                                                                                        |
+| ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| *(bare)*    | shipped (slice 0) | The about card — greeting, not reference (ADR 0003)                                                                            |
+| `version`   | shipped (slice 0) | The version, with the sparkle                                                                                                  |
+| `help`      | shipped (slice 0) | The reference                                                                                                                  |
+| `add`       | shipped (slice 1) | Ingest exactly one album, non-interactively (ADR 0004)                                                                         |
+| `list`      | shipped (slice 2) | The library, made visible — albums by default, entity by option; output via `--fields`/`--format` (ADRs 0011, 0013, 0015–0017) |
+| `info`      | next (slice 2)    | One entity in depth — including its source layer, not just the merge                                                           |
+| `fields`    | later             | The field namespace a subject exposes — what `--fields` can name (ADR 0018)                                                    |
+| `match`     | planned (slice 4) | MusicBrainz matching, separate and retryable                                                                                   |
+| `review`    | planned (slice 5) | The pending-changes queue: accept, reject, auto-accept rules                                                                   |
+| `import`    | later             | Ingest a set of albums; owns boundary detection (ADR 0005)                                                                     |
+| `init`      | later             | Create a library: location and config, retiring the hardcoded root                                                             |
+| `organize`  | later             | Re-derive stale paths per ADR 0010 — beets' `move`, made explicit                                                              |
+| `remove`    | later             | Take an album out of the library (implied by ADR 0004's `--force`)                                                             |
+| `dump`      | later             | The library as portable text: claims and history, never the merged view                                                        |
+| `load`      | later             | Rebuild a library from a dump; merged view recomputed, not read                                                                |
+| *(unnamed)* | later             | Tag write-back — beets' `write`; deliberately unnamed until designed                                                           |
 
 ## Open questions
 
