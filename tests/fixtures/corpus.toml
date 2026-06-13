@@ -114,3 +114,29 @@ title = "Pylon Hum"
 [[albums.tracks]]
 title = "Dust on the Faders"
 track = 4
+
+# ---------------------------------------------------------------------------
+# The Extraordinarily Long-Winded Orchestral Collective of Greater Scandinavia
+# — I Wrote My Heart in Beacon Code (2021)
+# Fully and cleanly tagged. Deliberately enormous artist, album, and track
+# strings (one title carries a curly apostrophe) to exercise text wrapping,
+# truncation, and Unicode width. Do not shorten these names.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "I Wrote My Heart in Beacon Code"
+artist = "The Extraordinarily Long-Winded Orchestral Collective of Greater Scandinavia"
+year = 2021
+genre = "Modern Classical"
+tracktotal = 3
+
+[[albums.tracks]]
+title = "Overture for a Very Patient Lighthouse"
+track = 1
+
+[[albums.tracks]]
+title = "Your Lantern Learned My Name"
+track = 2
+
+[[albums.tracks]]
+title = "I Couldn’t Compete with the Fog"
+track = 3
