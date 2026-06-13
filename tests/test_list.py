@@ -147,13 +147,17 @@ def test_tracks_within_an_album_order_by_number_then_assembly(corpus, materialis
     ]
 
 
-def test_a_track_shows_its_album_artist_not_a_feat_credit(corpus, materialise):
+def test_a_track_shows_its_overriding_credit(corpus, materialise):
     # Lowland Frequencies is credited "Tin Hatch Choir feat. Vesna Holloway"
-    # on the track, but it sits on Tin Hatch Choir's shelf; the override is a
-    # leek info detail, not part of the tree walk (ADR 0013).
+    # on the track: that override is the effective artist shown (ADR 0013,
+    # option A), while the row still sorts under the album artist's shelf.
+    # Its siblings, with no override, fall back to the album artist.
     library.add(materialise(by_title(corpus, "Salt Meridian")))
-    [lowland] = [t for t in library.list_tracks() if t.title == "Lowland Frequencies"]
-    assert lowland.artist == "Tin Hatch Choir"
+    tracks = library.list_tracks()
+    [lowland] = [t for t in tracks if t.title == "Lowland Frequencies"]
+    assert lowland.artist == "Tin Hatch Choir feat. Vesna Holloway"
+    others = [t for t in tracks if t.title != "Lowland Frequencies"]
+    assert all(t.artist == "Tin Hatch Choir" for t in others)
 
 
 def test_a_duplicate_track_title_lists_both(corpus, materialise):

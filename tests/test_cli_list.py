@@ -178,7 +178,25 @@ def test_no_match_notes_for_tracks_and_artists(corpus, materialise):
     assert "no artists match that" in artists.stderr
 
 
+def test_list_tracks_shows_an_overriding_credit(corpus, materialise):
+    # The effective artist (ADR 0013, option A): Lowland Frequencies' own
+    # feat. credit reaches the track view, consistent with --artists.
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--tracks"])
+    assert "Tin Hatch Choir feat. Vesna Holloway" in result.stdout
+
+
+def test_albums_option_matches_the_default(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    explicit = CliRunner().invoke(leek, ["list", "--albums"])
+    default = CliRunner().invoke(leek, ["list"])
+    assert explicit.exit_code == 0
+    assert explicit.stdout == default.stdout
+    assert "Salt Meridian" in explicit.stdout
+
+
 def test_list_options_appear_in_help():
     result = CliRunner().invoke(leek, ["list", "--help"])
+    assert "--albums" in result.output
     assert "--tracks" in result.output
     assert "--artists" in result.output

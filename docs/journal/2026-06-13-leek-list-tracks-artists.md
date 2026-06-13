@@ -52,6 +52,19 @@ twenty-five track lines, and the long-named album's track stayed one greppable r
 tabs, four fields). `--artists` listed all six rows with the feat credit, Åsa last. `--tracks "tin hatch"` found nothing
 and said so on stderr; the feat track read as "Tin Hatch Choir". The themed tables rendered through a pseudo-tty.
 
+## Second look
+
+Seeing it live, Fredrik called the asymmetry what it was — inconsistent: `--artists` shows
+`Tin Hatch Choir feat. Vesna Holloway` as a row, but `--tracks` showed the same track (Lowland Frequencies) under the
+album artist `Tin Hatch Choir`. The root is the unsplit-credit wart — that string is a credit, not an artist, squatting
+in the artists table until splitting (ADR 0009) — which the listings cannot fix, only present. Of the two ways to agree,
+we took the one that hides nothing and matches the surface-it-honestly choice already made for `--artists`: `--tracks`
+now shows the **effective** artist — the track's own credit when it overrides, else the album artist — while still
+sorting by album artist, so the override displays under its album's shelf. The two views agree, and compilations (real
+per-track artists, not just feat. strings) will surface in both. `ListedTrack.artist` became a `coalesce` over two
+artist joins, the album artist aliased apart from the track artist. The same pass added `--albums` as an explicit alias
+for the default, since reaching for it and getting "No such option" is a small papercut.
+
 ## Open ends
 
 `--genres` is the third subject ADR 0013 named and this slice did not build; the option mechanism is ready for it, but

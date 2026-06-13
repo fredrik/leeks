@@ -20,7 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import String, cast, func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from leeks import db, tags
 from leeks.detect import detect
@@ -79,8 +79,9 @@ class ListedTrack:
     album_id: int
     number: int | None
     title: str
-    # The album artist — the shelf this track sits on. A track's own
-    # overriding credit (a feat.) is a `leek info` detail, not shown here.
+    # The effective artist: the track's own credit when it overrides the
+    # album's (a feat.), else the album artist. Rows sort by album artist
+    # (the shelf), so an override still displays under its album.
     artist: str | None
     album: str
 
@@ -152,13 +153,22 @@ def list_tracks(terms: Sequence[str] = ()) -> list[ListedTrack]:
     does not reach up to the album artist; that cross-entity reach is
     deferred to the query grammar (ADR 0013), and the punt is title-only.
     """
+    # Two artist joins: the album artist sets the shelf (and the sort); the
+    # track artist overrides the display when a track carries its own credit.
+    album_artist = aliased(Artist)
+    track_artist = aliased(Artist)
     statement = (
-        select(Track, Artist.name, Album.title)
+        select(
+            Track,
+            func.coalesce(track_artist.name, album_artist.name),
+            Album.title,
+        )
         # INNER: every track has an album (NOT NULL album_id).
         .join(Album, Track.album_id == Album.id)
-        .outerjoin(Artist, Album.artist_id == Artist.id)
+        .outerjoin(album_artist, Album.artist_id == album_artist.id)
+        .outerjoin(track_artist, Track.artist_id == track_artist.id)
         .order_by(
-            func.coalesce(Artist.name, "Unknown Artist").collate("NOCASE"),
+            func.coalesce(album_artist.name, "Unknown Artist").collate("NOCASE"),
             Album.year.is_(None),
             Album.year,
             Album.title.collate("NOCASE"),

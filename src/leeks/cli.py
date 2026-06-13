@@ -223,17 +223,20 @@ def _emit(
 @leek.command(name="list")
 @click.argument("terms", nargs=-1)
 @click.option(
-    "--tracks", "subject", flag_value="tracks", help="List tracks, not albums."
+    "--albums",
+    "subject",
+    flag_value="albums",
+    default=True,
+    help="List albums (default).",
 )
-@click.option(
-    "--artists", "subject", flag_value="artists", help="List artists, not albums."
-)
-def list_command(terms: tuple[str, ...], subject: str | None) -> None:
+@click.option("--tracks", "subject", flag_value="tracks", help="List tracks.")
+@click.option("--artists", "subject", flag_value="artists", help="List artists.")
+def list_command(terms: tuple[str, ...], subject: str) -> None:
     """List the library, in shelf order — albums by default.
 
     Terms narrow the listing: an item stays only when every term
-    matches. --tracks and --artists list those entities instead (one
-    subject at a time); with neither, the subject is albums.
+    matches. --albums, --tracks, and --artists choose the subject (one
+    at a time); with none, the subject is albums.
     """
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
