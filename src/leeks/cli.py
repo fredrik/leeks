@@ -515,7 +515,7 @@ def _show_json(albums: "Sequence[ShownAlbum]") -> None:
     "-s",
     "with_sources",
     is_flag=True,
-    help="Unfold the claim layer: who claimed each field.",
+    help="Show where each field came from: the source behind every value.",
 )
 @click.option(
     "--format",
@@ -527,13 +527,13 @@ def _show_json(albums: "Sequence[ShownAlbum]") -> None:
 def show_command(
     terms: tuple[str, ...], with_sources: bool, output_format: str | None
 ) -> None:
-    """Show an album in depth — its tracks, their files, and on request its sources.
+    """Show an album in depth: its tracks, their files, and on request its sources.
 
-    Terms pick the album the way leek list does — by artist, title, or
-    year — or id:N names one exactly. A unique match is shown in full; when
+    Terms pick the album the way leek list does (by artist, title, or
+    year), or id:N names one exactly. A unique match is shown in full; when
     several match, all of them are (a chooser to narrow them comes later).
-    --sources unfolds the claim layer beneath each field. --format json
-    prints the whole projection, always as an array.
+    --sources shows where each field came from, source by source. --format
+    json prints the whole projection, always as an array.
     """
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
@@ -544,7 +544,7 @@ def show_command(
         return
     if not albums:
         note = (
-            "nothing matches that"
+            "nothing on the shelf matches that"
             if terms
             else "the library is empty, leek add brings music in"
         )

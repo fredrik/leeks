@@ -88,7 +88,7 @@ def test_show_no_match_is_a_note_not_an_error(corpus, materialise):
     result = CliRunner().invoke(leek, ["show", "polka"])
     assert result.exit_code == 0
     assert result.stdout == ""
-    assert "nothing matches" in result.stderr
+    assert "nothing on the shelf matches" in result.stderr
 
 
 def test_show_empty_library_points_at_add():
