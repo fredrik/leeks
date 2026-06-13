@@ -41,9 +41,7 @@ Distilled into the living docs on review; the brainstorm's wording is superseded
 - **One extension protocol — a plugin is a source; resist hook soup** → core-positions
 - **Engine portability as discipline; the dump as canonical interchange** → [portability](../../design/portability.md),
   with the Postgres CI leg explicitly deferred
-- **Query atoms** (beets-style `field:value` compiled to SQL) → noted on the
-  [roadmap](../../plans/2026-06-11-roadmap.md) for slice 2
-- **Review must scale to bulk proposals** → noted on the roadmap for slice 5
+- **Review must scale to bulk proposals** → noted on the [roadmap](../../plans/2026-06-11-roadmap.md) for slice 5
 - **`dump` / `load` as verbs** → the [verbs](../../design/verbs.md) collection, later
 
 ## Converged independently
@@ -60,6 +58,12 @@ Decided on main, with no sight of the brainstorm, before this review filed anyth
 
 ## Parked — mine these when their slice arrives
 
+- **Beets-style query language** (design-notes §8): field-qualified atoms (`year:2019`, ranges, negation) compiled to
+  SQL over the normalised schema. This is the intended direction for how queries grow, not a rejected one.
+  [ADR 0011](../../decisions/0011-list-is-albums-in-shelf-order.md) set bare substring terms as the floor for
+  `leek list` and explicitly punted the grammar — "any future grammar can keep `leek list radiohead` meaning what it
+  obviously means" — until a real query demands it. The brainstorm's leaning and the ADR's punt agree: ship the floor,
+  design the grammar deliberately when the need is real rather than accreting it the way beets did.
 - **The virtual filesystem** (design-notes §7). The one decision that already holds: the browse tree is a render
   function, never canonical. The one experiment worth its cost when the time comes: the **retag-on-read spike** (~50
   lines — synthesize a VORBIS_COMMENT, splice it over layer-0 tags at open time, verify in mpv) — canonical bytes stay

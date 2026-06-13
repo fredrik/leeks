@@ -34,8 +34,13 @@ design re-derives itself from local information.
 - **Adopted as discipline in [portability](../design/portability.md):** the engine-portability rules, with the Postgres
   CI leg explicitly declined until a multi-host topology is real; the dump as canonical interchange, serialising claims
   and history, never the merged view.
-- **Noted on the [roadmap](../plans/2026-06-11-roadmap.md):** query atoms for slice 2; bulk-scale review for slice 5;
-  the dump and the wantlist under Later. `dump`/`load` joined the [verbs](../design/verbs.md) collection as later.
+- **Noted on the [roadmap](../plans/2026-06-11-roadmap.md):** bulk-scale review for slice 5; the dump and the wantlist
+  under Later. `dump`/`load` joined the [verbs](../design/verbs.md) collection as later.
+- **Deferred, not reversed:** the brainstorm's beets-style query atoms were first noted on the roadmap for slice 2. When
+  `leek list` landed first, [ADR 0011](../decisions/0011-list-is-albums-in-shelf-order.md) shipped bare substring terms
+  as the floor and explicitly punted the grammar. After rebasing onto that landing, the query language moved to the
+  research README's parked direction: it is the intended way queries grow (Fredrik wants beets' query language), held
+  until a real query demands the design — the ADR's punt and the brainstorm's leaning agree.
 - **Parked in the research README:** the virtual filesystem (with the retag-on-read spike recipe), capability tiers and
   MCP, the history porcelain, the canonical-serialisation consumer list, fingerprints-as-identity, live/pinned
   playlists. Two open questions carried out with punts: precedence configuration shape, raw-payload archival.
