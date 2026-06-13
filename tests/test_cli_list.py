@@ -197,3 +197,70 @@ def test_list_options_appear_in_help():
     assert "--albums" in result.output
     assert "--tracks" in result.output
     assert "--artists" in result.output
+
+
+def test_fields_appears_in_help():
+    result = CliRunner().invoke(leek, ["list", "--help"])
+    assert "--fields" in result.output
+
+
+def test_fields_selects_a_subset_in_order(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    # title then artist — field order is column order, and these replace
+    # the curated columns (no year, no extra).
+    result = CliRunner().invoke(leek, ["list", "--fields", "title,artist"])
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    title, artist = lines[0].split("\t")
+    assert title == "Cartography for Sleepwalkers"
+    assert artist == "Tin Hatch Choir"
+
+
+def test_fields_trims_whitespace(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["list", "--fields", " title , artist "])
+    assert result.exit_code == 0
+    title, artist = result.stdout.splitlines()[0].split("\t")
+    assert title == "Cartography for Sleepwalkers"
+    assert artist == "Tin Hatch Choir"
+
+
+def test_fields_composes_with_tracks(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["list", "--tracks", "--fields", "number,title"])
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    assert all(len(line.split("\t")) == 2 for line in lines)
+    number, title = lines[0].split("\t")
+    assert number == "1"
+    assert title == "Inventory of Small Storms"
+
+
+def test_unknown_field_is_a_loud_error(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--fields", "nonsense"])
+    assert result.exit_code != 0
+    # The error names the offender and lists the valid fields, never a silent skip.
+    assert "nonsense" in result.output
+    assert "artist" in result.output
+    assert "title" in result.output
+
+
+def test_fields_namespace_is_per_subject(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    # 'year' is a valid album field but not an artist field.
+    albums = CliRunner().invoke(leek, ["list", "--fields", "year"])
+    assert albums.exit_code == 0
+    artists = CliRunner().invoke(leek, ["list", "--artists", "--fields", "year"])
+    assert artists.exit_code != 0
+    assert "year" in artists.output
+    assert "name" in artists.output
+
+
+def test_fields_duplicates_are_kept(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--fields", "title,title"])
+    assert result.exit_code == 0
+    cells = result.stdout.splitlines()[0].split("\t")
+    assert len(cells) == 2
+    assert cells[0] == cells[1]

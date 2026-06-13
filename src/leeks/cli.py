@@ -200,12 +200,50 @@ def _artist_table(artists: "Sequence[ListedArtist]") -> Table:
     return table
 
 
+def _parse_fields(subject: str, spec: str) -> tuple[str, ...]:
+    """The `--fields` names, validated against the subject's namespace.
+
+    Selection, not interpolation (ADR 0016): a comma-separated list of
+    names, trimmed of surrounding whitespace. An unknown name is a loud
+    usage error listing the valid names for the subject — never a silent
+    skip — so the exit code is non-zero. Duplicates are harmless and kept
+    as given; field order is column order.
+    """
+    valid = _FIELDS[subject]
+    names = tuple(name.strip() for name in spec.split(","))
+    for name in names:
+        if name not in valid:
+            raise click.BadParameter(
+                f"{name!r} is not a field of {subject}; choose from {', '.join(valid)}",
+                param_hint="--fields",
+            )
+    return names
+
+
+def _plain_table(rows: Sequence[Any], fields: Sequence[str]) -> Table:
+    """A utilitarian table for `--fields`: one column per selected field.
+
+    No per-field styling (ADR 0016) — the curated styled tables (the
+    italic Unknown bucket, bold titles) are only the default view. This
+    matches the headerless house style; a header row is a deferred
+    question (ADR 0016). Values come off the typed projection via getattr
+    and `_display_cell`, the same seam the pipe reads (ADR 0014).
+    """
+    table = Table(box=None, show_header=False, pad_edge=False)
+    for _ in fields:
+        table.add_column(style=theme.TEXT)
+    for row in rows:
+        table.add_row(*(_display_cell(name, getattr(row, name)) for name in fields))
+    return table
+
+
 def _emit(
     rows: Sequence[Any],
     *,
     subject: str,
     table: Callable[..., Table],
     note: str,
+    fields: tuple[str, ...] | None = None,
 ) -> None:
     """Print a listing, or its absence: the shape every `list` subject shares.
 
@@ -219,18 +257,22 @@ def _emit(
     The pipe record is the subject's fields (`_FIELDS`) read off each row and
     rendered with `_display_cell` — the typed projection, stringified at the
     edge (ADR 0014).
+
+    `--fields` (when given) selects which fields print and in what order,
+    replacing the curated default columns (ADR 0016): the pipe records and
+    the TTY's plain, unstyled table both read exactly those.
     """
     if not rows:
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
         return
     if not sys.stdout.isatty():
-        fields = _FIELDS[subject]
+        columns = fields if fields is not None else _FIELDS[subject]
         for row in rows:
             click.echo(
-                "\t".join(_display_cell(name, getattr(row, name)) for name in fields)
+                "\t".join(_display_cell(name, getattr(row, name)) for name in columns)
             )
         return
-    Console().print(table(rows))
+    Console().print(_plain_table(rows, fields) if fields is not None else table(rows))
 
 
 @leek.command(name="list")
@@ -244,15 +286,24 @@ def _emit(
 )
 @click.option("--tracks", "subject", flag_value="tracks", help="List tracks.")
 @click.option("--artists", "subject", flag_value="artists", help="List artists.")
-def list_command(terms: tuple[str, ...], subject: str) -> None:
+@click.option(
+    "--fields",
+    "fields_spec",
+    default=None,
+    help="Print only these fields, in order (comma-separated), e.g. artist,title.",
+)
+def list_command(terms: tuple[str, ...], subject: str, fields_spec: str | None) -> None:
     """List the library, in shelf order — albums by default.
 
     Terms narrow the listing: an item stays only when every term
     matches. --albums, --tracks, and --artists choose the subject (one
-    at a time); with none, the subject is albums.
+    at a time); with none, the subject is albums. --fields selects which
+    fields print, replacing the curated columns (ADR 0016).
     """
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
+
+    fields = _parse_fields(subject, fields_spec) if fields_spec is not None else None
 
     if subject == "tracks":
         _emit(
@@ -262,6 +313,7 @@ def list_command(terms: tuple[str, ...], subject: str) -> None:
             note="no tracks match that"
             if terms
             else "the library is empty — leek add brings music in",
+            fields=fields,
         )
     elif subject == "artists":
         _emit(
@@ -269,6 +321,7 @@ def list_command(terms: tuple[str, ...], subject: str) -> None:
             subject="artists",
             table=_artist_table,
             note="no artists match that" if terms else "no artists yet",
+            fields=fields,
         )
     else:
         _emit(
@@ -278,6 +331,7 @@ def list_command(terms: tuple[str, ...], subject: str) -> None:
             note="nothing on the shelf matches that"
             if terms
             else "the library is empty — leek add brings music in",
+            fields=fields,
         )
 
 
