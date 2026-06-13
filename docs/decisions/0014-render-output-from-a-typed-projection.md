@@ -1,6 +1,6 @@
 # 0014 — Render output from a typed projection
 
-Status: Proposed (2026-06-13)
+Status: Decided (2026-06-13)
 
 ## Decision
 

@@ -1,6 +1,6 @@
 # 0016 — Select fields with `--fields`
 
-Status: Proposed (2026-06-13)
+Status: Decided (2026-06-13)
 
 ## Decision
 

@@ -1,6 +1,6 @@
 # 0015 — Reject a template language for output
 
-Status: Proposed (2026-06-13)
+Status: Decided (2026-06-13)
 
 ## Decision
 

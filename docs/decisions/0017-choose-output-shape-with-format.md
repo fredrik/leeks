@@ -1,6 +1,6 @@
 # 0017 — Choose output shape with `--format`
 
-Status: Proposed (2026-06-13)
+Status: Decided (2026-06-13)
 
 ## Decision
 

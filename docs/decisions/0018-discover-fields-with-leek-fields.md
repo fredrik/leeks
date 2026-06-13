@@ -1,6 +1,6 @@
 # 0018 — Discover fields with `leek fields`
 
-Status: Proposed (2026-06-13)
+Status: Decided (2026-06-13)
 
 ## Decision
 
