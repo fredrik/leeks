@@ -130,28 +130,29 @@ def add(directory: Path) -> None:
         raise click.ClickException(str(refusal)) from refusal
 
 
-def _shelf_fields(album: "Listed") -> tuple[str, str, str]:
-    """Artist, year, title: the three columns of the shelf."""
-    return (
-        album.artist or "Unknown Artist",
-        str(album.year) if album.year else "",
-        album.title,
-    )
+# The renderable fields each subject projects, in column order. The names
+# are attributes of the matching Listed* dataclass (library.py), so a value
+# is a getattr away — the single typed seam every formatter reads (ADR 0014).
+# Today's namespace is the display columns; it grows (bitrate, path, …) when a
+# slice surfaces those facts, and `leek fields` will report it (ADR 0018).
+_FIELDS: dict[str, tuple[str, ...]] = {
+    "albums": ("artist", "year", "title"),
+    "tracks": ("artist", "album", "number", "title"),
+    "artists": ("name",),
+}
 
 
-def _track_fields(track: "ListedTrack") -> tuple[str, str, str, str]:
-    """Artist, album, number, title: the four columns of a track row."""
-    return (
-        track.artist or "Unknown Artist",
-        track.album,
-        str(track.number) if track.number is not None else "",
-        track.title,
-    )
+def _display_cell(name: str, value: object) -> str:
+    """Render one projected value as plain text for a pipe or a plain table.
 
-
-def _artist_fields(artist: "ListedArtist") -> tuple[str]:
-    """The single column of an artist row: the name."""
-    return (artist.name,)
+    Absence is a rendering choice here, not data (ADR 0014): a missing artist
+    shows the Unknown bucket (ADR 0010), every other missing field shows
+    empty. Structured output (`--format json`) skips this and emits the typed
+    value — null stays null.
+    """
+    if value is None:
+        return "Unknown Artist" if name == "artist" else ""
+    return str(value)
 
 
 def _artist_cell(artist: str | None) -> Text:
@@ -167,8 +168,11 @@ def _shelf_table(albums: "Sequence[Listed]") -> Table:
     shelf.add_column(style=theme.SUBTEXT0, justify="right")  # year
     shelf.add_column(style=f"bold {theme.TEXT}")  # title
     for album in albums:
-        _, year, title = _shelf_fields(album)
-        shelf.add_row(_artist_cell(album.artist), year, title)
+        shelf.add_row(
+            _artist_cell(album.artist),
+            _display_cell("year", album.year),
+            album.title,
+        )
     return shelf
 
 
@@ -179,8 +183,12 @@ def _track_table(tracks: "Sequence[ListedTrack]") -> Table:
     table.add_column(style=theme.SUBTEXT0, justify="right")  # number
     table.add_column(style=f"bold {theme.TEXT}")  # title
     for track in tracks:
-        _, album, number, title = _track_fields(track)
-        table.add_row(_artist_cell(track.artist), album, number, title)
+        table.add_row(
+            _artist_cell(track.artist),
+            track.album,
+            _display_cell("number", track.number),
+            track.title,
+        )
     return table
 
 
@@ -195,7 +203,7 @@ def _artist_table(artists: "Sequence[ListedArtist]") -> Table:
 def _emit(
     rows: Sequence[Any],
     *,
-    record: Callable[..., tuple[str, ...]],
+    subject: str,
     table: Callable[..., Table],
     note: str,
 ) -> None:
@@ -207,13 +215,20 @@ def _emit(
     grep`; a pipe gets one tab-separated record per row instead (ADR 0011).
     The test is the stream's own isatty, not Console.is_terminal, which
     reports True under FORCE_COLOR even into a pipe, which would wrap.
+
+    The pipe record is the subject's fields (`_FIELDS`) read off each row and
+    rendered with `_display_cell` — the typed projection, stringified at the
+    edge (ADR 0014).
     """
     if not rows:
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
         return
     if not sys.stdout.isatty():
+        fields = _FIELDS[subject]
         for row in rows:
-            click.echo("\t".join(record(row)))
+            click.echo(
+                "\t".join(_display_cell(name, getattr(row, name)) for name in fields)
+            )
         return
     Console().print(table(rows))
 
@@ -242,7 +257,7 @@ def list_command(terms: tuple[str, ...], subject: str) -> None:
     if subject == "tracks":
         _emit(
             library.list_tracks(terms),
-            record=_track_fields,
+            subject="tracks",
             table=_track_table,
             note="no tracks match that"
             if terms
@@ -251,14 +266,14 @@ def list_command(terms: tuple[str, ...], subject: str) -> None:
     elif subject == "artists":
         _emit(
             library.list_artists(terms),
-            record=_artist_fields,
+            subject="artists",
             table=_artist_table,
             note="no artists match that" if terms else "no artists yet",
         )
     else:
         _emit(
             library.list_albums(terms),
-            record=_shelf_fields,
+            subject="albums",
             table=_shelf_table,
             note="nothing on the shelf matches that"
             if terms
