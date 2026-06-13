@@ -10,6 +10,11 @@ decision — it gets an ADR; this document is the living map of the collection.
 `organize` re-derives stale paths; tag write-back will be its own verb (ADR 0010). When a verb accumulates a second
 concern, that is a new verb trying to get out — beets' importer is the cautionary tale.
 
+**Verbs may take options; options never change the subject.** ADR 0003 bans flags only at the top level, and an option
+that tunes how a verb does its one job is fine — ADR 0004 already contemplates `add --force`. What an option must never
+do is change what the verb is about: beets' `ls -a` flips the listing from tracks to albums, a second verb hiding behind
+a flag. An option that changes the concern is a verb trying to get out.
+
 **Primitives are non-interactive; orchestrators may ask.** `add` never prompts (ADR 0004); `import`, wrapping it, may —
 and only about what the albums are, never about metadata quality (ADR 0005). Scriptability lives in the primitives.
 
@@ -31,7 +36,7 @@ words. `add`, not `ingest`; `review`, not `reconcile-pending-changes`.
 | `version`   | shipped (slice 0) | The version, with the sparkle                                        |
 | `help`      | shipped (slice 0) | The reference                                                        |
 | `add`       | shipped (slice 1) | Ingest exactly one album, non-interactively (ADR 0004)               |
-| `list`      | next (slice 2)    | The library, queryable                                               |
+| `list`      | shipped (slice 2) | Albums in shelf order, filtered by bare terms (ADR 0011)             |
 | `info`      | next (slice 2)    | One entity in depth — including its source layer, not just the merge |
 | `match`     | planned (slice 4) | MusicBrainz matching, separate and retryable                         |
 | `review`    | planned (slice 5) | The pending-changes queue: accept, reject, auto-accept rules         |
@@ -47,3 +52,5 @@ words. `add`, not `ingest`; `review`, not `reconcile-pending-changes`.
   into the files". Not needed until the verb is.
 - Whether `organize` is the right word, or whether the reconciler and a future "show me what's stale" preview are one
   verb or two.
+- How `list` queries grow: field-qualified terms, comparisons, negation, per-track search. The punt is bare substring
+  terms, ANDed (ADR 0011), until a real query demands more.
