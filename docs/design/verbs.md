@@ -10,11 +10,6 @@ decision — it gets an ADR; this document is the living map of the collection.
 `organize` re-derives stale paths; tag write-back will be its own verb (ADR 0010). When a verb accumulates a second
 concern, that is a new verb trying to get out — beets' importer is the cautionary tale.
 
-**Verbs may take options; options never change the subject.** ADR 0003 bans flags only at the top level, and an option
-that tunes how a verb does its one job is fine — ADR 0004 already contemplates `add --force`. What an option must never
-do is change what the verb is about: beets' `ls -a` flips the listing from tracks to albums, a second verb hiding behind
-a flag. An option that changes the concern is a verb trying to get out.
-
 **Primitives are non-interactive; orchestrators may ask.** `add` never prompts (ADR 0004); `import`, wrapping it, may —
 and only about what the albums are, never about metadata quality (ADR 0005). Scriptability lives in the primitives.
 
