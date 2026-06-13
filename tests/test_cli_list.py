@@ -1,5 +1,7 @@
 """The list command at the CLI surface: the shelf, and notes when it is bare."""
 
+import json
+
 from click.testing import CliRunner
 
 from leeks import library
@@ -197,3 +199,167 @@ def test_list_options_appear_in_help():
     assert "--albums" in result.output
     assert "--tracks" in result.output
     assert "--artists" in result.output
+
+
+def test_fields_appears_in_help():
+    result = CliRunner().invoke(leek, ["list", "--help"])
+    assert "--fields" in result.output
+
+
+def test_fields_selects_a_subset_in_order(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    # title then artist — field order is column order, and these replace
+    # the curated columns (no year, no extra).
+    result = CliRunner().invoke(leek, ["list", "--fields", "title,artist"])
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    title, artist = lines[0].split("\t")
+    assert title == "Cartography for Sleepwalkers"
+    assert artist == "Tin Hatch Choir"
+
+
+def test_fields_trims_whitespace(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["list", "--fields", " title , artist "])
+    assert result.exit_code == 0
+    title, artist = result.stdout.splitlines()[0].split("\t")
+    assert title == "Cartography for Sleepwalkers"
+    assert artist == "Tin Hatch Choir"
+
+
+def test_fields_composes_with_tracks(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["list", "--tracks", "--fields", "number,title"])
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    assert all(len(line.split("\t")) == 2 for line in lines)
+    number, title = lines[0].split("\t")
+    assert number == "1"
+    assert title == "Inventory of Small Storms"
+
+
+def test_unknown_field_is_a_loud_error(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--fields", "nonsense"])
+    assert result.exit_code != 0
+    # The error names the offender and lists the valid fields, never a silent skip.
+    assert "nonsense" in result.output
+    assert "artist" in result.output
+    assert "title" in result.output
+
+
+def test_fields_namespace_is_per_subject(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    # 'year' is a valid album field but not an artist field.
+    albums = CliRunner().invoke(leek, ["list", "--fields", "year"])
+    assert albums.exit_code == 0
+    artists = CliRunner().invoke(leek, ["list", "--artists", "--fields", "year"])
+    assert artists.exit_code != 0
+    assert "year" in artists.output
+    assert "name" in artists.output
+
+
+def test_fields_duplicates_are_kept(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--fields", "title,title"])
+    assert result.exit_code == 0
+    cells = result.stdout.splitlines()[0].split("\t")
+    assert len(cells) == 2
+    assert cells[0] == cells[1]
+
+
+def test_format_json_is_valid_and_typed(shelve):
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert isinstance(payload, list)
+    row = payload[0]
+    assert row == {"artist": "Tin Hatch Choir", "year": 2021, "title": "Salt Meridian"}
+    # The year is a real JSON number, not a stringified one (ADR 0014).
+    assert row["year"] == 2021
+    assert isinstance(row["year"], int)
+
+
+def test_format_json_renders_absence_as_null(shelve):
+    # The honest-null contrast with the pipe's "Unknown Artist" fallback: a
+    # genuine absence is null in JSON, not the display bucket (ADR 0014).
+    shelve("Mystery Tape")
+    result = CliRunner().invoke(leek, ["list", "--format", "json"])
+    assert result.exit_code == 0
+    row = json.loads(result.stdout)[0]
+    assert row["artist"] is None
+    assert "Unknown Artist" not in result.stdout
+    assert row["year"] is None
+
+
+def test_format_json_composes_with_fields_and_tracks(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(
+        leek, ["list", "--tracks", "--fields", "artist,number", "--format", "json"]
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    # Exactly the selected keys, in order, with the number typed.
+    assert all(set(row) == {"artist", "number"} for row in payload)
+    assert isinstance(payload[0]["number"], int)
+
+
+def test_format_json_empty_library_is_an_empty_array():
+    result = CliRunner().invoke(leek, ["list", "--format", "json"])
+    assert result.exit_code == 0
+    # A machine consumer always parses valid JSON, even on an empty shelf.
+    assert json.loads(result.stdout) == []
+
+
+def test_format_appears_in_help():
+    result = CliRunner().invoke(leek, ["list", "--help"])
+    assert "--format" in result.output
+
+
+def test_invalid_format_is_rejected(shelve):
+    shelve("Salt Meridian")
+    result = CliRunner().invoke(leek, ["list", "--format", "xml"])
+    assert result.exit_code != 0
+
+
+def test_fields_empty_name_is_a_clear_error(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--fields", "artist,"])
+    assert result.exit_code != 0
+    # A trailing comma blames an empty name, not a cryptic '' is not a field.
+    assert "empty field name" in result.output
+
+
+def test_format_json_is_plain_under_forced_colour(shelve):
+    # JSON is for machines: even when colour is forced (Rich would otherwise
+    # style a terminal), the structured shape stays pure parseable JSON.
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner(env={"FORCE_COLOR": "1"}).invoke(
+        leek, ["list", "--format", "json"]
+    )
+    assert result.exit_code == 0
+    assert "\x1b[" not in result.stdout  # no ANSI escapes leaked into the JSON
+    assert json.loads(result.stdout)[0]["year"] == 2021
+
+
+def test_plain_table_renders_selected_columns():
+    # The --fields TTY table: a direct render, because CliRunner's stdout is
+    # never a tty, so the table branch is unreachable from the CLI surface.
+    from rich.console import Console
+
+    from leeks.cli import _plain_table
+    from leeks.library import Listed
+
+    rows = [Listed(album_id=1, artist=None, year=None, title="Mystery Tape")]
+    table = _plain_table(rows, ("artist", "year", "title"))
+    assert len(table.columns) == 3
+    console = Console(width=80)
+    with console.capture() as capture:
+        console.print(table)
+    out = capture.get()
+    # Plain side of the asymmetry: null artist is the Unknown bucket, a null
+    # year is empty, and a raw None never leaks (ADR 0010/0014).
+    assert "Unknown Artist" in out
+    assert "Mystery Tape" in out
+    assert "None" not in out
