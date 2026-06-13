@@ -3,8 +3,9 @@
 import importlib.metadata
 import sys
 import time
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import rich_click as click
 from rich.console import Console
@@ -15,7 +16,7 @@ from rich.text import Text
 from leeks import theme
 
 if TYPE_CHECKING:
-    from leeks.library import Added, Listed
+    from leeks.library import Added, Listed, ListedArtist, ListedTrack
 
 theme.apply()
 
@@ -129,62 +130,140 @@ def add(directory: Path) -> None:
         raise click.ClickException(str(refusal)) from refusal
 
 
-def _shelf_fields(album: "Listed") -> tuple[str, str, str, str]:
-    """Artist, year, title, track count: the four columns of the shelf."""
+def _shelf_fields(album: "Listed") -> tuple[str, str, str]:
+    """Artist, year, title: the three columns of the shelf."""
     return (
         album.artist or "Unknown Artist",
         str(album.year) if album.year else "",
         album.title,
-        f"{album.tracks} track" if album.tracks == 1 else f"{album.tracks} tracks",
     )
+
+
+def _track_fields(track: "ListedTrack") -> tuple[str, str, str, str]:
+    """Artist, album, number, title: the four columns of a track row."""
+    return (
+        track.artist or "Unknown Artist",
+        track.album,
+        str(track.number) if track.number is not None else "",
+        track.title,
+    )
+
+
+def _artist_fields(artist: "ListedArtist") -> tuple[str]:
+    """The single column of an artist row: the name."""
+    return (artist.name,)
+
+
+def _artist_cell(artist: str | None) -> Text:
+    """The artist column, dim italic when it is the Unknown fallback (ADR 0010)."""
+    if artist:
+        return Text(artist)
+    return Text("Unknown Artist", style=f"italic {theme.OVERLAY1}")
+
+
+def _shelf_table(albums: "Sequence[Listed]") -> Table:
+    shelf = Table(box=None, show_header=False, pad_edge=False)
+    shelf.add_column(style=theme.TEXT)  # artist
+    shelf.add_column(style=theme.SUBTEXT0, justify="right")  # year
+    shelf.add_column(style=f"bold {theme.TEXT}")  # title
+    for album in albums:
+        _, year, title = _shelf_fields(album)
+        shelf.add_row(_artist_cell(album.artist), year, title)
+    return shelf
+
+
+def _track_table(tracks: "Sequence[ListedTrack]") -> Table:
+    table = Table(box=None, show_header=False, pad_edge=False)
+    table.add_column(style=theme.TEXT)  # artist
+    table.add_column(style=theme.SUBTEXT0)  # album
+    table.add_column(style=theme.SUBTEXT0, justify="right")  # number
+    table.add_column(style=f"bold {theme.TEXT}")  # title
+    for track in tracks:
+        _, album, number, title = _track_fields(track)
+        table.add_row(_artist_cell(track.artist), album, number, title)
+    return table
+
+
+def _artist_table(artists: "Sequence[ListedArtist]") -> Table:
+    table = Table(box=None, show_header=False, pad_edge=False)
+    table.add_column(style=theme.TEXT)
+    for artist in artists:
+        table.add_row(artist.name)
+    return table
+
+
+def _emit(
+    rows: Sequence[Any],
+    *,
+    record: Callable[..., tuple[str, ...]],
+    table: Callable[..., Table],
+    note: str,
+) -> None:
+    """Print a listing, or its absence: the shape every `list` subject shares.
+
+    An empty result is a note on stderr (exit 0) so stdout stays a clean
+    list. The themed table is for eyes only — it wraps long rows at the
+    console width, and a record folded across lines breaks `leek list |
+    grep`; a pipe gets one tab-separated record per row instead (ADR 0011).
+    The test is the stream's own isatty, not Console.is_terminal, which
+    reports True under FORCE_COLOR even into a pipe, which would wrap.
+    """
+    if not rows:
+        Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
+        return
+    if not sys.stdout.isatty():
+        for row in rows:
+            click.echo("\t".join(record(row)))
+        return
+    Console().print(table(rows))
 
 
 @leek.command(name="list")
 @click.argument("terms", nargs=-1)
-def list_command(terms: tuple[str, ...]) -> None:
-    """List the library's albums, in shelf order.
+@click.option(
+    "--albums",
+    "subject",
+    flag_value="albums",
+    default=True,
+    help="List albums (default).",
+)
+@click.option("--tracks", "subject", flag_value="tracks", help="List tracks.")
+@click.option("--artists", "subject", flag_value="artists", help="List artists.")
+def list_command(terms: tuple[str, ...], subject: str) -> None:
+    """List the library, in shelf order — albums by default.
 
-    Terms narrow the shelf: an album stays only when every term
-    appears in its artist, title, or year. No terms lists everything.
+    Terms narrow the listing: an item stays only when every term
+    matches. --albums, --tracks, and --artists choose the subject (one
+    at a time); with none, the subject is albums.
     """
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
 
-    albums = library.list_albums(terms)
-    if not albums:
-        note = (
-            "nothing on the shelf matches that"
+    if subject == "tracks":
+        _emit(
+            library.list_tracks(terms),
+            record=_track_fields,
+            table=_track_table,
+            note="no tracks match that"
             if terms
-            else "the library is empty — leek add brings music in"
+            else "the library is empty — leek add brings music in",
         )
-        # Notes go to stderr: stdout stays a clean list of albums.
-        Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
-        return
-    # The table is for eyes only: it wraps long rows at the console width,
-    # and a record folded across lines breaks `leek list | grep`. Pipes
-    # get one tab-separated record per album (ADR 0011). The test is the
-    # real stream's isatty, not Console.is_terminal — the latter reports
-    # True under FORCE_COLOR even into a pipe, which would wrap.
-    if not sys.stdout.isatty():
-        for album in albums:
-            click.echo("\t".join(_shelf_fields(album)))
-        return
-    console = Console()
-    shelf = Table(box=None, show_header=False, pad_edge=False)
-    shelf.add_column(style=theme.TEXT)
-    shelf.add_column(style=theme.SUBTEXT0, justify="right")
-    shelf.add_column(style=f"bold {theme.TEXT}")
-    shelf.add_column(style=theme.SUBTEXT0)
-    for album in albums:
-        artist, year, title, tracks = _shelf_fields(album)
-        styled = (
-            Text(artist)
-            if album.artist
-            # The bucket, visibly a fallback and not data (ADR 0010).
-            else Text(artist, style=f"italic {theme.OVERLAY1}")
+    elif subject == "artists":
+        _emit(
+            library.list_artists(terms),
+            record=_artist_fields,
+            table=_artist_table,
+            note="no artists match that" if terms else "no artists yet",
         )
-        shelf.add_row(styled, year, title, tracks)
-    console.print(shelf)
+    else:
+        _emit(
+            library.list_albums(terms),
+            record=_shelf_fields,
+            table=_shelf_table,
+            note="nothing on the shelf matches that"
+            if terms
+            else "the library is empty — leek add brings music in",
+        )
 
 
 @leek.command(name="help")

@@ -45,11 +45,10 @@ def test_the_whole_corpus_comes_back_in_shelf_order(corpus, materialise):
     assert listed == sorted(listed, key=shelf_key)
 
 
-def test_listed_albums_carry_year_and_track_count(corpus, materialise):
+def test_listed_albums_carry_their_year(corpus, materialise):
     library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
     [cartography] = library.list_albums()
     assert cartography.year == 2019
-    assert cartography.tracks == 5
 
 
 def test_missing_years_shelve_last_within_an_artist(shelve):
@@ -110,3 +109,133 @@ def test_an_artistless_album_sits_in_the_unknown_bucket(shelve):
     assert listed[1].artist is None
     # Terms match data, never the display fallback.
     assert library.list_albums(["unknown"]) == []
+
+
+# --- leek list --tracks: the tree walk (ADR 0013) ---
+
+
+def test_an_empty_library_lists_no_tracks():
+    assert library.list_tracks() == []
+
+
+def test_tracks_walk_the_library_tree(corpus, materialise):
+    add_corpus(corpus, materialise)
+    tracks = library.list_tracks()
+    # Every corpus track is on the walk...
+    assert len(tracks) == sum(len(album["tracks"]) for album in corpus["albums"])
+    # ...grouped by album, in exactly the shelf order list_albums defines:
+    # the listing walks the tree, and the two never disagree (ADR 0010/0013).
+    walked: list[int] = []
+    for track in tracks:
+        if not walked or walked[-1] != track.album_id:
+            walked.append(track.album_id)
+    assert walked == [album.album_id for album in library.list_albums()]
+
+
+def test_tracks_within_an_album_order_by_number_then_assembly(corpus, materialise):
+    # Tape Hiss Archipelago: two numbered tracks, two unnumbered. Numbered
+    # first in number order; the unnumbered pair in assembly order — source
+    # filename, so Sodium (02) before Pylon (03), the tie-break Track.id
+    # carries from tags.assemble.
+    library.add(materialise(by_title(corpus, "Tape Hiss Archipelago")))
+    assert [track.title for track in library.list_tracks()] == [
+        "Arcade Rain",
+        "Dust on the Faders",
+        "Sodium Light Study",
+        "Pylon Hum",
+    ]
+
+
+def test_a_track_shows_its_overriding_credit(corpus, materialise):
+    # Lowland Frequencies is credited "Tin Hatch Choir feat. Vesna Holloway"
+    # on the track: that override is the effective artist shown (ADR 0013,
+    # option A), while the row still sorts under the album artist's shelf.
+    # Its siblings, with no override, fall back to the album artist.
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    tracks = library.list_tracks()
+    [lowland] = [t for t in tracks if t.title == "Lowland Frequencies"]
+    assert lowland.artist == "Tin Hatch Choir feat. Vesna Holloway"
+    others = [t for t in tracks if t.title != "Lowland Frequencies"]
+    assert all(t.artist == "Tin Hatch Choir" for t in others)
+
+
+def test_a_duplicate_track_title_lists_both(corpus, materialise):
+    # "Glass Harbour" is two different songs on two albums (corpus quirk).
+    add_corpus(corpus, materialise)
+    harbours = [t for t in library.list_tracks() if t.title == "Glass Harbour"]
+    assert len(harbours) == 2
+    assert {t.album for t in harbours} == {
+        "Cartography for Sleepwalkers",
+        "Paper Lung Atlas",
+    }
+    assert harbours[0].track_id != harbours[1].track_id
+
+
+def test_track_terms_match_the_title(corpus, materialise):
+    add_corpus(corpus, materialise)
+    harbours = library.list_tracks(["harbour"])
+    assert {t.title for t in harbours} == {"Glass Harbour"}
+    assert len(harbours) == 2  # case-insensitive, both songs
+
+
+def test_track_terms_do_not_reach_the_album_artist(corpus, materialise):
+    # The deferred cross-entity reach (ADR 0013): a --tracks term matches the
+    # track title only, never the album artist. "Tin Hatch" finds no tracks.
+    add_corpus(corpus, materialise)
+    assert library.list_tracks(["tin hatch"]) == []
+
+
+def test_a_track_term_is_text_not_a_pattern(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    assert library.list_tracks(["%"]) == []
+    assert library.list_tracks(["_"]) == []
+
+
+# --- leek list --artists: every artist row, in name order (ADR 0013) ---
+
+
+def name_key(name: str) -> str:
+    """Case-folded like SQLite NOCASE: ASCII A–Z only, others by code point."""
+    return "".join(c.lower() if "A" <= c <= "Z" else c for c in name)
+
+
+def test_an_empty_library_lists_no_artists():
+    assert library.list_artists() == []
+
+
+def test_artists_are_every_row_in_name_order(corpus, materialise):
+    add_corpus(corpus, materialise)
+    names = [artist.name for artist in library.list_artists()]
+    # Every distinct credit the corpus tags — album artists and the raw
+    # track-level feat. credits both — is an artist row (ADR 0013).
+    expected = {album["artist"] for album in corpus["albums"]}
+    expected |= {
+        track["artist"]
+        for album in corpus["albums"]
+        for track in album["tracks"]
+        if "artist" in track
+    }
+    assert set(names) == expected
+    assert "Tin Hatch Choir feat. Vesna Holloway" in expected  # the wart, present
+    # Case-folded name order, whatever the corpus grows (Åsa after ASCII).
+    assert names == sorted(names, key=name_key)
+
+
+def test_an_artistless_album_contributes_no_artist_row(shelve):
+    # Unknown Artist is a shelf fallback, not an artist entity (ADR 0011);
+    # an album with no artist claim adds no row to --artists.
+    shelve("Mystery Tape")
+    assert library.list_artists() == []
+
+
+def test_artist_terms_match_the_name(corpus, materialise):
+    add_corpus(corpus, materialise)
+    assert {a.name for a in library.list_artists(["hatch"])} == {
+        "Tin Hatch Choir",
+        "Tin Hatch Choir feat. Vesna Holloway",
+    }
+    # A substring reaches into the raw credit string too.
+    assert {a.name for a in library.list_artists(["holloway"])} == {
+        "Vesna Holloway",
+        "Tin Hatch Choir feat. Vesna Holloway",
+    }

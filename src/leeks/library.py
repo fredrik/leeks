@@ -20,7 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import String, cast, func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from leeks import db, tags
 from leeks.detect import detect
@@ -68,7 +68,29 @@ class Listed:
     artist: str | None
     year: int | None
     title: str
-    tracks: int
+
+
+@dataclass(frozen=True)
+class ListedTrack:
+    """One track of `leek list --tracks`, in tree-walk order (ADR 0013)."""
+
+    track_id: int
+    album_id: int
+    number: int | None
+    title: str
+    # The effective artist: the track's own credit when it overrides the
+    # album's (a feat.), else the album artist. Rows sort by album artist
+    # (the shelf), so an override still displays under its album.
+    artist: str | None
+    album: str
+
+
+@dataclass(frozen=True)
+class ListedArtist:
+    """One artist of `leek list --artists`."""
+
+    artist_id: int
+    name: str
 
 
 def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
@@ -79,12 +101,13 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
     display fallbacks.
     """
     statement = (
-        select(Album, Artist.name, func.count(Track.id))
+        select(Album, Artist.name)
         .outerjoin(Artist, Album.artist_id == Artist.id)
         # INNER join leans on an invariant: every album has at least one
-        # track, because add creates them together. A future verb that
-        # deletes tracks must revisit this, or empty albums silently
-        # vanish from the shelf.
+        # track, because add creates them together. It filters the shelf to
+        # albums that have tracks — a future verb that deletes tracks must
+        # revisit this, or empty albums silently vanish — and the group_by
+        # collapses the per-track rows the join would otherwise produce.
         .join(Track, Track.album_id == Album.id)
         .group_by(Album.id)
         .order_by(
@@ -109,9 +132,82 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
                 artist=artist,
                 year=album.year,
                 title=album.title,
-                tracks=tracks,
             )
-            for album, artist, tracks in session.execute(statement)
+            for album, artist in session.execute(statement)
+        ]
+
+
+def list_tracks(terms: Sequence[str] = ()) -> list[ListedTrack]:
+    """The library's tracks as a depth-first walk of the tree (ADR 0013).
+
+    Tree-walk order is album shelf order (ADR 0011), then track number with
+    unnumbered last, then `Track.id`. `Track.id` is assembly order — track
+    number then filename (glossary) — so it already *is* the filename
+    tie-break, materialised; no file join is needed. (That assembly order
+    can diverge from the on-disk destination-filename order only for
+    unnumbered tracks.) `Album.id` keeps one album's tracks contiguous when
+    two albums share shelf coordinates.
+
+    Terms AND together and match the track title, case-insensitively. A term
+    does not reach up to the album artist; that cross-entity reach is
+    deferred to the query grammar (ADR 0013), and the punt is title-only.
+    """
+    # Two artist joins: the album artist sets the shelf (and the sort); the
+    # track artist overrides the display when a track carries its own credit.
+    album_artist = aliased(Artist)
+    track_artist = aliased(Artist)
+    statement = (
+        select(
+            Track,
+            func.coalesce(track_artist.name, album_artist.name),
+            Album.title,
+        )
+        # INNER: every track has an album (NOT NULL album_id).
+        .join(Album, Track.album_id == Album.id)
+        .outerjoin(album_artist, Album.artist_id == album_artist.id)
+        .outerjoin(track_artist, Track.artist_id == track_artist.id)
+        .order_by(
+            func.coalesce(album_artist.name, "Unknown Artist").collate("NOCASE"),
+            Album.year.is_(None),
+            Album.year,
+            Album.title.collate("NOCASE"),
+            Album.id,
+            Track.track.is_(None),
+            Track.track,
+            Track.id,
+        )
+    )
+    for term in terms:
+        statement = statement.where(Track.title.icontains(term, autoescape=True))
+    with db.session() as session:
+        return [
+            ListedTrack(
+                track_id=track.id,
+                album_id=track.album_id,
+                number=track.track,
+                title=track.title,
+                artist=artist,
+                album=album,
+            )
+            for track, artist, album in session.execute(statement)
+        ]
+
+
+def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
+    """Every artist in the library, in case-folded name order (ADR 0013).
+
+    Every row of the artists table, raw multi-artist credit strings included
+    ("… feat. …", until artist-credit splitting refines them into real
+    artists): the honest view of what the table holds today. Terms AND
+    together and match the name, case-insensitively.
+    """
+    statement = select(Artist).order_by(Artist.name.collate("NOCASE"))
+    for term in terms:
+        statement = statement.where(Artist.name.icontains(term, autoescape=True))
+    with db.session() as session:
+        return [
+            ListedArtist(artist_id=artist.id, name=artist.name)
+            for artist in session.scalars(statement)
         ]
 
 
