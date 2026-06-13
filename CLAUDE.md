@@ -24,7 +24,8 @@ approaches a fork in the road beets once faced, say so plainly and steer by the 
 
 ## Respect your elders
 
-This project has nothing but respect for beets and its success. Make this obvious when we talk about beets and any perceived imperfections therein.
+This project has nothing but respect for beets and its success. Make this obvious when we talk about beets and any
+perceived imperfections therein.
 
 ## Design principles
 
