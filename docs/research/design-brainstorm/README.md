@@ -59,11 +59,12 @@ Decided on main, with no sight of the brainstorm, before this review filed anyth
 ## Parked — mine these when their slice arrives
 
 - **Beets-style query language** (design-notes §8): field-qualified atoms (`year:2019`, ranges, negation) compiled to
-  SQL over the normalised schema. This is the intended direction for how queries grow, not a rejected one.
+  SQL over the normalised schema. The *direction* is now decided —
+  [ADR 0012](../../decisions/0012-query-language-is-beets-inspired.md): leeks' query language is beets-inspired,
+  preserving the terse, guessable surface that makes beets a joy. The *grammar* is still parked:
   [ADR 0011](../../decisions/0011-list-is-albums-in-shelf-order.md) set bare substring terms as the floor for
-  `leek list` and explicitly punted the grammar — "any future grammar can keep `leek list radiohead` meaning what it
-  obviously means" — until a real query demands it. The brainstorm's leaning and the ADR's punt agree: ship the floor,
-  design the grammar deliberately when the need is real rather than accreting it the way beets did.
+  `leek list` and punted the operators until a real query demands the design. So the brainstorm's leaning was right on
+  direction; what waits is the deliberate grammar, written on typed columns rather than accreted the way beets' was.
 - **The virtual filesystem** (design-notes §7). The one decision that already holds: the browse tree is a render
   function, never canonical. The one experiment worth its cost when the time comes: the **retag-on-read spike** (~50
   lines — synthesize a VORBIS_COMMENT, splice it over layer-0 tags at open time, verify in mpv) — canonical bytes stay
