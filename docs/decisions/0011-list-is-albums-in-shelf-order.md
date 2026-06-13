@@ -1,6 +1,6 @@
 # 0011 — `leek list` is albums in shelf order, filtered by bare terms
 
-Status: Decided (2026-06-12)
+Status: Superseded by [0013](0013-list-selects-its-entity-by-option.md) (2026-06-13)
 
 ## Decision
 
