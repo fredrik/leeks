@@ -213,6 +213,11 @@ def _parse_fields(subject: str, spec: str) -> tuple[str, ...]:
     valid = _FIELDS[subject]
     names = tuple(name.strip() for name in spec.split(","))
     for name in names:
+        if not name:
+            raise click.BadParameter(
+                f"empty field name (a stray comma?); choose from {', '.join(valid)}",
+                param_hint="--fields",
+            )
         if name not in valid:
             raise click.BadParameter(
                 f"{name!r} is not a field of {subject}; choose from {', '.join(valid)}",

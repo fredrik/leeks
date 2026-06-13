@@ -321,3 +321,45 @@ def test_invalid_format_is_rejected(shelve):
     shelve("Salt Meridian")
     result = CliRunner().invoke(leek, ["list", "--format", "xml"])
     assert result.exit_code != 0
+
+
+def test_fields_empty_name_is_a_clear_error(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--fields", "artist,"])
+    assert result.exit_code != 0
+    # A trailing comma blames an empty name, not a cryptic '' is not a field.
+    assert "empty field name" in result.output
+
+
+def test_format_json_is_plain_under_forced_colour(shelve):
+    # JSON is for machines: even when colour is forced (Rich would otherwise
+    # style a terminal), the structured shape stays pure parseable JSON.
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner(env={"FORCE_COLOR": "1"}).invoke(
+        leek, ["list", "--format", "json"]
+    )
+    assert result.exit_code == 0
+    assert "\x1b[" not in result.stdout  # no ANSI escapes leaked into the JSON
+    assert json.loads(result.stdout)[0]["year"] == 2021
+
+
+def test_plain_table_renders_selected_columns():
+    # The --fields TTY table: a direct render, because CliRunner's stdout is
+    # never a tty, so the table branch is unreachable from the CLI surface.
+    from rich.console import Console
+
+    from leeks.cli import _plain_table
+    from leeks.library import Listed
+
+    rows = [Listed(album_id=1, artist=None, year=None, title="Mystery Tape")]
+    table = _plain_table(rows, ("artist", "year", "title"))
+    assert len(table.columns) == 3
+    console = Console(width=80)
+    with console.capture() as capture:
+        console.print(table)
+    out = capture.get()
+    # Plain side of the asymmetry: null artist is the Unknown bucket, a null
+    # year is empty, and a raw None never leaks (ADR 0010/0014).
+    assert "Unknown Artist" in out
+    assert "Mystery Tape" in out
+    assert "None" not in out
