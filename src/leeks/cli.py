@@ -1,6 +1,7 @@
 """The leek command-line interface."""
 
 import importlib.metadata
+import json
 import sys
 import time
 from collections.abc import Callable, Sequence
@@ -237,6 +238,26 @@ def _plain_table(rows: Sequence[Any], fields: Sequence[str]) -> Table:
     return table
 
 
+def _emit_json(rows: Sequence[Any], columns: Sequence[str]) -> None:
+    """Emit the listing as JSON: an array of objects, keyed by `columns`.
+
+    Renders the typed projection directly (ADR 0014/0017) — values come off
+    each row by getattr and are NOT passed through `_display_cell`, so a year
+    is a JSON number and a genuine absence is JSON `null`, never the Unknown
+    bucket fallback the human formatters supply. JSON ignores the isatty
+    split: a script asked for this shape, so it gets it onto a terminal or a
+    pipe alike.
+
+    Punts (decision altitude, ADR 0017): the envelope is a top-level array of
+    objects (vs. JSON Lines) and the output is indented for the eye (jq
+    reformats anyway) — grammar deferred to contact. An empty listing emits
+    `[]`, not the human stderr note, so a machine consumer always parses valid
+    JSON (and an empty result is a clean exit 0, not an error).
+    """
+    payload = [{name: getattr(row, name) for name in columns} for row in rows]
+    click.echo(json.dumps(payload, indent=2))
+
+
 def _emit(
     rows: Sequence[Any],
     *,
@@ -244,6 +265,7 @@ def _emit(
     table: Callable[..., Table],
     note: str,
     fields: tuple[str, ...] | None = None,
+    output_format: str | None = None,
 ) -> None:
     """Print a listing, or its absence: the shape every `list` subject shares.
 
@@ -261,12 +283,20 @@ def _emit(
     `--fields` (when given) selects which fields print and in what order,
     replacing the curated default columns (ADR 0016): the pipe records and
     the TTY's plain, unstyled table both read exactly those.
+
+    `--format` (when given) names an explicit structured shape and is
+    orthogonal to `--fields` (ADR 0017): it keys on the same resolved column
+    list, bypasses the isatty split, and replaces the human formatters. Only
+    `json` exists today; `csv` is deferred until the slice arrives.
     """
+    columns = fields if fields is not None else _FIELDS[subject]
+    if output_format == "json":
+        _emit_json(rows, columns)
+        return
     if not rows:
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
         return
     if not sys.stdout.isatty():
-        columns = fields if fields is not None else _FIELDS[subject]
         for row in rows:
             click.echo(
                 "\t".join(_display_cell(name, getattr(row, name)) for name in columns)
@@ -292,13 +322,26 @@ def _emit(
     default=None,
     help="Print only these fields, in order (comma-separated), e.g. artist,title.",
 )
-def list_command(terms: tuple[str, ...], subject: str, fields_spec: str | None) -> None:
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["json"]),
+    default=None,
+    help="Emit a structured shape instead of the table/record. Choice: json.",
+)
+def list_command(
+    terms: tuple[str, ...],
+    subject: str,
+    fields_spec: str | None,
+    output_format: str | None,
+) -> None:
     """List the library, in shelf order — albums by default.
 
     Terms narrow the listing: an item stays only when every term
     matches. --albums, --tracks, and --artists choose the subject (one
     at a time); with none, the subject is albums. --fields selects which
-    fields print, replacing the curated columns (ADR 0016).
+    fields print, replacing the curated columns (ADR 0016); --format
+    chooses a structured shape, e.g. json (ADR 0017).
     """
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
@@ -314,6 +357,7 @@ def list_command(terms: tuple[str, ...], subject: str, fields_spec: str | None) 
             if terms
             else "the library is empty — leek add brings music in",
             fields=fields,
+            output_format=output_format,
         )
     elif subject == "artists":
         _emit(
@@ -322,6 +366,7 @@ def list_command(terms: tuple[str, ...], subject: str, fields_spec: str | None) 
             table=_artist_table,
             note="no artists match that" if terms else "no artists yet",
             fields=fields,
+            output_format=output_format,
         )
     else:
         _emit(
@@ -332,6 +377,7 @@ def list_command(terms: tuple[str, ...], subject: str, fields_spec: str | None) 
             if terms
             else "the library is empty — leek add brings music in",
             fields=fields,
+            output_format=output_format,
         )
 
 

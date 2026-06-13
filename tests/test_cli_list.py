@@ -1,5 +1,7 @@
 """The list command at the CLI surface: the shelf, and notes when it is bare."""
 
+import json
+
 from click.testing import CliRunner
 
 from leeks import library
@@ -264,3 +266,58 @@ def test_fields_duplicates_are_kept(corpus, materialise):
     cells = result.stdout.splitlines()[0].split("\t")
     assert len(cells) == 2
     assert cells[0] == cells[1]
+
+
+def test_format_json_is_valid_and_typed(shelve):
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert isinstance(payload, list)
+    row = payload[0]
+    assert row == {"artist": "Tin Hatch Choir", "year": 2021, "title": "Salt Meridian"}
+    # The year is a real JSON number, not a stringified one (ADR 0014).
+    assert row["year"] == 2021
+    assert isinstance(row["year"], int)
+
+
+def test_format_json_renders_absence_as_null(shelve):
+    # The honest-null contrast with the pipe's "Unknown Artist" fallback: a
+    # genuine absence is null in JSON, not the display bucket (ADR 0014).
+    shelve("Mystery Tape")
+    result = CliRunner().invoke(leek, ["list", "--format", "json"])
+    assert result.exit_code == 0
+    row = json.loads(result.stdout)[0]
+    assert row["artist"] is None
+    assert "Unknown Artist" not in result.stdout
+    assert row["year"] is None
+
+
+def test_format_json_composes_with_fields_and_tracks(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(
+        leek, ["list", "--tracks", "--fields", "artist,number", "--format", "json"]
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    # Exactly the selected keys, in order, with the number typed.
+    assert all(set(row) == {"artist", "number"} for row in payload)
+    assert isinstance(payload[0]["number"], int)
+
+
+def test_format_json_empty_library_is_an_empty_array():
+    result = CliRunner().invoke(leek, ["list", "--format", "json"])
+    assert result.exit_code == 0
+    # A machine consumer always parses valid JSON, even on an empty shelf.
+    assert json.loads(result.stdout) == []
+
+
+def test_format_appears_in_help():
+    result = CliRunner().invoke(leek, ["list", "--help"])
+    assert "--format" in result.output
+
+
+def test_invalid_format_is_rejected(shelve):
+    shelve("Salt Meridian")
+    result = CliRunner().invoke(leek, ["list", "--format", "xml"])
+    assert result.exit_code != 0
