@@ -55,6 +55,15 @@ is its human-readable projection.
 The two-layer model — Pydantic v2 for the pipeline, SQLAlchemy 2.0 for persistence, mapped at the boundary — is
 [ADR 0001](../decisions/0001-pydantic-pipeline-sqlalchemy-persistence.md).
 
+**Output renders from a typed projection.** Every way leek prints an entity — the human table, the piped record,
+structured `--format` output — renders from the entity's real, typed fields, never from pre-stringified values. A
+field's display string is one rendering among several, never its only public form: the table and JSON read the same
+typed values, and which fields are renderable is defined once, not per formatter. This keeps a genuine null distinct
+from a display fallback ([ADR 0010](../decisions/0010-the-library-tree-is-for-humans.md)) — absence is data, the
+stand-in is a rendering choice. beets had only `formatted()`, a `Mapping[str, str]`, so even its JSON export rode the
+human-readable string flattener and could never emit honest typed data; there was no typed seam to plug structured
+output into ([ADR 0014](../decisions/0014-render-output-from-a-typed-projection.md)).
+
 **One extension protocol.** A plugin is a source of claims behind one narrow protocol; MusicBrainz, Discogs, a path
 parser, and a scrobble fetcher all fit it. Lifecycle hooks are presumed wrong until a real extension cannot be a source
 — beets' plugin API grew by accretion, hook by hook, and the result constrained every core refactor for a decade.
