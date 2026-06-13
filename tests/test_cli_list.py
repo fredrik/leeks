@@ -70,6 +70,24 @@ def test_piped_albums_are_one_line_each(shelve):
     assert tracks == "1 track"
 
 
+def test_forced_colour_does_not_wrap_a_pipe(shelve, monkeypatch):
+    # FORCE_COLOR makes Rich call a pipe a terminal; the pipe is still a
+    # pipe (ADR 0011), so the long album stays one plain record, not a
+    # wrapped, ANSI-styled table.
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    shelve(
+        "An Album Title That Goes On Considerably Longer Than Anyone Would "
+        "Reasonably Expect (Deluxe)",
+        artist="The Extraordinarily Long-Winded Orchestral Collective of "
+        "Greater Scandinavia",
+        year=2021,
+    )
+    result = CliRunner().invoke(leek, ["list"])
+    lines = result.stdout.splitlines()
+    assert len(lines) == 1
+    assert "\x1b[" not in result.stdout  # no ANSI escapes leaked into the pipe
+
+
 def test_list_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "list" in result.output

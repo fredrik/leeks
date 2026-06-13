@@ -1,6 +1,7 @@
 """The leek command-line interface."""
 
 import importlib.metadata
+import sys
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -159,14 +160,16 @@ def list_command(terms: tuple[str, ...]) -> None:
         # Notes go to stderr: stdout stays a clean list of albums.
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
         return
-    console = Console()
-    # The table is for eyes only: it wraps long rows at the console
-    # width, and a record folded across lines breaks `leek list | grep`.
-    # Pipes get one tab-separated record per album (ADR 0011).
-    if not console.is_terminal:
+    # The table is for eyes only: it wraps long rows at the console width,
+    # and a record folded across lines breaks `leek list | grep`. Pipes
+    # get one tab-separated record per album (ADR 0011). The test is the
+    # real stream's isatty, not Console.is_terminal — the latter reports
+    # True under FORCE_COLOR even into a pipe, which would wrap.
+    if not sys.stdout.isatty():
         for album in albums:
             click.echo("\t".join(_shelf_fields(album)))
         return
+    console = Console()
     shelf = Table(box=None, show_header=False, pad_edge=False)
     shelf.add_column(style=theme.TEXT)
     shelf.add_column(style=theme.SUBTEXT0, justify="right")
