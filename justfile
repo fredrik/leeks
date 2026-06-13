@@ -16,6 +16,11 @@ fix:
     uv run --quiet ty check --quiet
     uv run --quiet pytest --quiet
 
+# Rebase a feature branch onto main, in its own worktree.
+# Without an argument, fzf picks the branch.
+rebase *args:
+    ./scripts/rebase {{args}}
+
 # Land a feature branch: semi-linear merge marker, then clean up the branch.
 # Without an argument, fzf picks the branch. --ff and --squash change the mode.
 land *args:

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Rebase a feature branch onto main, in its own worktree.
+#
+# land requires the branch to already sit on top of main; this is the tool
+# that gets it there. The rebase runs in the branch's own worktree, not the
+# main checkout: git refuses to move a branch checked out elsewhere anyway,
+# and if the rebase stops on a conflict you want to be standing in that
+# worktree to resolve it. So we locate the worktree and drive git into it.
+#
+# Usage: just rebase [branch]
+#
+# Without an argument, fzf picks the branch. (The branch-pick and worktree
+# lookup are duplicated from scripts/land rather than shared: it is two small
+# idioms, and bash factoring costs more than it saves here.)
+set -euo pipefail
+
+branch="${1:-}"
+if [ -z "$branch" ] && command -v fzf >/dev/null 2>&1; then
+    branch="$(git branch --format='%(refname:short)' | grep -vx main |
+        fzf --prompt='rebase> ' --height=40% \
+            --preview 'git log --oneline --reverse main..{}' || true)"
+fi
+if [ -z "$branch" ]; then
+    echo "usage: just rebase [branch]" >&2
+    exit 1
+fi
+if [ "$branch" = "main" ]; then
+    echo "rebase: refusing to rebase main" >&2
+    exit 1
+fi
+git rev-parse --verify --quiet "refs/heads/$branch" >/dev/null || {
+    echo "rebase: no such branch: $branch" >&2
+    exit 1
+}
+
+if git merge-base --is-ancestor main "$branch"; then
+    echo "rebase: $branch is already on top of main — nothing to do"
+    exit 0
+fi
+
+worktree="$(git worktree list --porcelain | grep -B2 "^branch refs/heads/$branch$" |
+    sed -n 's/^worktree //p' || true)"
+if [ -z "$worktree" ]; then
+    echo "rebase: $branch has no worktree — every branch should live in one" >&2
+    exit 1
+fi
+
+echo "Rebasing $branch onto main, in $worktree"
+echo
+git -C "$worktree" rebase main
