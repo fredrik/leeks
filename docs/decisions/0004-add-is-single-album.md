@@ -1,4 +1,4 @@
-# 0004 — `leek add` ingests exactly one album
+# 0004 — Make `leek add` ingest exactly one album
 
 Status: Decided (2026-06-11)
 

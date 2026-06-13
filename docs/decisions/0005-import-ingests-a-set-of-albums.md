@@ -1,4 +1,4 @@
-# 0005 — `leek import` ingests a set of albums
+# 0005 — Make `leek import` ingest a set of albums
 
 Status: Decided (2026-06-11)
 

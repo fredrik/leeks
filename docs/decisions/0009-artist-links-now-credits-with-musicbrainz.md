@@ -1,4 +1,4 @@
-# 0009 — Artist links now; the credits table arrives with MusicBrainz
+# 0009 — Link artists now; defer the credits table to MusicBrainz
 
 Status: Decided (2026-06-12)
 

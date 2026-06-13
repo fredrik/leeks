@@ -1,4 +1,4 @@
-# 0001 — Pydantic models for the pipeline, SQLAlchemy models for persistence
+# 0001 — Model the pipeline in Pydantic, persist in SQLAlchemy
 
 Status: Decided (2026-06-10)
 

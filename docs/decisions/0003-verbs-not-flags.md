@@ -1,4 +1,4 @@
-# 0003 — Verbs, not flags: the leek top-level interface
+# 0003 — Speak in verbs, not flags, at the top level
 
 Status: Decided (2026-06-11)
 

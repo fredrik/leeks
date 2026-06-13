@@ -1,4 +1,4 @@
-# 0002 — The CLI theme is Catppuccin Mocha
+# 0002 — Theme the CLI with Catppuccin Mocha
 
 Status: Decided (2026-06-11)
 

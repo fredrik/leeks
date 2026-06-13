@@ -1,4 +1,4 @@
-# 0012 — The query language is beets-inspired
+# 0012 — Base the query language on beets
 
 Status: Decided (2026-06-13)
 

@@ -1,4 +1,4 @@
-# 0013 — `leek list` selects its entity by option; albums by default
+# 0013 — Select `leek list`'s entity by option; default to albums
 
 Status: Decided (2026-06-13)
 

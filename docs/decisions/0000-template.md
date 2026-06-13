@@ -1,4 +1,4 @@
-# NNNN — Short imperative title
+# NNNN — Short title
 
 Status: Proposed (YYYY-MM-DD)
 
@@ -15,6 +15,9 @@ edited after the record lands. The lifecycle:
 - Superseded by [NNNN](NNNN-title.md) (YYYY-MM-DD) — replaced by a newer record.
 
 The date is the date of the most recent status change.
+
+Title mood: imperative by default ("Store claims, not measurements"). Use declarative ("The library tree is for
+humans") only when the record fixes the shape or purpose of a thing and an imperative would distort it.
 -->
 
 ## Decision
