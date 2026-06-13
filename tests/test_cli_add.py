@@ -14,7 +14,7 @@ def test_add_prints_the_card(corpus, materialise):
     assert "Cartography for Sleepwalkers" in result.output
     assert "Tin Hatch Choir" in result.output
     assert "5 tracks" in result.output
-    assert "15 claims" in result.output
+    assert "15 values read from the file tags" in result.output
 
 
 def test_add_refuses_a_tree_with_the_import_hint(corpus, materialise):

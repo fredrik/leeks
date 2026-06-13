@@ -46,7 +46,7 @@ def detect(directory: Path) -> list[FileTags]:
     if nested:
         raise NotOneAlbum(
             f"audio in subdirectories ({', '.join(nested)}): "
-            "this looks like more than one album — try `leek import`"
+            "this looks like more than one album, try `leek import`"
         )
     audio = []
     for path in sorted(directory.iterdir()):
@@ -58,6 +58,6 @@ def detect(directory: Path) -> list[FileTags]:
     if len(albums) > 1:
         named = "; ".join(albums)
         raise NotOneAlbum(
-            f"this looks like {len(albums)} albums ({named}) — try `leek import`"
+            f"this looks like {len(albums)} albums ({named}), try `leek import`"
         )
     return audio

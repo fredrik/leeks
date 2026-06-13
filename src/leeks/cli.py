@@ -32,7 +32,7 @@ def _print_about() -> None:
     console.print(
         Text.assemble(
             theme.rainbow("leek"),
-            (" — a music library organiser", f"bold {theme.TEXT}"),
+            (", a music library organiser", f"bold {theme.TEXT}"),
         )
     )
     console.print(Text("the spiritual successor to beets", style=theme.SUBTEXT0))
@@ -106,7 +106,7 @@ def _print_added(added: "Added") -> None:
         Text.assemble(("  → ", theme.SUBTEXT0), (str(added.destination), theme.BLUE))
     )
     console.print(
-        Text(f"  {added.claims} claims recorded from file tags", style=theme.SUBTEXT0)
+        Text(f"  {added.claims} values read from the file tags", style=theme.SUBTEXT0)
     )
 
 
@@ -340,7 +340,7 @@ def list_command(
     fields_spec: str | None,
     output_format: str | None,
 ) -> None:
-    """List the library, in shelf order — albums by default.
+    """List the library, in shelf order, albums by default.
 
     Terms narrow the listing: an album stays only when it matches all of
     them. --albums, --tracks, and --artists choose what to list, one at a
@@ -362,7 +362,7 @@ def list_command(
             table=_track_table,
             note="no tracks match that"
             if terms
-            else "the library is empty — leek add brings music in",
+            else "the library is empty, leek add brings music in",
             fields=fields,
             output_format=output_format,
         )
@@ -382,7 +382,7 @@ def list_command(
             table=_shelf_table,
             note="nothing on the shelf matches that"
             if terms
-            else "the library is empty — leek add brings music in",
+            else "the library is empty, leek add brings music in",
             fields=fields,
             output_format=output_format,
         )
