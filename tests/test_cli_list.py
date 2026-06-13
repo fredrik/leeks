@@ -91,3 +91,94 @@ def test_forced_colour_does_not_wrap_a_pipe(shelve, monkeypatch):
 def test_list_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "list" in result.output
+
+
+def test_list_tracks_walks_the_tree(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["list", "--tracks"])
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    # One tab record per track: number, title, artist, album.
+    assert len(lines) == 5
+    number, title, artist, album = lines[0].split("\t")
+    assert number == "1"
+    assert title == "Inventory of Small Storms"
+    assert artist == "Tin Hatch Choir"
+    assert album == "Cartography for Sleepwalkers"
+
+
+def test_list_tracks_narrows_with_terms(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["list", "--tracks", "storms"])
+    assert result.exit_code == 0
+    assert "Inventory of Small Storms" in result.stdout
+    assert "Glass Harbour" not in result.stdout
+
+
+def test_piped_tracks_are_one_line_each(corpus, materialise):
+    # The long-named album would wrap a width-80 table; piped, each track
+    # stays one greppable record (the slice-2 lesson, now for tracks).
+    library.add(materialise(by_title(corpus, "I Wrote My Heart in Beacon Code")))
+    result = CliRunner().invoke(leek, ["list", "--tracks"])
+    lines = result.stdout.splitlines()
+    assert len(lines) == 3
+    assert all(len(line.split("\t")) == 4 for line in lines)
+
+
+def test_forced_colour_does_not_wrap_piped_tracks(corpus, materialise, monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    library.add(materialise(by_title(corpus, "I Wrote My Heart in Beacon Code")))
+    result = CliRunner().invoke(leek, ["list", "--tracks"])
+    lines = result.stdout.splitlines()
+    assert len(lines) == 3
+    assert "\x1b[" not in result.stdout  # no ANSI escapes leaked into the pipe
+
+
+def test_list_artists_lists_names(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--artists"])
+    assert result.exit_code == 0
+    names = result.stdout.splitlines()
+    # Salt Meridian brings its album artist and the raw feat. credit row.
+    assert "Tin Hatch Choir" in names
+    assert "Tin Hatch Choir feat. Vesna Holloway" in names
+
+
+def test_subject_options_are_mutually_exclusive(corpus, materialise):
+    # Shared flag_value: the last subject on the line wins (an explicit
+    # error is the deferred mutual-exclusion question, ADR 0013).
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "--tracks", "--artists"])
+    assert result.exit_code == 0
+    # Artists won: bare name lines, not tab-separated track records.
+    assert "Tin Hatch Choir" in result.stdout
+    assert "\t" not in result.stdout
+
+
+def test_empty_library_notes_for_tracks_and_artists():
+    tracks = CliRunner().invoke(leek, ["list", "--tracks"])
+    assert tracks.exit_code == 0
+    assert tracks.stdout == ""
+    assert "leek add" in tracks.stderr
+    artists = CliRunner().invoke(leek, ["list", "--artists"])
+    assert artists.exit_code == 0
+    assert artists.stdout == ""
+    assert "no artists yet" in artists.stderr
+
+
+def test_no_match_notes_for_tracks_and_artists(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    tracks = CliRunner().invoke(leek, ["list", "--tracks", "zzz"])
+    assert tracks.exit_code == 0
+    assert tracks.stdout == ""
+    assert "no tracks match that" in tracks.stderr
+    artists = CliRunner().invoke(leek, ["list", "--artists", "zzz"])
+    assert artists.exit_code == 0
+    assert artists.stdout == ""
+    assert "no artists match that" in artists.stderr
+
+
+def test_list_options_appear_in_help():
+    result = CliRunner().invoke(leek, ["list", "--help"])
+    assert "--tracks" in result.output
+    assert "--artists" in result.output
