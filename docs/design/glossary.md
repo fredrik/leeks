@@ -68,13 +68,17 @@ Coining a new term of art means adding it here in the same change.
 
 ## The process
 
+- **Effort** — a bounded push toward one goal: the unit of work we plan, branch, and land. One effort lives on one
+  branch and one branch carries one effort — the terms are two views of the same thing, so "which branch?" and "which
+  effort?" are the same question. Agnostic to kind: a feature, a fix, a doc pass, and a fixture addition are all
+  efforts.
 - **Slice** — one roadmap increment: small enough to implement and verify in one session, always ending runnable.
 - **Punt** — the recorded interim answer to an open question, so implementation never stalls. A punt is a placeholder
   with a name, not a decision.
 - **Decision record** (ADR) — a numbered file in `docs/decisions/`, started from the template, recording a decision with
   its context and alternatives. Its `Status:` line is the one mutable line of the record and moves through Proposed →
   Decided | Declined → Deprecated | Superseded.
-- **Landing** — Fredrik integrating a branch into main with a single `--no-ff` merge marker (`just land`).
+- **Landing** — Fredrik integrating an effort into main with a single `--no-ff` merge marker (`just land`).
 - **The corpus** — the fixture metadata in `tests/fixtures/corpus.toml`: fictional artists and albums with documented,
   load-bearing quirks.
 - **Materialise** — write a corpus album to disk as genuinely tagged audio files (`just materialise`, or the
