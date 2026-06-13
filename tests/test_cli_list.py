@@ -358,7 +358,7 @@ def test_plain_table_renders_selected_columns():
     from leeks.cli import _plain_table
     from leeks.library import Listed
 
-    rows = [Listed(album_id=1, artist=None, year=None, title="Mystery Tape")]
+    rows = [Listed(id=1, artist=None, year=None, title="Mystery Tape")]
     table = _plain_table(rows, ("artist", "year", "title"))
     assert len(table.columns) == 3
     console = Console(width=80)

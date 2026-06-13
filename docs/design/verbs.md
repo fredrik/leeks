@@ -30,7 +30,7 @@ words. `add`, not `ingest`; `review`, not `reconcile-pending-changes`.
 | `help`      | shipped (slice 0) | The reference                                                                                     |
 | `add`       | shipped (slice 1) | Ingest exactly one album, non-interactively                                                       |
 | `list`      | shipped (slice 2) | The library, made visible — albums by default, entity by option; output via `--fields`/`--format` |
-| `show`      | next (slice 2)    | One entity in depth — merged values and measurements; `--sources` reaches the claim layer beneath |
+| `show`      | shipped (slice 2) | One entity in depth — merged values and measurements; `--sources` reaches the claim layer beneath |
 | `fields`    | shipped (slice 2) | The field namespace a subject exposes — what `--fields` can name                                  |
 | `match`     | planned (slice 4) | MusicBrainz matching, separate and retryable                                                      |
 | `review`    | planned (slice 5) | The pending-changes queue: accept, reject, auto-accept rules                                      |

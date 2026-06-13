@@ -129,7 +129,7 @@ def test_tracks_walk_the_library_tree(corpus, materialise):
     for track in tracks:
         if not walked or walked[-1] != track.album_id:
             walked.append(track.album_id)
-    assert walked == [album.album_id for album in library.list_albums()]
+    assert walked == [album.id for album in library.list_albums()]
 
 
 def test_tracks_within_an_album_order_by_number_then_assembly(corpus, materialise):
