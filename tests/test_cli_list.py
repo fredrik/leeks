@@ -52,7 +52,8 @@ def test_fallbacks_render_but_are_visibly_not_data(shelve):
 
 
 def test_piped_albums_are_one_line_each(shelve):
-    # Long enough that the table rendering would wrap it at width 80.
+    # A pipe gets bare plain lines, never the wrapping table (ADR 0019), so a
+    # very long album stays exactly one line, its fields space-joined.
     shelve(
         "An Album Title That Goes On Considerably Longer Than Anyone Would "
         "Reasonably Expect (Deluxe)",
@@ -63,15 +64,14 @@ def test_piped_albums_are_one_line_each(shelve):
     result = CliRunner().invoke(leek, ["list"])
     lines = result.stdout.splitlines()
     assert len(lines) == 1
-    artist, year, title = lines[0].split("\t")
-    assert artist.startswith("The Extraordinarily")
-    assert year == "2021"
-    assert title.endswith("(Deluxe)")
+    assert lines[0].startswith("The Extraordinarily")
+    assert "2021" in lines[0]
+    assert lines[0].endswith("(Deluxe)")
 
 
 def test_forced_colour_does_not_wrap_a_pipe(shelve, monkeypatch):
     # FORCE_COLOR makes Rich call a pipe a terminal; the pipe is still a
-    # pipe (ADR 0011), so the long album stays one plain record, not a
+    # pipe (ADR 0019), so the long album stays one bare line, not a
     # wrapped, ANSI-styled table.
     monkeypatch.setenv("FORCE_COLOR", "1")
     shelve(
@@ -97,13 +97,11 @@ def test_list_tracks_walks_the_tree(corpus, materialise):
     result = CliRunner().invoke(leek, ["list", "--tracks"])
     assert result.exit_code == 0
     lines = result.stdout.splitlines()
-    # One tab record per track: artist, album, number, title.
+    # One bare line per track: artist, album, number, title, space-joined.
     assert len(lines) == 5
-    artist, album, number, title = lines[0].split("\t")
-    assert artist == "Tin Hatch Choir"
-    assert album == "Cartography for Sleepwalkers"
-    assert number == "1"
-    assert title == "Inventory of Small Storms"
+    assert lines[0] == (
+        "Tin Hatch Choir Cartography for Sleepwalkers 1 Inventory of Small Storms"
+    )
 
 
 def test_list_tracks_narrows_with_terms(corpus, materialise):
@@ -115,13 +113,13 @@ def test_list_tracks_narrows_with_terms(corpus, materialise):
 
 
 def test_piped_tracks_are_one_line_each(corpus, materialise):
-    # The long-named album would wrap a width-80 table; piped, each track
-    # stays one greppable record (the slice-2 lesson, now for tracks).
+    # The long-named album would wrap a width-80 table; piped, each track is
+    # one bare line instead (ADR 0019), the album name intact on every one.
     library.add(materialise(by_title(corpus, "I Wrote My Heart in Beacon Code")))
     result = CliRunner().invoke(leek, ["list", "--tracks"])
     lines = result.stdout.splitlines()
     assert len(lines) == 3
-    assert all(len(line.split("\t")) == 4 for line in lines)
+    assert all("I Wrote My Heart in Beacon Code" in line for line in lines)
 
 
 def test_forced_colour_does_not_wrap_piped_tracks(corpus, materialise, monkeypatch):
@@ -147,11 +145,12 @@ def test_subject_options_are_mutually_exclusive(corpus, materialise):
     # Shared flag_value: the last subject on the line wins (an explicit
     # error is the deferred mutual-exclusion question, ADR 0013).
     library.add(materialise(by_title(corpus, "Salt Meridian")))
-    result = CliRunner().invoke(leek, ["list", "--tracks", "--artists"])
-    assert result.exit_code == 0
-    # Artists won: bare name lines, not tab-separated track records.
-    assert "Tin Hatch Choir" in result.stdout
-    assert "\t" not in result.stdout
+    won = CliRunner().invoke(leek, ["list", "--tracks", "--artists"])
+    artists = CliRunner().invoke(leek, ["list", "--artists"])
+    assert won.exit_code == 0
+    # Artists won, not tracks: identical to a plain --artists listing.
+    assert won.stdout == artists.stdout
+    assert "Tin Hatch Choir" in won.stdout
 
 
 def test_empty_library_notes_for_tracks_and_artists():
@@ -212,19 +211,19 @@ def test_fields_selects_a_subset_in_order(corpus, materialise):
     # the curated columns (no year, no extra).
     result = CliRunner().invoke(leek, ["list", "--fields", "title,artist"])
     assert result.exit_code == 0
-    lines = result.stdout.splitlines()
-    title, artist = lines[0].split("\t")
-    assert title == "Cartography for Sleepwalkers"
-    assert artist == "Tin Hatch Choir"
+    # Column order is field order — title leads — and no year column.
+    assert (
+        result.stdout.splitlines()[0] == "Cartography for Sleepwalkers Tin Hatch Choir"
+    )
 
 
 def test_fields_trims_whitespace(corpus, materialise):
     library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
     result = CliRunner().invoke(leek, ["list", "--fields", " title , artist "])
     assert result.exit_code == 0
-    title, artist = result.stdout.splitlines()[0].split("\t")
-    assert title == "Cartography for Sleepwalkers"
-    assert artist == "Tin Hatch Choir"
+    assert (
+        result.stdout.splitlines()[0] == "Cartography for Sleepwalkers Tin Hatch Choir"
+    )
 
 
 def test_fields_composes_with_tracks(corpus, materialise):
@@ -232,10 +231,9 @@ def test_fields_composes_with_tracks(corpus, materialise):
     result = CliRunner().invoke(leek, ["list", "--tracks", "--fields", "number,title"])
     assert result.exit_code == 0
     lines = result.stdout.splitlines()
-    assert all(len(line.split("\t")) == 2 for line in lines)
-    number, title = lines[0].split("\t")
-    assert number == "1"
-    assert title == "Inventory of Small Storms"
+    # Only number,title, in that order: every line opens with its number.
+    assert lines[0] == "1 Inventory of Small Storms"
+    assert all(line.split(" ", 1)[0].isdigit() for line in lines)
 
 
 def test_unknown_field_is_a_loud_error(corpus, materialise):
@@ -263,9 +261,8 @@ def test_fields_duplicates_are_kept(corpus, materialise):
     library.add(materialise(by_title(corpus, "Salt Meridian")))
     result = CliRunner().invoke(leek, ["list", "--fields", "title,title"])
     assert result.exit_code == 0
-    cells = result.stdout.splitlines()[0].split("\t")
-    assert len(cells) == 2
-    assert cells[0] == cells[1]
+    # A duplicate field is kept, not deduped: the title prints twice.
+    assert result.stdout.splitlines()[0] == "Salt Meridian Salt Meridian"
 
 
 def test_format_json_is_valid_and_typed(shelve):

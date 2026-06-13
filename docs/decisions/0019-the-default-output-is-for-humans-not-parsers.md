@@ -83,3 +83,21 @@ Exactly what `human`-plain strips versus keeps (colour and width-alignment, cert
 survives), and the machine dialects already deferred by [ADR 0017](0017-choose-output-shape-with-format.md) — the JSON
 envelope, the CSV/TSV header and quoting rules — are designed when the slice arrives. This record fixes only the
 division: the default is for humans and is not a contract; machines ask by name.
+
+## Resolved on contact (2026-06-13)
+
+The `leek list` / `leek fields` slice named the default and settled what a pipe gets in place of the tab-separated
+record:
+
+- **`human` is a named value, and the default.** `--format human` joins the closed enum beside `json`; naming the
+  readable shape explicitly is now possible, though it changes nothing a bare `leek list` did not already do.
+- **A pipe gets bare plain lines.** `leek list` keeps the isatty split — the themed, aligned table to a terminal — but a
+  pipe now gets each row's fields rendered with `_display_cell`, space-joined, absent values dropped: no colour, no
+  alignment, one line per record, never wrapped. The tab-separated record is gone. Tabs said "parse me by column"; the
+  default output is for reading.
+- **`leek fields` was already plain.** Its bare-names listing has no presentation to strip, so it is unchanged — the
+  same names in a pipe and a terminal ([ADR 0018](0018-discover-fields-with-leek-fields.md)), now understood as human
+  output, not a scripting contract.
+- **Still not a contract; `csv`/`tsv` still deferred.** The bare lines are for reading, not parsing — a machine consumer
+  asks for `--format json`. The `csv`/`tsv` dialects and the JSON envelope remain deferred
+  ([ADR 0017](0017-choose-output-shape-with-format.md)).

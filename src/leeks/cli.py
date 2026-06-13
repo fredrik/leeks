@@ -275,18 +275,20 @@ def _emit(
     """Print a listing, or its absence: the shape every `list` subject shares.
 
     An empty result is a note on stderr (exit 0) so stdout stays a clean
-    list. The themed table is for eyes only — it wraps long rows at the
-    console width, and a record folded across lines breaks `leek list |
-    grep`; a pipe gets one tab-separated record per row instead (ADR 0011).
-    The test is the stream's own isatty, not Console.is_terminal, which
-    reports True under FORCE_COLOR even into a pipe, which would wrap.
+    list. The default `human` shape adapts to the stream, not the format: a
+    terminal gets the themed, aligned table; a pipe gets the same fields as
+    bare plain lines — no colour, no alignment (ADR 0019). The test is the
+    stream's own isatty, not Console.is_terminal, which reports True under
+    FORCE_COLOR even into a pipe.
 
-    The pipe record is the subject's fields (`_FIELDS`) read off each row and
-    rendered with `_display_cell` — the typed projection, stringified at the
-    edge (ADR 0014).
+    The piped line is the subject's fields (`_FIELDS`) read off each row,
+    rendered with `_display_cell` and space-joined, absent values dropped —
+    the typed projection stringified at the edge (ADR 0014). It is for
+    reading, never a parse target; a machine consumer asks for `--format
+    json` (ADR 0019).
 
     `--fields` (when given) selects which fields print and in what order,
-    replacing the curated default columns (ADR 0016): the pipe records and
+    replacing the curated default columns (ADR 0016): the piped lines and
     the TTY's plain, unstyled table both read exactly those.
 
     `--format` names the output shape and is orthogonal to `--fields` (ADR
@@ -304,9 +306,8 @@ def _emit(
         return
     if not sys.stdout.isatty():
         for row in rows:
-            click.echo(
-                "\t".join(_display_cell(name, getattr(row, name)) for name in columns)
-            )
+            cells = (_display_cell(name, getattr(row, name)) for name in columns)
+            click.echo(" ".join(cell for cell in cells if cell))
         return
     Console().print(_plain_table(rows, fields) if fields is not None else table(rows))
 
