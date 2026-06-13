@@ -1,5 +1,7 @@
 """The list query: the merged view in shelf order, narrowed by terms."""
 
+from typing import Any
+
 from leeks import library
 from test_harness import by_title
 
@@ -9,20 +11,38 @@ def add_corpus(corpus, materialise):
         library.add(materialise(album))
 
 
+def shelf_key(album: "library.Listed") -> tuple[Any, ...]:
+    """The shelf-order sort the SQL ORDER BY must reproduce (ADR 0011).
+
+    SQLite's NOCASE folds only ASCII A–Z, so a faithful reference folds
+    the same and lets non-ASCII fall through to its code point — Åsa
+    after the ASCII artists, as on the real shelf.
+    """
+
+    def fold(text: str) -> str:
+        return "".join(c.lower() if "A" <= c <= "Z" else c for c in text)
+
+    return (
+        fold(album.artist or "Unknown Artist"),
+        album.year is None,
+        album.year or 0,
+        fold(album.title),
+    )
+
+
 def test_an_empty_library_lists_nothing():
     assert library.list_albums() == []
 
 
-def test_the_shelf_is_in_shelf_order(corpus, materialise):
+def test_the_whole_corpus_comes_back_in_shelf_order(corpus, materialise):
     add_corpus(corpus, materialise)
     listed = library.list_albums()
-    # Artists alphabetically, and Tin Hatch Choir's albums chronologically.
-    assert [(album.artist, album.title) for album in listed] == [
-        ("Polder Arcade", "Tape Hiss Archipelago"),
-        ("Tin Hatch Choir", "Cartography for Sleepwalkers"),
-        ("Tin Hatch Choir", "Salt Meridian"),
-        ("Vesna Holloway", "Paper Lung Atlas"),
-    ]
+    # Every corpus album is on the shelf...
+    assert {(album.artist, album.title) for album in listed} == {
+        (album["artist"], album["title"]) for album in corpus["albums"]
+    }
+    # ...and the query's order is the shelf order, whatever the corpus grows.
+    assert listed == sorted(listed, key=shelf_key)
 
 
 def test_listed_albums_carry_year_and_track_count(corpus, materialise):
