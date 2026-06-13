@@ -67,6 +67,14 @@ def test_fields_format_json_defaults_to_albums():
     assert json.loads(result.stdout) == ["artist", "year", "title"]
 
 
+def test_fields_format_human_matches_the_default():
+    # --format human is the explicit name for the bare-names default (ADR 0019).
+    explicit = CliRunner().invoke(leek, ["fields", "--format", "human"])
+    default = CliRunner().invoke(leek, ["fields"])
+    assert explicit.exit_code == 0
+    assert explicit.stdout == default.stdout
+
+
 def test_fields_invalid_format_is_rejected():
     result = CliRunner().invoke(leek, ["fields", "--format", "xml"])
     assert result.exit_code != 0

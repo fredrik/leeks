@@ -312,6 +312,16 @@ def test_format_json_empty_library_is_an_empty_array():
     assert json.loads(result.stdout) == []
 
 
+def test_format_human_matches_the_default(shelve):
+    # --format human names the default explicitly (ADR 0019): the readable
+    # shape is what you get with no --format, so naming it changes nothing.
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    explicit = CliRunner().invoke(leek, ["list", "--format", "human"])
+    default = CliRunner().invoke(leek, ["list"])
+    assert explicit.exit_code == 0
+    assert explicit.stdout == default.stdout
+
+
 def test_format_appears_in_help():
     result = CliRunner().invoke(leek, ["list", "--help"])
     assert "--format" in result.output

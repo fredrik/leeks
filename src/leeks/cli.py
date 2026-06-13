@@ -289,10 +289,11 @@ def _emit(
     replacing the curated default columns (ADR 0016): the pipe records and
     the TTY's plain, unstyled table both read exactly those.
 
-    `--format` (when given) names an explicit structured shape and is
-    orthogonal to `--fields` (ADR 0017): it keys on the same resolved column
-    list, bypasses the isatty split, and replaces the human formatters. Only
-    `json` exists today; `csv` is deferred until the slice arrives.
+    `--format` names the output shape and is orthogonal to `--fields` (ADR
+    0017). `human` is the default and takes the isatty split above; a
+    structured shape like `json` bypasses the split and replaces the human
+    formatters, keying on the same resolved column list. Only `human` and
+    `json` exist today; `csv` and `tsv` are deferred until the slice arrives.
     """
     columns = fields if fields is not None else _FIELDS[subject]
     if output_format == "json":
@@ -330,9 +331,9 @@ def _emit(
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice(["json"]),
-    default=None,
-    help="Print machine-readable output instead, e.g. json.",
+    type=click.Choice(["human", "json"]),
+    default="human",
+    help="Output shape: human (default) or json.",
 )
 def list_command(
     terms: tuple[str, ...],
@@ -345,8 +346,8 @@ def list_command(
     Terms narrow the listing: an album stays only when it matches all of
     them. --albums, --tracks, and --artists choose what to list, one at a
     time; with none, you get albums. --fields picks which fields to print,
-    in place of the usual columns. --format prints machine-readable output
-    instead, e.g. --format json.
+    in place of the usual columns. --format names the output shape: human
+    (the default) or json.
     """
     # --fields and --format are orthogonal: --format keys on the same
     # fields --fields resolves, so the two compose (ADRs 0016, 0017).
@@ -401,9 +402,9 @@ def list_command(
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice(["json"]),
-    default=None,
-    help="Print machine-readable output instead, e.g. json.",
+    type=click.Choice(["human", "json"]),
+    default="human",
+    help="Output shape: human (default) or json.",
 )
 def fields_command(subject: str, output_format: str | None) -> None:
     """Show the fields a subject exposes, the names `leek list --fields` can use.
