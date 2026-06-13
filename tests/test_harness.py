@@ -1,5 +1,6 @@
 """The fixture harness itself: corpus albums materialise as real tagged files."""
 
+import unicodedata
 from typing import Any
 
 from mediafile import MediaFile
@@ -47,3 +48,21 @@ def test_feat_credit_is_verbatim(corpus, materialise):
     tags = MediaFile(str(path))
     assert tags.artist == "Tin Hatch Choir feat. Vesna Holloway"
     assert tags.albumartist == "Tin Hatch Choir"
+
+
+def test_decomposed_title_survives_verbatim(corpus, materialise):
+    # The normalisation trap: track 1 is authored in NFD (decomposed) form
+    # while the album title is precomposed NFC. Both must round-trip exactly,
+    # neither silently normalised toward the other.
+    album = by_title(corpus, "Vägen åter till sjön")
+    assert unicodedata.is_normalized("NFC", album["title"])
+    track = next(t for t in album["tracks"] if t["track"] == 1)
+    decomposed = track["title"]
+    assert unicodedata.is_normalized("NFD", decomposed)
+    assert not unicodedata.is_normalized("NFC", decomposed)
+
+    directory = materialise(album)
+    path = next(p for p in directory.iterdir() if p.name.startswith("01"))
+    tags = MediaFile(str(path))
+    assert tags.title == decomposed
+    assert unicodedata.is_normalized("NFD", tags.title)

@@ -11,7 +11,7 @@ directly) writes the corpus as real tagged albums for playing with `leek` by han
 ## The corpus
 
 Everything in `corpus.toml` is fictional — invented artists, albums, and titles chosen so tests never accidentally match
-real MusicBrainz data. Four artists, five albums, twenty tracks:
+real MusicBrainz data. Five artists, six albums, twenty-five tracks:
 
 | Artist                                                                       | Album                                  | Tracks | Tagging                |
 | ---------------------------------------------------------------------------- | -------------------------------------- | ------ | ---------------------- |
@@ -20,6 +20,7 @@ real MusicBrainz data. Four artists, five albums, twenty tracks:
 | Vesna Holloway                                                               | Paper Lung Atlas (2017)                | 4      | clean                  |
 | Polder Arcade                                                                | Tape Hiss Archipelago                  | 4      | deliberately sparse    |
 | The Extraordinarily Long-Winded Orchestral Collective of Greater Scandinavia | I Wrote My Heart in Beacon Code (2021) | 3      | clean, very long names |
+| Åsa Vinterhök                                                                | Vägen åter till sjön (2020)            | 5      | clean, non-ASCII       |
 
 ## Schema
 
@@ -38,15 +39,35 @@ The corpus exists to exercise the import pipeline's edge cases. Each quirk below
 1. **Raw multi-artist credit** — *Lowland Frequencies* on *Salt Meridian* carries
    `artist = "Tin Hatch Choir feat. Vesna Holloway"`: a single raw string, exactly as a real file tag would hold it. It
    exercises artist-credit splitting. Do not normalise it into structured fields.
+
 2. **Sparse album** — *Tape Hiss Archipelago* has no `year`, no `genre`, no `tracktotal`, and two tracks (*Sodium Light
    Study*, *Pylon Hum*) without `track` numbers. It represents the badly-tagged music a library organiser most needs to
    handle. Do not complete the missing fields.
+
 3. **Duplicate track title** — *Glass Harbour* appears on both *Cartography for Sleepwalkers* and *Paper Lung Atlas*.
    Same title string, different songs. It exercises title-based matching that must not assume titles are unique. Do not
    rename either one.
+
 4. **Extravagantly long strings** — *I Wrote My Heart in Beacon Code* by *The Extraordinarily Long-Winded Orchestral
    Collective of Greater Scandinavia* has a deliberately enormous artist name, a long album title, and long track titles
    — one (*I Couldn't Compete with the Fog*) carrying a curly apostrophe. It exercises text wrapping, truncation, and
    Unicode width in any human-facing output. Do not shorten the names or straighten the apostrophe.
+
+5. **Non-ASCII and typography** — *Vägen åter till sjön* by *Åsa Vinterhök* is the encoding specimen, the bug class a
+   library organiser hits the moment it writes non-ASCII to a path or reads it back. The artist and album carry å/ä/ö
+   onto the directory paths; each track then isolates one rendering hazard:
+
+   1. *Förlorad i snön* is authored in **NFD (decomposed)** form — every å/ä/ö is a base letter plus a combining
+      diacritic, not a precomposed codepoint (the album title, by contrast, is precomposed NFC). This is the macOS/APFS
+      normalisation trap: a path written in one form reads back in another. The decomposed bytes live in `corpus.toml`
+      and survive into the file tag, so the specimen is deterministic regardless of filesystem. Do not precompose it.
+   2. *Vi kallade det ”hem”* uses **Swedish typographic quotes** — U+201D (right double quotation mark) on *both* sides,
+      the genuine Swedish convention, not a matched `“…”` pair. It catches renderers that assume curly quotes nest.
+   3. *Mörker — ljus* uses an **em dash** (U+2014) as separator, not a hyphen-minus.
+   4. *Och så vidare…* ends with an **ellipsis** as one glyph (U+2026), not three full stops.
+   5. *ÅTERSKEN ÖVER ÄNGEN* is all **uppercase diacritics** (Å/Ä/Ö), for casefolding and width.
+
+   Punctuation is deliberately limited to those three marks — enough to expose the hazards without becoming a Unicode
+   torture test. Do not normalise, straighten, de-accent, or ASCII-fold any of it.
 
 The remaining albums are fully and cleanly tagged on purpose: they are the happy-path control group.

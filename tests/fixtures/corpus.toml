@@ -140,3 +140,46 @@ track = 2
 [[albums.tracks]]
 title = "I Couldn’t Compete with the Fog"
 track = 3
+
+# ---------------------------------------------------------------------------
+# Åsa Vinterhök — Vägen åter till sjön (2020)
+# Fully and cleanly tagged. The non-ASCII / typographic specimen: a Swedish
+# artist and album carry å/ä/ö onto the directory paths, and each track
+# isolates one rendering hazard. See tests/fixtures/README.md — every quirk
+# here is load-bearing. Do not "normalise", straighten, or de-accent anything.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "Vägen åter till sjön"
+artist = "Åsa Vinterhök"
+year = 2020
+genre = "Nordic Folk"
+tracktotal = 5
+
+# Deliberate: authored in NFD (decomposed) form — every å/ä/ö is a base
+# letter plus a combining diacritic, not a precomposed codepoint. The macOS
+# filesystem normalisation trap: a path written in one form reads back in
+# another. Do not precompose this title.
+[[albums.tracks]]
+title = "Förlorad i snön"
+track = 1
+
+# Deliberate: Swedish typographic quotes — U+201D (right double quotation
+# mark) on BOTH sides, the genuine Swedish convention, not a matched “…” pair.
+[[albums.tracks]]
+title = "Vi kallade det ”hem”"
+track = 2
+
+# Deliberate: em dash (U+2014) as separator, not a hyphen-minus.
+[[albums.tracks]]
+title = "Mörker — ljus"
+track = 3
+
+# Deliberate: ellipsis as one glyph (U+2026), not three full stops.
+[[albums.tracks]]
+title = "Och så vidare…"
+track = 4
+
+# Deliberate: uppercase diacritics Å/Ä/Ö, for casefolding and width.
+[[albums.tracks]]
+title = "ÅTERSKEN ÖVER ÄNGEN"
+track = 5
