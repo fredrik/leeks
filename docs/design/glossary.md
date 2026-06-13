@@ -50,8 +50,11 @@ Coining a new term of art means adding it here in the same change.
 - **Copy time** — the step after write time when bytes enter the library: destination paths are derived from the (just
   merged) columns, files are copied, and each copy is measured. "Paths derive from metadata at copy time" means exactly
   this moment — and never again without `leek organize`.
-- **Term** — one word of a `leek list` query. Terms AND together; a term matches an album when it appears,
-  case-insensitively, in the album's artist, title, or year — data only, never display fallbacks (ADR 0011).
+- **Term** — one word of a `leek list` query. Terms AND together and match case-insensitively against data only, never
+  display fallbacks (ADR 0011). What a term matches is per subject (ADR 0013): an album by its artist, title, or year; a
+  track by its title; an artist by its name. A term reaches no further than the listed entity — a `--tracks` term does
+  not reach up to the album artist — until the query grammar designs that cross-entity reach deliberately (ADRs 0012,
+  0013).
 
 ## On disk
 
@@ -63,6 +66,10 @@ Coining a new term of art means adding it here in the same change.
 - **Shelf** — informally, an artist's directory under the root: where their albums sit.
 - **Shelf order** — artist (case-folded, Unknown Artist under U), then year with missing years last, then title: the
   order of the library tree and of `leek list` (ADR 0011). The listing and the tree never disagree.
+- **Tree walk** — the order of `leek list --tracks`: shelf order by album, then within an album track number (unnumbered
+  last), then assembly order — track number then filename, the tie-break `Track.id` already carries (assembly). A track
+  listing thus reads as a depth-first walk of the library tree, extending shelf order's "the listing and the tree never
+  disagree" to tracks (ADR 0013).
 - **Stale path** — a library path that no longer matches what the scheme would derive from current merged metadata.
   Stale is honest; `files.path` stays true, and `leek organize` reconciles on request.
 

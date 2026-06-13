@@ -49,5 +49,8 @@ words. `add`, not `ingest`; `review`, not `reconcile-pending-changes`.
   into the files". Not needed until the verb is.
 - Whether `organize` is the right word, or whether the reconciler and a future "show me what's stale" preview are one
   verb or two.
-- How `list` queries grow: field-qualified terms, comparisons, negation, per-track search. The punt is bare substring
-  terms, ANDed (ADR 0011), until a real query demands more.
+- How `list` queries grow: field-qualified terms, comparisons, negation, and a term's cross-entity reach (should a
+  `--tracks` term match the album artist?). The punt is bare substring terms, ANDed, matching the listed entity's own
+  text — album by artist/title/year, track by title, artist by name (ADRs 0011, 0013) — until a real query demands more.
+  Mutual-exclusion errors between the subject options (`--tracks`/`--artists`/`--genres`) are part of that deferred
+  grammar; today the last option wins. `--genres` is the one subject ADR 0013 named but this slice did not build.
