@@ -16,7 +16,6 @@ def test_list_prints_the_shelf_in_order(corpus, materialise):
     assert "Tin Hatch Choir" in lines[0]
     assert "2019" in lines[0]
     assert "Cartography for Sleepwalkers" in lines[0]
-    assert "5 tracks" in lines[0]
     assert "Paper Lung Atlas" in lines[1]
 
 
@@ -48,7 +47,6 @@ def test_fallbacks_render_but_are_visibly_not_data(shelve):
     shelve("Mystery Tape")
     result = CliRunner().invoke(leek, ["list"])
     assert "Unknown Artist" in result.stdout
-    assert "1 track" in result.stdout
 
 
 def test_piped_albums_are_one_line_each(shelve):
@@ -63,11 +61,10 @@ def test_piped_albums_are_one_line_each(shelve):
     result = CliRunner().invoke(leek, ["list"])
     lines = result.stdout.splitlines()
     assert len(lines) == 1
-    artist, year, title, tracks = lines[0].split("\t")
+    artist, year, title = lines[0].split("\t")
     assert artist.startswith("The Extraordinarily")
     assert year == "2021"
     assert title.endswith("(Deluxe)")
-    assert tracks == "1 track"
 
 
 def test_forced_colour_does_not_wrap_a_pipe(shelve, monkeypatch):
@@ -98,13 +95,13 @@ def test_list_tracks_walks_the_tree(corpus, materialise):
     result = CliRunner().invoke(leek, ["list", "--tracks"])
     assert result.exit_code == 0
     lines = result.stdout.splitlines()
-    # One tab record per track: number, title, artist, album.
+    # One tab record per track: artist, album, number, title.
     assert len(lines) == 5
-    number, title, artist, album = lines[0].split("\t")
-    assert number == "1"
-    assert title == "Inventory of Small Storms"
+    artist, album, number, title = lines[0].split("\t")
     assert artist == "Tin Hatch Choir"
     assert album == "Cartography for Sleepwalkers"
+    assert number == "1"
+    assert title == "Inventory of Small Storms"
 
 
 def test_list_tracks_narrows_with_terms(corpus, materialise):

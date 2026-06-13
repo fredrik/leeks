@@ -130,23 +130,22 @@ def add(directory: Path) -> None:
         raise click.ClickException(str(refusal)) from refusal
 
 
-def _shelf_fields(album: "Listed") -> tuple[str, str, str, str]:
-    """Artist, year, title, track count: the four columns of the shelf."""
+def _shelf_fields(album: "Listed") -> tuple[str, str, str]:
+    """Artist, year, title: the three columns of the shelf."""
     return (
         album.artist or "Unknown Artist",
         str(album.year) if album.year else "",
         album.title,
-        f"{album.tracks} track" if album.tracks == 1 else f"{album.tracks} tracks",
     )
 
 
 def _track_fields(track: "ListedTrack") -> tuple[str, str, str, str]:
-    """Number, title, artist, album: the four columns of a track row."""
+    """Artist, album, number, title: the four columns of a track row."""
     return (
-        str(track.number) if track.number is not None else "",
-        track.title,
         track.artist or "Unknown Artist",
         track.album,
+        str(track.number) if track.number is not None else "",
+        track.title,
     )
 
 
@@ -164,25 +163,24 @@ def _artist_cell(artist: str | None) -> Text:
 
 def _shelf_table(albums: "Sequence[Listed]") -> Table:
     shelf = Table(box=None, show_header=False, pad_edge=False)
-    shelf.add_column(style=theme.TEXT)
-    shelf.add_column(style=theme.SUBTEXT0, justify="right")
-    shelf.add_column(style=f"bold {theme.TEXT}")
-    shelf.add_column(style=theme.SUBTEXT0)
+    shelf.add_column(style=theme.TEXT)  # artist
+    shelf.add_column(style=theme.SUBTEXT0, justify="right")  # year
+    shelf.add_column(style=f"bold {theme.TEXT}")  # title
     for album in albums:
-        _, year, title, tracks = _shelf_fields(album)
-        shelf.add_row(_artist_cell(album.artist), year, title, tracks)
+        _, year, title = _shelf_fields(album)
+        shelf.add_row(_artist_cell(album.artist), year, title)
     return shelf
 
 
 def _track_table(tracks: "Sequence[ListedTrack]") -> Table:
     table = Table(box=None, show_header=False, pad_edge=False)
-    table.add_column(style=theme.SUBTEXT0, justify="right")  # number
-    table.add_column(style=f"bold {theme.TEXT}")  # title
     table.add_column(style=theme.TEXT)  # artist
     table.add_column(style=theme.SUBTEXT0)  # album
+    table.add_column(style=theme.SUBTEXT0, justify="right")  # number
+    table.add_column(style=f"bold {theme.TEXT}")  # title
     for track in tracks:
-        number, title, _, album = _track_fields(track)
-        table.add_row(number, title, _artist_cell(track.artist), album)
+        _, album, number, title = _track_fields(track)
+        table.add_row(_artist_cell(track.artist), album, number, title)
     return table
 
 

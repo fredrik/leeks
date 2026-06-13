@@ -65,6 +65,10 @@ per-track artists, not just feat. strings) will surface in both. `ListedTrack.ar
 artist joins, the album artist aliased apart from the track artist. The same pass added `--albums` as an explicit alias
 for the default, since reaching for it and getting "No such option" is a small papercut.
 
+A last presentation pass before landing settled the columns so the three subjects read in one consistent left-to-right
+order, artist first: `--albums` is artist · year · album (the track count dropped — `Listed.tracks` and its `count()`
+went with it), `--tracks` is artist · album · number · title, and `--artists` is just the name.
+
 ## Open ends
 
 `--genres` is the third subject ADR 0013 named and this slice did not build; the option mechanism is ready for it, but

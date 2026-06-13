@@ -45,11 +45,10 @@ def test_the_whole_corpus_comes_back_in_shelf_order(corpus, materialise):
     assert listed == sorted(listed, key=shelf_key)
 
 
-def test_listed_albums_carry_year_and_track_count(corpus, materialise):
+def test_listed_albums_carry_their_year(corpus, materialise):
     library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
     [cartography] = library.list_albums()
     assert cartography.year == 2019
-    assert cartography.tracks == 5
 
 
 def test_missing_years_shelve_last_within_an_artist(shelve):

@@ -68,7 +68,6 @@ class Listed:
     artist: str | None
     year: int | None
     title: str
-    tracks: int
 
 
 @dataclass(frozen=True)
@@ -102,12 +101,13 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
     display fallbacks.
     """
     statement = (
-        select(Album, Artist.name, func.count(Track.id))
+        select(Album, Artist.name)
         .outerjoin(Artist, Album.artist_id == Artist.id)
         # INNER join leans on an invariant: every album has at least one
-        # track, because add creates them together. A future verb that
-        # deletes tracks must revisit this, or empty albums silently
-        # vanish from the shelf.
+        # track, because add creates them together. It filters the shelf to
+        # albums that have tracks — a future verb that deletes tracks must
+        # revisit this, or empty albums silently vanish — and the group_by
+        # collapses the per-track rows the join would otherwise produce.
         .join(Track, Track.album_id == Album.id)
         .group_by(Album.id)
         .order_by(
@@ -132,9 +132,8 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
                 artist=artist,
                 year=album.year,
                 title=album.title,
-                tracks=tracks,
             )
-            for album, artist, tracks in session.execute(statement)
+            for album, artist in session.execute(statement)
         ]
 
 
