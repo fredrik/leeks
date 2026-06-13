@@ -135,7 +135,7 @@ def add(directory: Path) -> None:
 # are attributes of the matching Listed* dataclass (library.py), so a value
 # is a getattr away — the single typed seam every formatter reads (ADR 0014).
 # Today's namespace is the display columns; it grows (bitrate, path, …) when a
-# slice surfaces those facts, and `leek fields` will report it (ADR 0018).
+# slice surfaces those facts, and `leek fields` reports it (ADR 0018).
 _FIELDS: dict[str, tuple[str, ...]] = {
     "albums": ("artist", "year", "title"),
     "tracks": ("artist", "album", "number", "title"),
@@ -386,6 +386,44 @@ def list_command(
             fields=fields,
             output_format=output_format,
         )
+
+
+@leek.command(name="fields")
+@click.option(
+    "--albums",
+    "subject",
+    flag_value="albums",
+    default=True,
+    help="Fields of albums (default).",
+)
+@click.option("--tracks", "subject", flag_value="tracks", help="Fields of tracks.")
+@click.option("--artists", "subject", flag_value="artists", help="Fields of artists.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["json"]),
+    default=None,
+    help="Print machine-readable output instead, e.g. json.",
+)
+def fields_command(subject: str, output_format: str | None) -> None:
+    """Show the fields a subject exposes, the names `leek list --fields` can use.
+
+    --albums, --tracks, and --artists choose the subject, one at a time;
+    with none, the subject is albums. The names print one per line, or as
+    a JSON array with --format json. They are exactly the names --fields
+    accepts for that subject.
+    """
+    # The discovery side of --fields (ADR 0018), reading the same _FIELDS
+    # map --fields validates against (ADR 0016) so the two can never
+    # disagree. --format json mirrors list's structured shape (ADR 0017).
+    # No library import: the namespace is static, so `leek fields` never
+    # touches the database and pays no pipeline startup cost.
+    names = _FIELDS[subject]
+    if output_format == "json":
+        click.echo(json.dumps(list(names)))
+        return
+    for name in names:
+        click.echo(name)
 
 
 @leek.command(name="help")

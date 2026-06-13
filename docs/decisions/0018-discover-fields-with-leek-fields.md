@@ -21,6 +21,23 @@ an entity (that is `info`); it reports the vocabulary.
 each field carries a one-line description or a type, and how the subjects' namespaces overlap are designed when the
 slice arrives.
 
+## Resolved on contact (2026-06-13)
+
+The slice landed `--fields`'s discovery counterpart with the minimum that makes selection usable:
+
+- **Subjects.** `--albums` (default), `--tracks`, `--artists`, sharing `list`'s subject axis exactly — the same
+  shared-`flag_value` "last option wins" semantics ([ADR 0013](0013-list-selects-its-entity-by-option.md)), and
+  `--genres` unbuilt for the same reason `list` left it out.
+- **Output shape.** Bare names, one per line, identical in a pipe and a TTY (the names are short reference data — no
+  wrapping to fear, so no isatty split, and the output is stable for scripting). `--format json` is honoured for
+  symmetry with `list` ([ADR 0017](0017-choose-output-shape-with-format.md)): it emits a JSON array of names.
+- **Names only, no types or descriptions.** A field's type *is* in the typed projection
+  ([ADR 0014](0014-render-output-from-a-typed-projection.md)) and surfacing it was tempting, but the first need is "what
+  can I name?", which a name list answers. Types and descriptions stay deferred until a use asks for them — adding
+  columns is easy later, un-adding a shipped contract is not.
+- **One namespace.** `leek fields` reads the same `_FIELDS` map `--fields` validates against, so the pairing is
+  structural, not a documented promise that could drift.
+
 ## Context
 
 `--fields` ([ADR 0016](0016-select-fields-with-fields.md)) is only usable if you can find out what fields a subject has,

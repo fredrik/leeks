@@ -33,7 +33,7 @@ words. `add`, not `ingest`; `review`, not `reconcile-pending-changes`.
 | `add`       | shipped (slice 1) | Ingest exactly one album, non-interactively (ADR 0004)                                                                         |
 | `list`      | shipped (slice 2) | The library, made visible — albums by default, entity by option; output via `--fields`/`--format` (ADRs 0011, 0013, 0015–0017) |
 | `info`      | next (slice 2)    | One entity in depth — including its source layer, not just the merge                                                           |
-| `fields`    | later             | The field namespace a subject exposes — what `--fields` can name (ADR 0018)                                                    |
+| `fields`    | shipped (slice 2) | The field namespace a subject exposes — what `--fields` can name (ADR 0018)                                                    |
 | `match`     | planned (slice 4) | MusicBrainz matching, separate and retryable                                                                                   |
 | `review`    | planned (slice 5) | The pending-changes queue: accept, reject, auto-accept rules                                                                   |
 | `import`    | later             | Ingest a set of albums; owns boundary detection (ADR 0005)                                                                     |
