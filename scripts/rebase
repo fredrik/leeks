@@ -47,4 +47,9 @@ fi
 
 echo "Rebasing $branch onto main, in $worktree"
 echo
-git -C "$worktree" rebase main
+# --no-gpg-sign keeps the branch's commits unsigned even when whoever rebases
+# has commit.gpgsign on globally. Since git 2.26 the default (merge) rebase
+# backend honours commit.gpgsign, so without this a rebase would stamp a
+# signature onto every replayed commit. Only the mainline merge marker that
+# land writes is meant to be signed.
+git -C "$worktree" rebase --no-gpg-sign main
