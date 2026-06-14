@@ -44,8 +44,8 @@ code and design change, and archive what is outdated or implemented.
 
 Never edit the main checkout or commit to main directly. All work happens on a feature branch in its own worktree —
 always, even for small changes. Claude creates the worktree with its worktree tooling (EnterWorktree), commits on the
-branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. When Claude is done,
-declare 'effort at branch `fix-bug` is ready to land'.
+branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. When Claude is
+done, declare 'effort at branch `fix-bug` is ready to land'.
 
 EnterWorktree prepends `worktree-` to the branch it creates; immediately rename it to a bare kebab-case name describing
 the change (`leek-list`, `add-journal-entry`, `fix-integration-tests`) — the worktree's location already says it's a
