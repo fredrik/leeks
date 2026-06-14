@@ -119,7 +119,9 @@ Markdown is formatted with mdformat (120-column wrap, configured in `.mdformat.t
 - teebs is precedent, not blueprint: learn from its decisions and lessons, never copy its schemas, models, or plans —
   they were speculative design written before contact. Design from local information (see project-principles)
 - Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
-- Decision records live in `docs/decisions/` (template: `0000-template.md`); decisions that outlive a slice get one
+- Decision records live in `docs/decisions/` (template: `0000-template.md`); decisions that outlive a slice get one.
+  Scaffold one with `just adr-new <slug>`, which claims the next number from a shared bureau so parallel branches don't
+  collide (ADR 0030)
 - CLI: click. Entry point is `leek` (singular). The verbs are the user interface, curated in `docs/design/verbs.md` —
   adding a verb is a design decision
 - Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only.

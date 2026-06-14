@@ -3,8 +3,8 @@
 Status: Proposed (YYYY-MM-DD)
 
 <!--
-Copy this file to the next number in sequence. Every record carries a Status line; it is the one line that may be
-edited after the record lands. The lifecycle:
+`just adr-new <slug>` copies this file and claims the next number (see ADR 0030). Every record carries a Status line; it
+is the one line that may be edited after the record lands. The lifecycle:
 
     Proposed → Decided | Declined → Deprecated | Superseded
 

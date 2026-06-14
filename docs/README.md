@@ -14,7 +14,9 @@ Each kind of document has its own directory and lifecycle:
 ## Conventions
 
 - Decision records start from the template, [`decisions/0000-template.md`](decisions/0000-template.md), and are numbered
-  sequentially: `0001-use-postgres.md`. State the decision, the context, and the alternatives considered.
+  sequentially: `0001-use-postgres.md`. Run `just adr-new <slug>` to scaffold one — it claims the next number from a
+  shared bureau so parallel branches don't collide ([ADR 0030](decisions/0030-claim-record-numbers-from-a-bureau.md)).
+  State the decision, the context, and the alternatives considered.
 - Every record carries a mandatory `Status:` line with the lifecycle Proposed → Decided | Declined → Deprecated |
   Superseded. The status line is the one part of a record that may be edited after it lands; the body is append-only. To
   reverse a decision, write a new record and mark the old one `Superseded by [NNNN](...)`. There is no separate index —

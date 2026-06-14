@@ -16,6 +16,10 @@ fix:
     uv run --quiet ty check --quiet
     uv run --quiet pytest --quiet
 
+# Claim the next decision-record number from the shared bureau and scaffold it.
+adr-new slug:
+    ./scripts/adr-new {{slug}}
+
 # Rebase a feature branch onto main, in its own worktree.
 # Without an argument, fzf picks the branch.
 rebase *args:
