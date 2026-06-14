@@ -87,6 +87,37 @@ def test_forced_colour_does_not_wrap_a_pipe(shelve, monkeypatch):
     assert "\x1b[" not in result.stdout  # no ANSI escapes leaked into the pipe
 
 
+def test_list_can_select_id_for_every_subject(corpus, materialise):
+    # id is selectable for tracks and artists, not only albums (ADR 0020):
+    # the handle a user needs for show id:N, no longer a confusing error.
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    for subject in ("--albums", "--tracks", "--artists"):
+        result = CliRunner().invoke(leek, ["list", subject, "--fields", "id"])
+        assert result.exit_code == 0, result.output
+        # Every line is the bare integer id of one row.
+        assert all(line.isdigit() for line in result.stdout.splitlines())
+
+
+def test_list_summarises_the_count_on_stderr(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list"])
+    assert result.exit_code == 0
+    assert "listing 2 albums" in result.stderr
+    assert "listing" not in result.stdout  # the count rides stderr, not the list
+    one = CliRunner().invoke(leek, ["list", "salt"])
+    assert "listing 1 album" in one.stderr  # singular for a count of one
+
+
+def test_singular_subject_synonyms_are_accepted(corpus, materialise):
+    # --track is --tracks; the plural and singular are the same listing.
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    plural = CliRunner().invoke(leek, ["list", "--tracks"])
+    singular = CliRunner().invoke(leek, ["list", "--track"])
+    assert singular.exit_code == 0
+    assert singular.stdout == plural.stdout
+
+
 def test_list_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "list" in result.output
@@ -317,6 +348,50 @@ def test_format_human_matches_the_default(shelve):
     default = CliRunner().invoke(leek, ["list"])
     assert explicit.exit_code == 0
     assert explicit.stdout == default.stdout
+
+
+def test_format_csv_has_a_header_and_rows(shelve):
+    import csv as csvmod
+    import io
+
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "csv"])
+    assert result.exit_code == 0
+    rows = list(csvmod.reader(io.StringIO(result.stdout)))
+    assert rows[0] == ["artist", "year", "title"]  # the spreadsheet header
+    assert rows[1] == ["Tin Hatch Choir", "2021", "Salt Meridian"]
+
+
+def test_format_csv_quotes_embedded_commas(shelve):
+    import csv as csvmod
+    import io
+
+    shelve("Comma, Comma, Down", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "csv"])
+    # The csv module quotes the comma'd title; it parses back intact, unsplit.
+    title = list(csvmod.reader(io.StringIO(result.stdout)))[1][2]
+    assert title == "Comma, Comma, Down"
+
+
+def test_format_csv_leaves_absence_blank_not_the_bucket(shelve):
+    import csv as csvmod
+    import io
+
+    shelve("Mystery Tape")  # no artist, no year
+    result = CliRunner().invoke(leek, ["list", "--format", "csv"])
+    row = list(csvmod.reader(io.StringIO(result.stdout)))[1]
+    assert row[0] == ""  # absent artist is blank, not "Unknown Artist" (ADR 0019)
+    assert "Unknown Artist" not in result.stdout
+
+
+def test_format_tsv_omits_the_header_for_cut(shelve):
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "tsv"])
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    # No header: the first line is data, so cut -f reads pure values.
+    assert lines[0].split("\t") == ["Tin Hatch Choir", "2021", "Salt Meridian"]
+    assert "artist\t" not in result.stdout
 
 
 def test_format_appears_in_help():

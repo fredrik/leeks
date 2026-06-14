@@ -101,3 +101,19 @@ record:
 - **Still not a contract; `csv`/`tsv` still deferred.** The bare lines are for reading, not parsing — a machine consumer
   asks for `--format json`. The `csv`/`tsv` dialects and the JSON envelope remain deferred
   ([ADR 0017](0017-choose-output-shape-with-format.md)).
+
+## CSV and TSV resolved (2026-06-14)
+
+The `leek show` follow-on slice added the delimited dialects to `leek list`, settling the header and quoting rules this
+record deferred:
+
+- **CSV carries a header row; TSV does not.** The split follows each format's consumer. CSV serves spreadsheets (Excel,
+  pandas), which expect a header to name the columns; TSV serves the shell pipeline, where a header is a nuisance, so
+  `cut -f2` reads pure data from line one.
+- **Quoting is the `csv` module's job.** Values go through `csv.writer` with the right delimiter, so a comma or quote in
+  a title is quoted and parses back intact — the comma-heavy/tab-clean reality this record's alternatives section noted.
+- **Absence is blank, not the human bucket.** A delimited cell renders the typed value stringified, and a genuine
+  absence is the empty string, never the `Unknown Artist` fallback (that is a human reading choice,
+  [ADR 0014](0014-render-output-from-a-typed-projection.md)).
+- **`show` stays human/json.** The delimited shapes are tabular; `show`'s view is nested (album → tracks → files), so it
+  offers only `human` and `json`. The flat verbs (`list`) own `csv`/`tsv`.

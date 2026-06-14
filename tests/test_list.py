@@ -168,7 +168,7 @@ def test_a_duplicate_track_title_lists_both(corpus, materialise):
         "Cartography for Sleepwalkers",
         "Paper Lung Atlas",
     }
-    assert harbours[0].track_id != harbours[1].track_id
+    assert harbours[0].id != harbours[1].id
 
 
 def test_track_terms_match_the_title(corpus, materialise):
