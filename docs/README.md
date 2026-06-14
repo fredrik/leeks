@@ -20,7 +20,9 @@ Each kind of document has its own directory and lifecycle:
 - Every record carries a mandatory `Status:` line with the lifecycle Proposed → Decided | Declined → Deprecated |
   Superseded. The status line is the one part of a record that may be edited after it lands; the body is append-only. To
   reverse a decision wholesale, write a new record and mark the old one `Superseded by [NNNN](...)`. There is no
-  separate index — the filenames are the index, and `grep '^Status' docs/decisions/*.md` surveys the statuses.
+  generated status index to keep in sync — the filenames are the index, and `grep '^Status' docs/decisions/*.md` surveys
+  the statuses. For navigation, [`decisions/README.md`](decisions/README.md) groups the records by subject; it is a
+  hand-kept reading guide, so when a record lands, add it to its group there.
 - When a new record revises only a *clause* of an older one that otherwise still stands, it is not a supersession — but
   the older record must still say so. The amending record adds an
   `Amended by [NNNN](NNNN-title.md) (YYYY-MM-DD): <what changed>` line — its own line, one blank line below the old
