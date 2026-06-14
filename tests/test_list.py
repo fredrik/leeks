@@ -14,13 +14,11 @@ def add_corpus(corpus, materialise):
 def shelf_key(album: "library.Listed") -> tuple[Any, ...]:
     """The shelf-order sort the SQL ORDER BY must reproduce (ADR 0011).
 
-    SQLite's NOCASE folds only ASCII A–Z, so a faithful reference folds
-    the same and lets non-ASCII fall through to its code point — Åsa
-    after the ASCII artists, as on the real shelf.
+    The library folds case and accents at the connection (ADR 0021), so a
+    faithful reference folds the same way — Åsa shelves among the A's, not
+    past Z where SQLite's ASCII-only NOCASE once stranded it.
     """
-
-    def fold(text: str) -> str:
-        return "".join(c.lower() if "A" <= c <= "Z" else c for c in text)
+    from leeks.db import fold
 
     return (
         fold(album.artist or "Unknown Artist"),
@@ -66,6 +64,23 @@ def test_shelf_order_folds_artist_case(shelve):
     shelve("Second", artist="alpha gamma")
     shelve("First", artist="Alpha Beta")
     assert [album.title for album in library.list_albums()] == ["First", "Second"]
+
+
+def test_shelf_order_folds_accents(shelve):
+    # Åsa belongs among the A's, not stranded past Z (ADR 0021).
+    shelve("Ringer", artist="Bo")
+    shelve("Snön", artist="Åsa")
+    shelve("Alm", artist="Alm")
+    assert [album.title for album in library.list_albums()] == ["Alm", "Snön", "Ringer"]
+
+
+def test_terms_fold_case_and_accents(corpus, materialise):
+    # The åäö specimen: case-insensitive, accent-insensitive, NFD-insensitive.
+    library.add(materialise(by_title(corpus, "Vägen åter till sjön")))
+    for term in ["åsa", "Åsa", "asa", "vinterhök", "vinterhok"]:
+        assert [album.artist for album in library.list_albums([term])] == [
+            "Åsa Vinterhök"
+        ], term
 
 
 def test_terms_reach_artist_title_and_year(corpus, materialise):
@@ -195,8 +210,10 @@ def test_a_track_term_is_text_not_a_pattern(corpus, materialise):
 
 
 def name_key(name: str) -> str:
-    """Case-folded like SQLite NOCASE: ASCII A–Z only, others by code point."""
-    return "".join(c.lower() if "A" <= c <= "Z" else c for c in name)
+    """Folded like the library's NOCASE collation: case and accents (ADR 0021)."""
+    from leeks.db import fold
+
+    return fold(name)
 
 
 def test_an_empty_library_lists_no_artists():
@@ -217,7 +234,7 @@ def test_artists_are_every_row_in_name_order(corpus, materialise):
     }
     assert set(names) == expected
     assert "Tin Hatch Choir feat. Vesna Holloway" in expected  # the wart, present
-    # Case-folded name order, whatever the corpus grows (Åsa after ASCII).
+    # Folded name order, whatever the corpus grows (Åsa among the A's now).
     assert names == sorted(names, key=name_key)
 
 
