@@ -7,7 +7,7 @@ import time
 from collections.abc import Callable, Sequence
 from dataclasses import asdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import rich_click as click
 from rich.console import Console
@@ -26,8 +26,10 @@ if TYPE_CHECKING:
         ListedArtist,
         ListedTrack,
         ShownAlbum,
+        ShownArtist,
         ShownFile,
         ShownTrack,
+        ShownTrackCard,
     )
 
 theme.apply()
@@ -496,8 +498,8 @@ def _print_album(console: Console, album: "ShownAlbum", *, with_sources: bool) -
         console.print(Padding(_claims_table(track.claims), (0, 0, 0, 4), expand=False))
 
 
-def _show_json(albums: "Sequence[ShownAlbum]") -> None:
-    """The depth projection as JSON: an array of nested album objects.
+def _show_json(rows: "Sequence[Any]") -> None:
+    """The depth projection as JSON: an array of nested objects, one per match.
 
     Always an array, one element per match, and always full — claims included
     regardless of --sources (ADRs 0017/0019/0020). asdict walks the frozen
@@ -505,25 +507,101 @@ def _show_json(albums: "Sequence[ShownAlbum]") -> None:
     absence stays null. Like list's JSON it ignores the isatty split: a script
     asked for this shape, so it lands on a terminal or a pipe alike.
     """
-    click.echo(json.dumps([asdict(album) for album in albums], indent=2))
+    click.echo(json.dumps([asdict(row) for row in rows], indent=2))
 
 
-def _showing_summary(count: int, *, filtered: bool) -> str:
+def _print_track_card(
+    console: Console, card: "ShownTrackCard", *, with_sources: bool
+) -> None:
+    """One track in depth: its title, the album hosting it, and its measurements."""
+    heading = _artist_cell(card.artist)
+    heading.append(" — ", style=theme.SUBTEXT0)
+    heading.append(card.title, style=f"bold {theme.TEXT}")
+    console.print(heading)
+    context = card.album
+    if card.year is not None:
+        context += f" ({card.year})"
+    if card.number is not None:
+        context += f" · track {card.number}"
+    console.print(Text("  " + context, style=theme.SUBTEXT0))
+    file = card.files[0] if card.files else None  # one file per track today
+    if file is not None:
+        measured = " · ".join(
+            part
+            for part in (_duration(file.duration), file.format, _bitrate(file.bitrate))
+            if part
+        )
+        if measured:
+            console.print(Text("  " + measured, style=theme.SUBTEXT0))
+    if with_sources and card.claims:
+        console.print(Padding(_claims_table(card.claims), (0, 0, 0, 2), expand=False))
+
+
+def _print_artist(console: Console, artist: "ShownArtist") -> None:
+    """One artist in depth: the albums under its name, then its guest spots.
+
+    No --sources here: an artist carries no claims of its own (ADR 0007/0008).
+    """
+    console.print(Text(artist.name, style=f"bold {theme.TEXT}"))
+    if artist.albums:
+        console.print(Text("  albums", style=theme.SUBTEXT1))
+        shelf = Table(box=None, show_header=False, pad_edge=False)
+        shelf.add_column(style=theme.SUBTEXT0, justify="right")  # year
+        shelf.add_column(style=theme.TEXT)  # title
+        for ref in artist.albums:
+            shelf.add_row(_display_cell("year", ref.year), ref.title)
+        console.print(Padding(shelf, (0, 0, 0, 4), expand=False))
+    if artist.guests:
+        console.print(Text("  guest on", style=theme.SUBTEXT1))
+        guests = Table(box=None, show_header=False, pad_edge=False)
+        guests.add_column(style=theme.SUBTEXT0)  # album
+        guests.add_column(style=theme.SUBTEXT0, justify="right")  # number
+        guests.add_column(style=theme.TEXT)  # title
+        for guest in artist.guests:
+            guests.add_row(
+                guest.album, _display_cell("number", guest.number), guest.title
+            )
+        console.print(Padding(guests, (0, 0, 0, 4), expand=False))
+
+
+def _showing_summary(count: int, *, noun: str, filtered: bool) -> str:
     """The human-mode header: what `show` is about to print, and how much of it.
 
     A count on stderr so a glance warns when a bare `show` is about to pour
     out the whole shelf, without touching the readable stdout (ADR 0019).
     """
+    plural = noun if count == 1 else noun + "s"
     if filtered:
-        albums = "album" if count == 1 else "albums"
-        return f"showing {count} matching {albums}"
+        return f"showing {count} matching {plural}"
     if count == 1:
-        return "showing 1 album"
-    return f"showing all {count} albums"
+        return f"showing 1 {noun}"
+    return f"showing all {count} {plural}"
+
+
+# The empty and no-match notes per subject, mirroring list's (ADR 0011/0013).
+_EMPTY_NOTES = {
+    "albums": "the library is empty, leek add brings music in",
+    "tracks": "the library is empty, leek add brings music in",
+    "artists": "no artists yet",
+}
+_NO_MATCH_NOTES = {
+    "albums": "nothing on the shelf matches that",
+    "tracks": "no tracks match that",
+    "artists": "no artists match that",
+}
 
 
 @leek.command(name="show")
 @click.argument("terms", nargs=-1)
+@click.option(
+    "--albums",
+    "subject",
+    flag_value="albums",
+    default=True,
+    help="Show albums (default).",
+)
+@click.option("--tracks", "subject", flag_value="tracks", help="Show tracks.")
+@click.option("--artists", "subject", flag_value="artists", help="Show artists.")
 @click.option(
     "--sources",
     "with_sources",
@@ -538,38 +616,58 @@ def _showing_summary(count: int, *, filtered: bool) -> str:
     help="Print machine-readable output instead, e.g. json.",
 )
 def show_command(
-    terms: tuple[str, ...], with_sources: bool, output_format: str | None
+    terms: tuple[str, ...],
+    subject: str,
+    with_sources: bool,
+    output_format: str | None,
 ) -> None:
-    """Show an album in depth: its tracks, their files, and on request its sources.
+    """Show an album, track, or artist in depth.
 
-    Terms pick the album the way leek list does (by artist, title, or
-    year), or id:N names one exactly. A unique match is shown in full; when
-    several match, all of them are (a chooser to narrow them comes later).
-    --sources shows where each field came from, source by source. --format
-    json prints the whole projection, always as an array.
+    Terms pick what to show the way leek list does (albums by artist, title,
+    or year; tracks by title; artists by name), or id:N names one exactly.
+    --albums, --tracks, and --artists choose the subject, one at a time; with
+    none, you get albums. A unique match is shown in full; when several match,
+    all of them are. --sources unfolds the claim layer beneath each field, for
+    albums and tracks. --format json prints the whole projection, always as an
+    array.
     """
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
 
-    albums = library.show_albums(terms)
+    rows: list[Any]
+    if subject == "tracks":
+        rows = library.show_tracks(terms)
+        noun = "track"
+    elif subject == "artists":
+        rows = library.show_artists(terms)
+        noun = "artist"
+    else:
+        rows = library.show_albums(terms)
+        noun = "album"
+
     if output_format == "json":
-        _show_json(albums)
+        _show_json(rows)
         return
-    if not albums:
-        note = (
-            "nothing on the shelf matches that"
-            if terms
-            else "the library is empty, leek add brings music in"
-        )
-        Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
+    if not rows:
+        notes = _NO_MATCH_NOTES if terms else _EMPTY_NOTES
+        Console(stderr=True).print(Text(notes[subject], style=theme.SUBTEXT0))
         return
-    summary = _showing_summary(len(albums), filtered=bool(terms))
+    summary = _showing_summary(len(rows), noun=noun, filtered=bool(terms))
     Console(stderr=True).print(Text(summary, style=theme.SUBTEXT0))
     console = Console()
-    for index, album in enumerate(albums):
+    for index, row in enumerate(rows):
         if index:
-            console.print()  # a blank line between albums when several match
-        _print_album(console, album, with_sources=with_sources)
+            console.print()  # a blank line between entities when several match
+        # rows narrows to a per-subject type above; the dispatch matches it,
+        # so cast each row to the printer's own type.
+        if subject == "tracks":
+            _print_track_card(
+                console, cast("ShownTrackCard", row), with_sources=with_sources
+            )
+        elif subject == "artists":
+            _print_artist(console, cast("ShownArtist", row))
+        else:
+            _print_album(console, cast("ShownAlbum", row), with_sources=with_sources)
 
 
 @leek.command(name="fields")

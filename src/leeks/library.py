@@ -157,8 +157,61 @@ class ShownAlbum:
     claims: list[Claim]
 
 
+@dataclass(frozen=True)
+class ShownTrackCard:
+    """One track of `leek show --tracks`, in depth, with its album for context.
+
+    The standalone counterpart to the `ShownTrack` embedded in an album: it
+    carries the album title and year so a track shown on its own still says
+    where it lives.
+    """
+
+    id: int
+    number: int | None
+    title: str
+    artist: str | None
+    album: str
+    year: int | None
+    files: list[ShownFile]
+    claims: list[Claim]
+
+
+@dataclass(frozen=True)
+class ShownAlbumRef:
+    """An album on an artist's shelf: enough to name it and find it by id."""
+
+    id: int
+    title: str
+    year: int | None
+
+
+@dataclass(frozen=True)
+class ShownGuestTrack:
+    """A track an artist guests on, named under the album that hosts it."""
+
+    album: str
+    number: int | None
+    title: str
+
+
+@dataclass(frozen=True)
+class ShownArtist:
+    """One artist of `leek show --artists`, in depth: its shelf and guest spots.
+
+    An artist has no measurements and no claims of its own — the source layer
+    is album/track only (ADR 0007/0008) — so its depth is what it is credited
+    on: the albums under its name, and the tracks it guests on by an
+    overriding credit.
+    """
+
+    id: int
+    name: str
+    albums: list[ShownAlbumRef]
+    guests: list[ShownGuestTrack]
+
+
 # An `id:N` query term: the first field-qualified term (the grammar
-# deferred by ADR 0012/0013), kept minimal and album-scoped for now.
+# deferred by ADR 0012/0013), kept minimal across the show subjects.
 _ID_TERM = re.compile(r"id:(\d+)")
 
 
@@ -205,6 +258,49 @@ def _apply_album_terms(statement, terms: Sequence[str]):
                 )
             )
     return statement
+
+
+def _take_id(terms: Sequence[str]) -> tuple[list[int], list[str]]:
+    """Split terms into `id:N` selectors and the remaining substring terms.
+
+    `id:N` names one entity by primary key — the same field-qualified term
+    across the show subjects (ADR 0020); each `show_*` applies the ids to its
+    own entity, and ANDs the substring terms as usual.
+    """
+    ids: list[int] = []
+    rest: list[str] = []
+    for term in terms:
+        match = _ID_TERM.fullmatch(term)
+        if match is not None:
+            ids.append(int(match.group(1)))
+        else:
+            rest.append(term)
+    return ids, rest
+
+
+def _files_by_track(
+    session: Session, track_ids: Sequence[int]
+) -> dict[int, list[ShownFile]]:
+    """The measurements of the files realising each track (ADR 0007), by id."""
+    files: dict[int, list[ShownFile]] = defaultdict(list)
+    if not track_ids:
+        return files
+    for file in session.scalars(
+        select(File).where(File.track_id.in_(track_ids)).order_by(File.id)
+    ):
+        files[file.track_id].append(
+            ShownFile(
+                path=file.path,
+                format=file.format,
+                bitrate=file.bitrate,
+                samplerate=file.samplerate,
+                channels=file.channels,
+                duration=file.duration,
+                size=file.size,
+                sha256=file.sha256,
+            )
+        )
+    return files
 
 
 def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
@@ -353,23 +449,7 @@ def show_albums(terms: Sequence[str] = ()) -> list[ShownAlbum]:
             tracks_by_album[track.album_id].append((track, artist))
         track_ids = [track.id for rows in tracks_by_album.values() for track, _ in rows]
 
-        files_by_track: dict[int, list[ShownFile]] = defaultdict(list)
-        if track_ids:
-            for file in session.scalars(
-                select(File).where(File.track_id.in_(track_ids)).order_by(File.id)
-            ):
-                files_by_track[file.track_id].append(
-                    ShownFile(
-                        path=file.path,
-                        format=file.format,
-                        bitrate=file.bitrate,
-                        samplerate=file.samplerate,
-                        channels=file.channels,
-                        duration=file.duration,
-                        size=file.size,
-                        sha256=file.sha256,
-                    )
-                )
+        files_by_track = _files_by_track(session, track_ids)
 
         genres_by_album: dict[int, list[str]] = defaultdict(list)
         for album_id, name in session.execute(
@@ -404,6 +484,125 @@ def show_albums(terms: Sequence[str] = ()) -> list[ShownAlbum]:
                 claims=album_claims[album.id],
             )
             for album, artist in album_rows
+        ]
+
+
+def show_tracks(terms: Sequence[str] = ()) -> list[ShownTrackCard]:
+    """The matching tracks, each in depth: its album, file measurements, claims.
+
+    `leek show --tracks` (ADR 0020): tracks in tree-walk order (as
+    `list_tracks` defines it), narrowed by title or by `id:N` (the track's
+    id), each hydrated with the measurements of the files realising it
+    (ADR 0007) and every source's claims (ADR 0008). The effective artist is
+    the track's own credit when it overrides the album's, else the album's.
+    """
+    ids, text = _take_id(terms)
+    album_artist = aliased(Artist)
+    track_artist = aliased(Artist)
+    statement = (
+        select(
+            Track,
+            func.coalesce(track_artist.name, album_artist.name),
+            Album.title,
+            Album.year,
+        )
+        .join(Album, Track.album_id == Album.id)
+        .outerjoin(album_artist, Album.artist_id == album_artist.id)
+        .outerjoin(track_artist, Track.artist_id == track_artist.id)
+        .order_by(
+            func.coalesce(album_artist.name, "Unknown Artist").collate("NOCASE"),
+            Album.year.is_(None),
+            Album.year,
+            Album.title.collate("NOCASE"),
+            Album.id,
+            Track.track.is_(None),
+            Track.track,
+            Track.id,
+        )
+    )
+    if ids:
+        statement = statement.where(Track.id.in_(ids))
+    for term in text:
+        statement = statement.where(Track.title.icontains(term, autoescape=True))
+    with db.session() as session:
+        rows = session.execute(statement).all()
+        track_ids = [track.id for track, _, _, _ in rows]
+        files_by_track = _files_by_track(session, track_ids)
+        track_claims = _claims_by_entity(session, "track", track_ids)
+        return [
+            ShownTrackCard(
+                id=track.id,
+                number=track.track,
+                title=track.title,
+                artist=artist,
+                album=album_title,
+                year=album_year,
+                files=files_by_track[track.id],
+                claims=track_claims[track.id],
+            )
+            for track, artist, album_title, album_year in rows
+        ]
+
+
+def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
+    """The matching artists, each in depth: their shelf and their guest spots.
+
+    `leek show --artists` (ADR 0020): artists in case-folded name order,
+    narrowed by name or by `id:N` (the artist's id). An artist has no
+    measurements or claims of its own (the source layer is album/track only),
+    so its depth is the albums credited to it and the tracks it guests on by
+    an overriding credit.
+    """
+    ids, text = _take_id(terms)
+    statement = select(Artist).order_by(Artist.name.collate("NOCASE"))
+    if ids:
+        statement = statement.where(Artist.id.in_(ids))
+    for term in text:
+        statement = statement.where(Artist.name.icontains(term, autoescape=True))
+    with db.session() as session:
+        artists = session.scalars(statement).all()
+        artist_ids = [artist.id for artist in artists]
+        if not artist_ids:
+            return []
+
+        albums_by_artist: dict[int, list[ShownAlbumRef]] = defaultdict(list)
+        for album in session.scalars(
+            select(Album)
+            .where(Album.artist_id.in_(artist_ids))
+            .order_by(Album.year.is_(None), Album.year, Album.title.collate("NOCASE"))
+        ):
+            if album.artist_id is not None:
+                albums_by_artist[album.artist_id].append(
+                    ShownAlbumRef(id=album.id, title=album.title, year=album.year)
+                )
+
+        guests_by_artist: dict[int, list[ShownGuestTrack]] = defaultdict(list)
+        for track, album_title in session.execute(
+            select(Track, Album.title)
+            .join(Album, Track.album_id == Album.id)
+            .where(Track.artist_id.in_(artist_ids))
+            .order_by(
+                Album.title.collate("NOCASE"),
+                Track.track.is_(None),
+                Track.track,
+                Track.id,
+            )
+        ):
+            if track.artist_id is not None:
+                guests_by_artist[track.artist_id].append(
+                    ShownGuestTrack(
+                        album=album_title, number=track.track, title=track.title
+                    )
+                )
+
+        return [
+            ShownArtist(
+                id=artist.id,
+                name=artist.name,
+                albums=albums_by_artist[artist.id],
+                guests=guests_by_artist[artist.id],
+            )
+            for artist in artists
         ]
 
 

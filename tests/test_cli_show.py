@@ -130,6 +130,72 @@ def test_show_has_no_sources_shorthand(corpus, materialise):
     assert result.exit_code != 0
 
 
+def test_show_tracks_prints_a_track_in_depth(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["show", "--tracks", "storms"])
+    assert result.exit_code == 0
+    out = result.stdout
+    assert "Inventory of Small Storms" in out
+    assert "Cartography for Sleepwalkers" in out  # the album, for context
+    assert "kbps" in out  # a measurement
+    assert "showing 1 matching track" in result.stderr
+
+
+def test_show_tracks_unfolds_sources(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["show", "--tracks", "storms", "--sources"])
+    assert result.exit_code == 0
+    assert "file_tags" in result.stdout
+
+
+def test_show_artists_prints_shelf_and_guests(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["show", "--artists", "tin hatch"])
+    assert result.exit_code == 0
+    out = result.stdout
+    assert "Tin Hatch Choir" in out
+    assert "Cartography for Sleepwalkers" in out  # an album on the shelf
+    assert "Lowland Frequencies" in out  # a guest spot
+    assert "showing 2 matching artists" in result.stderr
+
+
+def test_show_artists_json_is_nested(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["show", "--artists", "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert isinstance(payload, list)
+    choir = next(a for a in payload if a["name"] == "Tin Hatch Choir")
+    assert choir["albums"][0]["title"] == "Salt Meridian"
+    assert "guests" in choir
+
+
+def test_show_subject_options_are_mutually_exclusive(corpus, materialise):
+    # Shared flag_value: the last subject wins, mirroring list (ADR 0013).
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    won = CliRunner().invoke(leek, ["show", "--albums", "--artists"])
+    assert won.exit_code == 0
+    assert "artists" in won.stderr  # artists won, not albums
+
+
+def test_show_tracks_empty_and_no_match_notes(corpus, materialise):
+    empty = CliRunner().invoke(leek, ["show", "--tracks"])
+    assert empty.exit_code == 0
+    assert empty.stdout == ""
+    assert "leek add" in empty.stderr
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    nomatch = CliRunner().invoke(leek, ["show", "--tracks", "zzz"])
+    assert nomatch.stdout == ""
+    assert "no tracks match that" in nomatch.stderr
+
+
+def test_show_help_mentions_subjects():
+    result = CliRunner().invoke(leek, ["show", "--help"])
+    assert "--tracks" in result.output
+    assert "--artists" in result.output
+
+
 def test_show_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "show" in result.output
