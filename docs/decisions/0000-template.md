@@ -24,6 +24,20 @@ time, or gut the decision, and supersede instead.
 
 Title mood: imperative by default ("Store claims, not measurements"). Use declarative ("The library tree is for
 humans") only when the record fixes the shape or purpose of a thing and an imperative would distort it.
+
+Voice — a record, not an essay. This is a different register from the rest of the project's prose: a record's reader is
+a future engineer in a hurry, not a student, and the decision is already made, so the record has nothing to prove.
+
+- State, don't persuade. Write the decision as standing fact, present tense ("leek lists albums by default"). Don't
+  argue the reader around.
+- Reasoning once, flat. Context is the forcing function that made a choice necessary, not the full intellectual
+  history. Say what was decisive and stop.
+- Alternatives are verdicts: "X — rejected because Y," a sentence or two each, not a paragraph re-staging the
+  deliberation.
+- No performance — no rhetorical reversal, no italics-for-drama, no teaching aside. beets scar-tissue is a flat
+  one-liner or a link to a design doc, never a narrative paragraph.
+- Length is a symptom. If a section runs past a paragraph or two, the cause is usually persuasion or pedagogy that
+  belongs elsewhere; cut the cause, not the line count. (`adr-voice` guards this register.)
 -->
 
 ## Decision

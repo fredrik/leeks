@@ -31,6 +31,9 @@ Each kind of document has its own directory and lifecycle:
   amendment is findable only from the record that made it. The amend line lives in the status block, the one region
   edits are allowed; the body stays append-only. A rule of thumb: if you find yourself amending the same record a third
   time, or the amendment guts its decision, supersede it instead.
+- Records are written in their own voice: a ruling, not an essay. State the decision as fact, give the reasoning once
+  and flat, and keep the teaching voice and beets scar-tissue narrative for the design docs. The charter is in the
+  template; if a record reads like it is arguing the reader around, it has drifted.
 - Design docs describe what the system should be; plans describe how to get there. When a plan is done, archive it — the
   design doc is the lasting record.
 - Keep design docs updated when code or design changes.
