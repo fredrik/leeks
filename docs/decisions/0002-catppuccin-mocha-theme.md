@@ -9,17 +9,15 @@ palette as constants and applies it to rich-click's style globals; all future st
 errors) draws from the same constants. Styles are truecolor; rich downgrades them on less capable terminals and drops
 them when output is piped or `NO_COLOR` is set.
 
-> **Update (ADR 0028):** Mocha is now the *default*, not the only theme — `LEEKS_THEME` selects among Mocha, Latte, and
-> Gruvbox. `theme.py` no longer exposes loose palette constants; it binds style *roles* (artist, title, …) per theme.
-> The "draws from the same constants" mechanism is superseded by the role binding, but the spirit holds: one source,
-> read everywhere.
+> **Update (ADR 0028):** Mocha is the default, not the only theme — `LEEKS_THEME` selects among Mocha, Latte, and
+> Gruvbox. `theme.py` no longer exposes loose palette constants; it binds style roles (artist, title, …) per theme,
+> superseding the shared-constants mechanism. One source, read everywhere, still holds.
 
 ## Context
 
 The joy rule in [project principles](../design/project-principles.md) makes the CLI's look a requirement, not a garnish.
-The CLI skeleton plan punted the theme decision to `leek list`; Fredrik resolved it early by choosing Catppuccin Mocha,
-a widely-used community palette with an established style convention (mauve as primary accent, red for errors, green for
-success) and sibling flavours if a light variant is ever wanted.
+Catppuccin Mocha is a widely-used community palette with an established style convention (mauve as primary accent, red
+for errors, green for success) and sibling flavours for a light variant if one is ever wanted.
 
 ## Alternatives considered
 

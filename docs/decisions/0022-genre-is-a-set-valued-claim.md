@@ -12,25 +12,21 @@ never the same one twice.
 Three rulings follow from that:
 
 **The claim layer holds what the format hands us.** mediafile returns a file's genres as a list — multiple Vorbis
-comments, ID3v2.4 multi-value frames, MP4 lists are all genuinely several values from one source, with no parsing
-involved. We record that list verbatim, one claim per genre. We do *not* split a single delimited string like
-`"Ambient; Modern Classical"` into parts: choosing a delimiter is heuristic, and heuristic extraction is an analyzer's
-job (ADR 0007), deferred like the path source (ADR 0008).
+comments, ID3v2.4 multi-value frames, MP4 lists are several values from one source, with no parsing involved. We record
+that list verbatim, one claim per genre. We do not split a single delimited string like `"Ambient; Modern Classical"`:
+choosing a delimiter is heuristic extraction, an analyzer's job (ADR 0007), deferred like the path source (ADR 0008).
 
 **Arity is code, not schema.** Widening the key drops the database-level guarantee that title/year/artist are
-single-valued per source. We accept that: the only thing universally meaningless is an *identical* duplicate claim, and
-that is all the constraint now forbids. Which fields are single- versus set-valued is domain knowledge the write path
-and merge carry — today, only `genre` is set-valued.
+single-valued per source. The constraint now forbids only an identical duplicate claim. Which fields are single- versus
+set-valued is domain knowledge the write path and merge carry; today, only `genre` is set-valued.
 
 **Consensus on a set is unanimity on the whole set.** When an album's files disagree on their genre set, `file_tags`
-claims nothing — exactly as a scalar field does under disagreement (ADR 0008). A source that disagrees with itself has
-said nothing. The agreed set is stored sorted; order is not meaningful at the claim layer, and the merged genres list is
-sorted for display regardless.
+claims nothing — as a scalar field does under disagreement (ADR 0008). The agreed set is stored sorted; order is not
+meaningful at the claim layer, and the merged genres list sorts for display regardless.
 
-The merged view already modelled genres as a set (the `album_genres` junction). This decision only lets the *claim*
-layer be as honest about multiplicity as the merged layer already was. While `file_tags` is the only source, identity
-merge copies the set through unchanged; reconciling two sources' genre sets is the relational-merge problem the glossary
-already defers to source #2.
+The merged view already models genres as a set (the `album_genres` junction); this lets the claim layer match it. While
+`file_tags` is the only source, identity merge copies the set through unchanged; reconciling two sources' genre sets is
+the relational-merge problem the glossary defers to source #2.
 
 ## Context
 
@@ -48,9 +44,7 @@ the format stores them as a set. The list had no real data behind it, and the co
 - **Keep the claim scalar; split into genres in an analyzer** — smallest change, and right for a single delimited
   string. But it is wrong for the common case: formats natively hand us a list, with nothing to parse. Treating that
   list as one string would be the laundering ADR 0008 warns against.
-- **Union as the consensus rule** — the truer rule for genre, and the one Fredrik flagged: three tracks tagged folk,
-  jangle pop, and pop aren't *disagreeing*, they're each contributing a facet, and the album is their union. Genre is
-  additive in a way a year or a title is not — two files can't both be right about the year, but they can both be right
-  about a genre. Deferred deliberately: union is a genre-shaped softening of consensus, not a general rule, and the
-  schema laid down here (one row per genre) is exactly what union will need. Unanimity is the honest, simple placeholder
-  until that effort.
+- **Union as the consensus rule** — the truer rule for genre: files tagged folk, jangle pop, and pop each contribute a
+  facet rather than contradicting, and the album is their union. Genre is additive where a year or title is not.
+  Deferred: union is a genre-shaped softening of consensus, not a general rule, and the schema here (one row per genre)
+  is what it will need. Unanimity is the placeholder until that effort.

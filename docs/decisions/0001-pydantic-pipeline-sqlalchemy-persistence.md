@@ -5,13 +5,10 @@ Status: Decided (2026-06-10)
 ## Context
 
 leeks moves metadata through a pipeline — tag reading, MusicBrainz lookups, matching, merging — and persists it in a
-normalised relational schema. The same conceptual entities (album, track) appear in both worlds, which invites using one
-set of classes for both.
-
-That is the beets trap. When pipeline objects are database objects, business logic accretes on persistence classes,
-objects are only valid inside a database session, and external candidates — a MusicBrainz release that may never enter
-the library — have to be faked as library rows or handled by a parallel code path. The pipeline becomes untestable
-without a database.
+normalised relational schema. The same conceptual entities (album, track) appear in both worlds, which invites one set
+of classes for both. That is the beets trap: business logic accretes on persistence classes, objects are valid only
+inside a database session, external candidates (a MusicBrainz release that may never enter the library) must be faked as
+library rows, and the pipeline becomes untestable without a database.
 
 ## Decision
 
@@ -36,7 +33,4 @@ change goes through an Alembic migration.
 
 ## Consequences
 
-- Mapping code at the boundary is a permanent cost, accepted deliberately. Two definitions of related shapes must be
-  kept in sync.
-- The pipeline is testable without a database, and external candidates are first-class pipeline citizens whether or not
-  they ever become library rows.
+- Mapping code at the boundary is a permanent cost: two definitions of related shapes kept in sync.

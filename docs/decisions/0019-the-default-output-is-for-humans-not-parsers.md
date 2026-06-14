@@ -4,116 +4,76 @@ Status: Decided (2026-06-13)
 
 ## Decision
 
-The default output — what `leek list` prints when `--format` is unset — is `human`, always, and it is **for reading,
-never for parsing**. Its bytes are not a contract: the human formatter is free to change its columns, spacing,
-adornment, and wording from one release to the next, because nothing is entitled to parse them. Machine consumption is
-what `--format` is for ([ADR 0017](0017-choose-output-shape-with-format.md)); that is the whole division of labour.
+The default output — what `leek list` prints when `--format` is unset — is `human`, always, and it is for reading, never
+for parsing. Its bytes are not a contract: the human formatter may change its columns, spacing, adornment, and wording
+between releases, because nothing is entitled to parse them. Machine consumption is what `--format` is for
+([ADR 0017](0017-choose-output-shape-with-format.md)).
 
-The `isatty` boundary governs **presentation, not format**. A terminal gets the themed, aligned table; a pipe gets the
-same `human` formatter rendered *plain* — no colour, no terminal-width alignment. Same formatter, two renderings — the
-`ls`/`git` discipline, where colour and layout adapt to the tty but the format does not silently switch under you
-(`git log` piped is still `git log`, not `--porcelain`; you ask for porcelain by name). `--format human` names this
-default explicitly, so a script can force the readable shape into a pipe, or onto a terminal, when it wants it.
+`isatty` governs presentation, not format. A terminal gets the themed, aligned table; a pipe gets the same `human`
+formatter rendered plain — each row's fields via `_display_cell`, space-joined, absent values dropped, one line per
+record, never wrapped, no colour, no width-alignment. Same formatter, two renderings — the `ls`/`git` discipline, where
+layout adapts to the tty but the format does not silently switch (`git log` piped is still `git log`, not
+`--porcelain`). `--format human` is a named value in the enum, so a script can force the readable shape either way; it
+changes nothing a bare `leek list` does not.
 
-The machine formats are an explicit, opt-in set — never auto-selected by a pipe:
+The machine formats are an explicit, opt-in set, never auto-selected by a pipe. A consumer reaches for one by name, and
+that naming is what earns the stability contract:
 
-- **`json`** — the structured, typed, nestable shape; real integers, real `null`s
-  ([ADR 0014](0014-render-output-from-a-typed-projection.md)). For programs (`jq`, anything that wants the types
-  intact).
-- **`csv`** — the spreadsheet lingua franca (Excel, Numbers, pandas). For "dump my library into a sheet."
-- **`tsv`** — the shell-pipeline delimited shape; `cut -f2` just works.
+- **`json`** — structured, typed, nestable; real integers, real `null`s
+  ([ADR 0014](0014-render-output-from-a-typed-projection.md)). For programs that want the types intact.
+- **`csv`** — the spreadsheet lingua franca (Excel, Numbers, pandas). Carries a header row, because spreadsheets expect
+  named columns.
+- **`tsv`** — the shell-pipeline delimited shape; `cut -f2` reads data from line one, so it carries no header. Only the
+  flat verbs (`list`) offer `csv`/`tsv`.
 
-A consumer reaches for one of these by name, and *that naming is what earns the stability contract*. A pipe selecting a
-machine format on its own would invoke that contract by accident, which is exactly what we refuse.
+For both delimited formats, values go through `csv.writer`, so a comma or quote in a title is quoted and parses back
+intact; a cell renders the typed value stringified, and a genuine absence is the empty string, never the
+`Unknown Artist` human fallback ([ADR 0014](0014-render-output-from-a-typed-projection.md)).
 
-This **revises the unset-default behaviour** recorded in [ADR 0011](0011-list-is-albums-in-shelf-order.md),
-[ADR 0013](0013-list-selects-its-entity-by-option.md), and [ADR 0017](0017-choose-output-shape-with-format.md): the pipe
-no longer receives a tab-separated *record*. That output was a machine format reached by accident; it becomes the plain
-rendering of the human format, and TSV survives only as an explicit `--format tsv`. The rest of those records stands —
-this changes one clause, the shape an unset `--format` sends to a pipe.
+This revises the unset-default behaviour in [ADR 0011](0011-list-is-albums-in-shelf-order.md),
+[ADR 0013](0013-list-selects-its-entity-by-option.md), and [ADR 0017](0017-choose-output-shape-with-format.md): a pipe
+no longer receives a tab-separated record — that was a machine format reached by accident. It becomes the plain
+rendering of the human format; TSV survives only as explicit `--format tsv`. The rest of those records stands; this
+changes one clause. It likewise corrects 0018's "stable for scripting" framing of `leek fields`'
+([ADR 0018](0018-discover-fields-with-leek-fields.md)) bare-names listing: that listing has no presentation to strip, so
+it is identical in a pipe and a terminal — but it is human output too, and the contract a script binds to is
+`leek fields --format json`, never the bare-names default.
 
 ## Context
 
-The thread is the default output's job. Fredrik's framing of why `human` is the right default: it is great *because* we
-can print anything we want and not be beholden to parsability. That freedom is real, and it survives exactly as long as
-nobody is entitled to parse the default. The shipped behaviour quietly spent it: a pipe got a tab-separated record, so
-the moment `leek list | cut -f2` works out of the box, that column order is a frozen contract — invoked by accident,
-owed forever, on output nobody deliberately asked to stabilise. The freedom Fredrik named and the auto-TSV pipe default
-cannot both hold; this record keeps the freedom.
+The default output is great because we can print anything and not be beholden to parsability — a freedom that survives
+exactly as long as nobody is entitled to parse the default. The shipped behaviour spent it: a pipe got a tab-separated
+record, so `leek list | cut -f2` working out of the box froze that column order into a contract nobody asked to
+stabilise. The freedom and the auto-TSV pipe default cannot both hold; this record keeps the freedom.
 
-This is the same scar `--format` already steers by. beets had exactly one public view of a field — the formatted string
-([ADR 0014](0014-render-output-from-a-typed-projection.md)) — so the human form and the machine form were never
-separable, and structured output inherited the string flattening. The lesson generalises to the pipe: when the readable
-output and the parseable output are the *same bytes*, the readable one cannot move without breaking a parser. Keeping
-them distinct — human for eyes, named formats for machines — is what lets the human side stay free.
+This is the scar `--format` already steers by: beets had one public view of a field — the formatted string
+([ADR 0014](0014-render-output-from-a-typed-projection.md)) — so human and machine forms were never separable, and
+structured output inherited the string flattening. When the readable output and the parseable output are the same bytes,
+the readable one cannot move without breaking a parser.
 
-`isatty` is still the right signal, pointed at the right thing. It answers "is a person watching?", which is a question
-about *presentation* — colour, alignment, width. It is not a proxy for "does the caller want a machine format," and the
-shipped default conflated the two. A pipe means "strip the adornment," not "switch to a contract."
-
-The human-plain rendering is plainer, but it is **still not a contract**: its stability is not promised either. A caller
-that wants stable output uses `--format`. This binds every verb, with no exceptions. `leek fields`
-([ADR 0018](0018-discover-fields-with-leek-fields.md)) looks like one — its bare-names listing is identical in a pipe
-and a terminal — but that is because field names have *no presentation to strip*, so the plain and themed renderings
-coincide; it is "presentation, not format" with nothing to vary, not a licence to parse. A script that wants the field
-namespace uses `leek fields --format json`, the machine path 0018 already provides. This **corrects 0018's "stable for
-scripting" framing** of that human listing: the no-`isatty`-split observation stands, but the human output is for
-reading there too — the contract a script binds to is the JSON, never the bare-names default.
+`isatty` answers "is a person watching?", a question about presentation — colour, alignment, width — not a proxy for
+"does the caller want a machine format." A pipe means "strip the adornment," not "switch to a contract." The human-plain
+rendering is plainer but still not a contract; a caller that wants stable output uses `--format`, and this binds every
+verb.
 
 ## Alternatives considered
 
 - **Tab-separated record on a pipe** — the shipped default ([ADRs 0011](0011-list-is-albums-in-shelf-order.md),
-  [0013](0013-list-selects-its-entity-by-option.md), [0017](0017-choose-output-shape-with-format.md)). Convenient —
-  `leek list | awk` just works with no flag — but the convenience *is* the trap: it is a parse contract reached by
-  accident, and it makes TSV, not human, the thing on the wire. The eight characters of `--format tsv` buy a deliberate
-  contract instead of an accidental one.
-- **JSON on a pipe** — the same flaw as auto-TSV with a bigger blast radius: it also surprises `| less` and `| grep`
-  with a shape no one asked for, and commits us to the JSON envelope's stability by accident rather than by request.
-- **No split at all — same output to terminal and pipe** — either loses the themed table (plain everywhere) or ships
-  colour codes and width-padding into pipes (table everywhere). The split is good; it just has to be presentation-only,
-  not a format switch.
-- **Drop `tsv`, keep `csv` + `json`** — declined. In this domain the data is comma-heavy and tab-clean — artist credits,
-  titles, `feat.` lists carry commas constantly and tabs almost never — so `tsv` is the *cleaner* delimited output and
-  `cut -f` works without quoting. If either delimited format were on the bubble it would be `csv`, justified only by
-  spreadsheet import; both earn their place because they serve different consumers (a shell pipeline vs. a sheet).
+  [0013](0013-list-selects-its-entity-by-option.md), [0017](0017-choose-output-shape-with-format.md)). Rejected:
+  convenient, but a parse contract reached by accident, and it puts TSV, not human, on the wire. `--format tsv` buys a
+  deliberate contract instead.
+- **JSON on a pipe** — rejected: the same flaw with a bigger blast radius, surprising `| less` and `| grep` with a shape
+  no one asked for and committing the JSON envelope's stability by accident.
+- **No split at all — same output to terminal and pipe** — rejected: either loses the themed table (plain everywhere) or
+  ships colour codes and width-padding into pipes (table everywhere). The split is right; it just has to be
+  presentation-only.
+- **Drop `tsv`, keep `csv` + `json`** — declined: the data is comma-heavy and tab-clean (artist credits, titles, `feat.`
+  lists carry commas constantly and tabs almost never), so `tsv` is the cleaner delimited output and `cut -f` works
+  without quoting. Both delimited formats serve different consumers — a shell pipeline vs. a sheet.
 
-## Grammar deferred to contact
+## Consequences
 
-Exactly what `human`-plain strips versus keeps (colour and width-alignment, certainly; whether any structural adornment
-survives), and the machine dialects already deferred by [ADR 0017](0017-choose-output-shape-with-format.md) — the JSON
-envelope, the CSV/TSV header and quoting rules — are designed when the slice arrives. This record fixes only the
-division: the default is for humans and is not a contract; machines ask by name.
-
-## Resolved on contact (2026-06-13)
-
-The `leek list` / `leek fields` slice named the default and settled what a pipe gets in place of the tab-separated
-record:
-
-- **`human` is a named value, and the default.** `--format human` joins the closed enum beside `json`; naming the
-  readable shape explicitly is now possible, though it changes nothing a bare `leek list` did not already do.
-- **A pipe gets bare plain lines.** `leek list` keeps the isatty split — the themed, aligned table to a terminal — but a
-  pipe now gets each row's fields rendered with `_display_cell`, space-joined, absent values dropped: no colour, no
-  alignment, one line per record, never wrapped. The tab-separated record is gone. Tabs said "parse me by column"; the
-  default output is for reading.
-- **`leek fields` was already plain.** Its bare-names listing has no presentation to strip, so it is unchanged — the
-  same names in a pipe and a terminal ([ADR 0018](0018-discover-fields-with-leek-fields.md)), now understood as human
-  output, not a scripting contract.
-- **Still not a contract; `csv`/`tsv` still deferred.** The bare lines are for reading, not parsing — a machine consumer
-  asks for `--format json`. The `csv`/`tsv` dialects and the JSON envelope remain deferred
-  ([ADR 0017](0017-choose-output-shape-with-format.md)).
-
-## CSV and TSV resolved (2026-06-14)
-
-The `leek show` follow-on slice added the delimited dialects to `leek list`, settling the header and quoting rules this
-record deferred:
-
-- **CSV carries a header row; TSV does not.** The split follows each format's consumer. CSV serves spreadsheets (Excel,
-  pandas), which expect a header to name the columns; TSV serves the shell pipeline, where a header is a nuisance, so
-  `cut -f2` reads pure data from line one.
-- **Quoting is the `csv` module's job.** Values go through `csv.writer` with the right delimiter, so a comma or quote in
-  a title is quoted and parses back intact — the comma-heavy/tab-clean reality this record's alternatives section noted.
-- **Absence is blank, not the human bucket.** A delimited cell renders the typed value stringified, and a genuine
-  absence is the empty string, never the `Unknown Artist` fallback (that is a human reading choice,
-  [ADR 0014](0014-render-output-from-a-typed-projection.md)).
-- **`show` stays human/json.** The delimited shapes are tabular; `show`'s view is nested (album → tracks → files), so it
-  offers only `human` and `json`. The flat verbs (`list`) own `csv`/`tsv`.
+What `human`-plain strips versus keeps beyond colour and width-alignment (whether any structural adornment survives),
+and the JSON envelope's shape ([ADR 0017](0017-choose-output-shape-with-format.md)), are designed when those slices
+arrive. `show`'s view is nested (album → tracks → files), so it offers only `human` and `json`; the delimited shapes are
+tabular and belong to the flat verbs.

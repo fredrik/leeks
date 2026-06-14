@@ -10,45 +10,38 @@ no interpolation of literal text between fields. Output is controlled by two nar
 [ADR 0017](0017-choose-output-shape-with-format.md)), both reading the typed projection
 ([ADR 0014](0014-render-output-from-a-typed-projection.md)).
 
-The boundary is precise: a template conflates two things, and the conflation *is* the language. **Selection** — naming
-which fields to print — is a list of names, not a language. **Interpolation** — the literal text, separators, and
-conditionals *between* fields — is the entire language: the parser, the escaping, the functions all exist to serve it.
-leek gives selection and withholds interpolation. When you need a bespoke line with your own punctuation, the shell
-composes it: `leek list --format json | jq -r '...'`. leek emits clean typed data; string assembly belongs to the tool
-built for string assembly.
+The boundary is two things a template conflates. **Selection** — naming which fields to print — is a list of names.
+**Interpolation** — the literal text, separators, and conditionals between fields — is the language: the parser, the
+escaping, the functions all serve it. leek gives selection and withholds interpolation. A bespoke line with your own
+punctuation is the shell's job: `leek list --format json | jq -r '...'`. leek emits clean typed data; string assembly
+belongs to the tool built for it.
 
 ## Context
 
-beets' `-f` is the scar tissue. It began as "let me pick a field" and grew, one reasonable commit at a time, into a DSL
-with its own escaping, functions (`%if{}`, `%aunique{}`, `%the{}`, …), and bugs — a second runtime nobody set out to
-ship, with the shape of its own history rather than of a decision. Three costs follow, and they are the reason for the
-firm no:
+beets' `-f` is the scar tissue: it began as "let me pick a field" and grew into a DSL with its own escaping, functions
+(`%if{}`, `%aunique{}`, `%the{}`, …), and bugs — a second runtime nobody set out to ship. Four costs make the no firm:
 
-- **It is a second runtime.** An undesigned language embedded in a music tool, that every plugin must then understand,
-  that grows by accretion exactly the way the soul warns against.
-- **It makes field names a permanent API.** The moment `-f '$mb_albumid'` works, the internal field name is a public
-  interface carried in shell history and scripts. beets' field names are sticky for this reason — a verified core of its
-  2010 names survives today (the set grew several-fold around them, and a couple were pluralised, so "sticky," not
-  "frozen"). Templates are one of three things — alongside queries and configs — that make any rename break users.
-- **It invites computation into the presentation layer.** Once the template can branch, logic moves into an untyped,
-  untestable string that the type checker never sees.
+- **It is a second runtime** — an undesigned language embedded in a music tool, that every plugin must understand, grown
+  by accretion.
+- **It makes field names a permanent API.** Once `-f '$mb_albumid'` works, the internal field name is a public interface
+  carried in shell history and scripts. beets' field names are sticky for this reason — a core of its 2010 names
+  survives today (the set grew several-fold around them, a couple pluralised, so "sticky," not "frozen"). Templates are
+  one of three things — with queries and configs — that make any rename break users.
+- **It invites computation into the presentation layer.** A template that can branch moves logic into an untyped,
+  untestable string the type checker never sees.
+- **It forecloses honest typed output** ([ADR 0014](0014-render-output-from-a-typed-projection.md)): a template flattens
+  every value to a string at the boundary. beets' JSON export rides `formatted()` for this reason, and its path-format
+  engine shares the same template machinery, so a template bug reaches files on disk, not just a printed line.
 
-The clinching cost is the one [ADR 0014](0014-render-output-from-a-typed-projection.md) records: a template flattens
-every value to a string at the boundary, foreclosing honest typed output. beets proves it — its JSON export rides
-`formatted()` because the template world *is* the string world, and the two never reconciled. And in beets the
-path-format engine shares the same template machinery, so a template bug's blast radius includes files on disk, not just
-a printed line. leek will never let the formatted string become a field's only public form.
-
-The legitimate daily use behind `-f` — "show me field X across these results" — is *selection*, and it is served, by
-`--fields`. Nothing real is lost.
+The legitimate daily use behind `-f` — "show me field X across these results" — is selection, served by `--fields`.
 
 ## Alternatives considered
 
-- **Ship a template language** — the thing rejected. It buys bespoke one-liners at the cost of a second runtime, field
-  names as a forever-API, and the foreclosure of typed output. The 80% need (selection) does not require it, and the 20%
-  (interpolation) is the shell's job.
-- **Allow a sliver of interpolation** — say, a single `--separator` or a join string. This is the seed of the same
-  language: the first literal-text-between-fields knob invites the second, and the conditional after that. Cleaner to
-  hold the line at selection and let the shell interpolate.
-- **Say nothing and decide on contact** — but the no *shapes* `--fields` and `--format`: it is why those are a name list
-  and a closed enum rather than a template. Recording it now is what keeps the next two records small.
+- **Ship a template language** — rejected: it buys bespoke one-liners at the cost of a second runtime, field names as a
+  forever-API, and the foreclosure of typed output. Selection does not require it; interpolation is the shell's job.
+- **Allow a sliver of interpolation** (a `--separator`, a join string) — rejected: the first literal-text-between-fields
+  knob is the seed of the same language and invites the next. Hold the line at selection.
+
+## Consequences
+
+The no shapes `--fields` and `--format`: it is why those are a name list and a closed enum rather than a template.

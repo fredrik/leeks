@@ -31,8 +31,8 @@ deterministic and thus a measurement; "this fingerprint means recording X" is a 
 
 Without the distinction, the source layer fills with rows nothing will ever merge against. Bitrate stored as a
 `file_tags` claim invites a second source to disagree with it, which is meaningless — another source has no opinion
-about the bytes on this disk. Worse, it makes the source layer's real content harder to see: review queues and
-disagreement queries would wade through fields that can never disagree.
+about the bytes on this disk. It also buries the source layer's real content: review queues and disagreement queries
+would wade through fields that can never disagree.
 
 The split also keeps the file row honest as the home of file-level fact (per the files-are-modelled position): what the
 bytes are is knowable by reading them, needs no provenance, and is cheap to recompute.
