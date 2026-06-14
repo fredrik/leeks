@@ -28,6 +28,20 @@ def test_clean_album_round_trips(corpus, materialise):
         assert tags.tracktotal == album["tracktotal"]
 
 
+def test_tracks_carry_varied_durations(corpus, materialise):
+    # The tones run different lengths (generate.py's DURATIONS, cycled), so a
+    # materialised album holds files of genuinely different duration rather than
+    # a uniform run. Cartography's five tracks draw tones 0–4: 1, 2, 4, 8, 1 s.
+    album = by_title(corpus, "Cartography for Sleepwalkers")
+    directory = materialise(album)
+    durations = [MediaFile(str(p)).length for p in sorted(directory.iterdir())]
+    expected = [1, 2, 4, 8, 1]
+    assert len(durations) == len(expected)
+    for actual, want in zip(durations, expected):
+        assert abs(actual - want) < 0.2
+    assert len({round(d) for d in durations}) > 1  # not all the same
+
+
 def test_sparse_fields_are_truly_absent(corpus, materialise):
     album = by_title(corpus, "Tape Hiss Archipelago")
     directory = materialise(album)

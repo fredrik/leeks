@@ -50,7 +50,8 @@ def test_absent_tags_are_none(corpus, materialise):
 def test_measure_probes_the_bytes(corpus, materialise):
     album = by_title(corpus, "Paper Lung Atlas")
     directory = materialise(album)
-    flac = next(p for p in directory.iterdir() if p.suffix == ".flac")
+    # Track 1 is realised by the first tone, which is one second long.
+    flac = sorted(directory.iterdir())[0]
     facts = tags.measure(flac)
     assert facts.format == "FLAC"
     assert facts.samplerate == 8000

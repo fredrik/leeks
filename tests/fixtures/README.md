@@ -2,7 +2,8 @@
 
 Two halves that combine into a tagged test library:
 
-- `audio/generate.py` synthesizes tiny **tagless** audio files (FLAC and MP3 sine tones).
+- `audio/generate.py` synthesizes tiny **tagless** audio files (FLAC and MP3 sine tones), each a distinct frequency and
+  a distinct duration (cycling 1, 2, 4, 8 seconds) so materialised albums carry varied track lengths.
 - `corpus.toml` is the **metadata corpus** those files are tagged with.
 
 `materialise.py` is the combiner: the test suite imports it, and `just materialise [dest]` (or running the script
