@@ -5,8 +5,41 @@ import json
 from click.testing import CliRunner
 
 from leeks import library
-from leeks.cli import leek
+from leeks.cli import _album_heading, leek
+from leeks.library import ShownAlbum
 from test_harness import by_title
+
+
+def _album(*, year: int | None = 2001, medium: str | None = None) -> ShownAlbum:
+    return ShownAlbum(
+        id=1,
+        artist="Aphex Twin",
+        year=year,
+        title="Drukqs",
+        medium=medium,
+        genres=[],
+        tracks=[],
+        claims=[],
+    )
+
+
+def test_album_heading_shows_medium_beside_the_year():
+    # year and medium share the one parenthetical, joined by a middot (ADR 0034).
+    heading = _album_heading(_album(medium="Vinyl")).plain
+    assert "Drukqs" in heading
+    assert "(2001 · Vinyl)" in heading
+
+
+def test_album_heading_shows_medium_alone_when_there_is_no_year():
+    heading = _album_heading(_album(year=None, medium="Vinyl")).plain
+    assert "(Vinyl)" in heading
+
+
+def test_album_heading_omits_the_medium_when_absent():
+    # Most albums have no medium; the parenthetical is then the year alone.
+    heading = _album_heading(_album(medium=None)).plain
+    assert "(2001)" in heading
+    assert "·" not in heading
 
 
 def test_show_prints_an_album_in_depth(corpus, materialise):

@@ -158,6 +158,9 @@ class ShownAlbum:
     artist: str | None
     year: int | None
     title: str
+    # The release's medium (vinyl/CD/cassette), a merged column (ADR 0034);
+    # None when no source claims it, which is most albums.
+    medium: str | None
     genres: list[str]
     tracks: list[ShownTrack]
     claims: list[Claim]
@@ -553,6 +556,7 @@ def show_albums(terms: Sequence[str] = ()) -> list[ShownAlbum]:
                 artist=artist,
                 year=album.year,
                 title=album.title,
+                medium=album.medium,
                 genres=genres_by_album[album.id],
                 tracks=[
                     ShownTrack(

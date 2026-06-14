@@ -34,9 +34,10 @@ Coining a new term of art means adding it here in the same change.
   assigning a winning claim (ADR 0031); relational fields are merged by reconciling the winning claim to a row. The
   artist foreign key does this now (ADR 0032); genre, a junction, waits for a second source to claim it.
 - **Merged column** — a scalar column in the merged view whose value `merge()` computes from the entity's claims (album
-  title and year; track title and number). A relational field is not a merged column: the artist foreign key is resolved
-  by `merge()` to a row (ADR 0032), and genre is still linked at write time until a source other than file_tags claims
-  it.
+  title, year, and medium; track title and number). A field earns one when a reader consumes it: medium became a merged
+  column when `leek show` displayed it, while region and catalogue stay claim-only until a reader of their own (ADR
+  0033/0034). A relational field is not a merged column: the artist foreign key is resolved by `merge()` to a row (ADR
+  0032), and genre is still linked at write time until a source other than file_tags claims it.
 - **Merge** — recomputing merged columns from claims: each column takes the value of the highest-priority source that
   claims it (ADR 0031). **Identity merge** is the degenerate case where one source claims a field — the value copies
   through. Claim **confidence** is recorded but does not yet enter resolution; richer strategies and the review queue

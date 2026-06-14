@@ -541,12 +541,26 @@ def _bitrate(bitrate: int | None) -> str:
 
 
 def _album_heading(album: "ShownAlbum") -> Text:
-    """`<artist> — <title> (<year>)`, the Unknown bucket styled (ADR 0010)."""
+    """`<artist> — <title> (<year> · <medium>)`, the Unknown bucket styled.
+
+    The parenthetical gathers the compact release facts — year, then medium
+    (ADR 0034) — each in its own style. An absent fact simply doesn't appear,
+    and an album with neither year nor medium gets no parens at all (ADR 0010).
+    """
     heading = _artist_cell(album.artist)  # a fresh Text, safe to append to
     heading.append(" — ", style=theme.MUTED)
     heading.append(album.title, style=theme.TITLE)
+    facts = Text()
     if album.year is not None:
-        heading.append(f" ({album.year})", style=theme.YEAR)
+        facts.append(str(album.year), style=theme.YEAR)
+    if album.medium is not None:
+        if facts:
+            facts.append(" · ", style=theme.MUTED)
+        facts.append(album.medium, style=theme.MEASURE)
+    if facts:
+        heading.append(" (", style=theme.MUTED)
+        heading.append_text(facts)
+        heading.append(")", style=theme.MUTED)
     return heading
 
 

@@ -372,8 +372,8 @@ def test_path_fills_a_missing_year_from_the_directory_name(tmp_path, leeks_root)
 
 def test_path_claims_release_facts_tags_never_carry(tmp_path, leeks_root):
     # medium and catalogue are facts tags don't carry; they land as path claims
-    # in the source layer and earn no merged column (ADR 0033). The [FLAC] token
-    # is the encoding — a measurement, never a claim (ADR 0007).
+    # in the source layer (ADR 0033). The [FLAC] token is the encoding — a
+    # measurement, never a claim (ADR 0007).
     source = _album_named(
         tmp_path
         / "Cordel Vane - Phantom Atlas (2001) (Vinyl) [FLAC] {Vandal Press - VP-07}"
@@ -394,10 +394,10 @@ def test_path_claims_release_facts_tags_never_carry(tmp_path, leeks_root):
             ("medium", "Vinyl"),
             ("catalogue", "VP-07"),
         }
-        # The facts are claim-only: file_tags claimed neither, and the album row
-        # carries no column for them — they live in the source layer alone.
+        # medium has a reader, so it merges to its column from the path's claim
+        # (ADR 0034); catalogue has none, so it stays claim-only — no column.
         (album,) = rows(session, orm.Album)
-        assert not hasattr(album, "medium")
+        assert album.medium == "Vinyl"
         assert not hasattr(album, "catalogue")
         fact_sources = {
             c.source.name
@@ -405,6 +405,9 @@ def test_path_claims_release_facts_tags_never_carry(tmp_path, leeks_root):
             if c.field in {"medium", "catalogue"}
         }
         assert fact_sources == {"path"}
+    # The merged column reaches the depth projection `leek show` renders (ADR 0034).
+    [shown] = library.show_albums(["phantom atlas"])
+    assert shown.medium == "Vinyl"
 
 
 def test_file_tags_year_outranks_the_path(tmp_path, leeks_root):

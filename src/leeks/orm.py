@@ -55,6 +55,10 @@ class Album(Base):
     # phrases) arrives with the MusicBrainz data that populates it.
     artist_id: Mapped[int | None] = mapped_column(ForeignKey("artists.id"))
     year: Mapped[int | None]
+    # The release's medium (vinyl/CD/cassette) — a merged column merge() fills
+    # from the path's claim (ADR 0034); distinct from a file's encoding, which
+    # is a measurement on the file row (ADR 0007).
+    medium: Mapped[str | None]
     added: Mapped[datetime]
 
     tracks: Mapped[list[Track]] = relationship(
