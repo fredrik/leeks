@@ -75,7 +75,7 @@ def test_assemble_clean_album(corpus, materialise):
 def test_assemble_multi_genre_album(corpus, materialise):
     # Every file carries the same three genres, so the album claims the set,
     # returned sorted (ADR 0022): order is not meaningful at the claim layer.
-    album = by_title(corpus, "Saltmarsh Telemetry")
+    album = by_title(corpus, "Genrezvous Telemetry")
     info = tags.assemble(materialised_tags(materialise(album)))
     assert info.genres == sorted(album["genre"])
     assert info.genres == ["Ambient", "Dub Techno", "Field Recording"]
@@ -84,7 +84,7 @@ def test_assemble_multi_genre_album(corpus, materialise):
 def test_assemble_set_consensus_is_unanimity(corpus, materialise):
     # Files that disagree on their genre set claim nothing, just as a scalar
     # field does under disagreement (ADR 0008/0022).
-    album = by_title(corpus, "Saltmarsh Telemetry")
+    album = by_title(corpus, "Genrezvous Telemetry")
     files = materialised_tags(materialise(album))
     import dataclasses
 

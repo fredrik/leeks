@@ -52,10 +52,10 @@ def test_listed_albums_carry_their_year(corpus, materialise):
 def test_listed_albums_carry_their_genres(corpus, materialise):
     # The shelf carries the merged genre set, folded-name ordered, same as the
     # depth read (ADR 0022); an untagged album carries an empty set.
-    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
     library.add(materialise(by_title(corpus, "Tape Hiss Archipelago")))
     listed = {album.title: album for album in library.list_albums()}
-    assert listed["Saltmarsh Telemetry"].genres == [
+    assert listed["Genrezvous Telemetry"].genres == [
         "Ambient",
         "Dub Techno",
         "Field Recording",

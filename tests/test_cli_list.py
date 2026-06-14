@@ -297,7 +297,7 @@ def test_fields_duplicates_are_kept(corpus, materialise):
 
 
 def test_genres_is_opt_in_not_a_default_column(corpus, materialise):
-    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
     bare = CliRunner().invoke(leek, ["list"])
     assert bare.exit_code == 0
     # The shelf's identity stays artist/year/title; genres are opt-in (ADR 0022).
@@ -305,14 +305,14 @@ def test_genres_is_opt_in_not_a_default_column(corpus, materialise):
 
 
 def test_genres_field_joins_with_commas_for_the_eye(corpus, materialise):
-    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
     result = CliRunner().invoke(leek, ["list", "--fields", "title,genres"])
     assert result.exit_code == 0
-    assert "Saltmarsh Telemetry Ambient, Dub Techno, Field Recording" in result.stdout
+    assert "Genrezvous Telemetry Ambient, Dub Techno, Field Recording" in result.stdout
 
 
 def test_genres_json_is_a_real_array(corpus, materialise):
-    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
     result = CliRunner().invoke(
         leek, ["list", "--fields", "title,genres", "--format", "json"]
     )
@@ -326,14 +326,14 @@ def test_genres_csv_joins_with_semicolons(corpus, materialise):
     import csv as csvmod
     import io
 
-    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
     result = CliRunner().invoke(
         leek, ["list", "--fields", "title,genres", "--format", "csv"]
     )
     assert result.exit_code == 0
     rows = list(csvmod.reader(io.StringIO(result.stdout)))
     # A set in one flat cell, joined by "; " so the comma stays CSV's alone.
-    assert rows[1] == ["Saltmarsh Telemetry", "Ambient; Dub Techno; Field Recording"]
+    assert rows[1] == ["Genrezvous Telemetry", "Ambient; Dub Techno; Field Recording"]
 
 
 def test_genres_absent_album_is_empty_not_a_fallback(corpus, materialise):

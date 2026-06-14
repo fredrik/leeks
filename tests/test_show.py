@@ -37,8 +37,8 @@ def test_show_albums_hydrates_tracks_files_and_claims(corpus, materialise):
 def test_show_albums_carries_a_multi_genre_set(corpus, materialise):
     # The genres list is the merged view of the genre claims (ADR 0022),
     # sorted as the read path shelves them.
-    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
-    [album] = library.show_albums(["saltmarsh"])
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
+    [album] = library.show_albums(["genrezvous"])
     assert album.genres == ["Ambient", "Dub Techno", "Field Recording"]
     genre_claims = [claim for claim in album.claims if claim.field == "genre"]
     assert {claim.value for claim in genre_claims} == set(album.genres)
