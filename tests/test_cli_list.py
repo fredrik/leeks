@@ -296,6 +296,55 @@ def test_fields_duplicates_are_kept(corpus, materialise):
     assert result.stdout.splitlines()[0] == "Salt Meridian Salt Meridian"
 
 
+def test_genres_is_opt_in_not_a_default_column(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    bare = CliRunner().invoke(leek, ["list"])
+    assert bare.exit_code == 0
+    # The shelf's identity stays artist/year/title; genres are opt-in (ADR 0022).
+    assert "Ambient" not in bare.stdout
+
+
+def test_genres_field_joins_with_commas_for_the_eye(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    result = CliRunner().invoke(leek, ["list", "--fields", "title,genres"])
+    assert result.exit_code == 0
+    assert "Saltmarsh Telemetry Ambient, Dub Techno, Field Recording" in result.stdout
+
+
+def test_genres_json_is_a_real_array(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    result = CliRunner().invoke(
+        leek, ["list", "--fields", "title,genres", "--format", "json"]
+    )
+    assert result.exit_code == 0
+    row = json.loads(result.stdout)[0]
+    # JSON keeps the set structured, not stringified (ADR 0022).
+    assert row["genres"] == ["Ambient", "Dub Techno", "Field Recording"]
+
+
+def test_genres_csv_joins_with_semicolons(corpus, materialise):
+    import csv as csvmod
+    import io
+
+    library.add(materialise(by_title(corpus, "Saltmarsh Telemetry")))
+    result = CliRunner().invoke(
+        leek, ["list", "--fields", "title,genres", "--format", "csv"]
+    )
+    assert result.exit_code == 0
+    rows = list(csvmod.reader(io.StringIO(result.stdout)))
+    # A set in one flat cell, joined by "; " so the comma stays CSV's alone.
+    assert rows[1] == ["Saltmarsh Telemetry", "Ambient; Dub Techno; Field Recording"]
+
+
+def test_genres_absent_album_is_empty_not_a_fallback(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Tape Hiss Archipelago")))
+    result = CliRunner().invoke(
+        leek, ["list", "--fields", "title,genres", "--format", "json"]
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["genres"] == []
+
+
 def test_format_json_is_valid_and_typed(shelve):
     shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
     result = CliRunner().invoke(leek, ["list", "--format", "json"])
@@ -433,7 +482,7 @@ def test_plain_table_renders_selected_columns():
     from leeks.cli import _plain_table
     from leeks.library import Listed
 
-    rows = [Listed(id=1, artist=None, year=None, title="Mystery Tape")]
+    rows = [Listed(id=1, artist=None, year=None, title="Mystery Tape", genres=[])]
     table = _plain_table(rows, ("artist", "year", "title"))
     assert len(table.columns) == 3
     console = Console(width=80)

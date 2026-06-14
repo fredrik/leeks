@@ -160,7 +160,7 @@ _DEFAULT_COLUMNS: dict[str, tuple[str, ...]] = {
 # discoverable here, not shelf furniture. Every subject has one. The namespace
 # grows (bitrate, path, …) as slices surface those facts (ADR 0018).
 _SELECTABLE_EXTRAS: dict[str, tuple[str, ...]] = {
-    "albums": ("id",),
+    "albums": ("id", "genres"),
     "tracks": ("id",),
     "artists": ("id",),
 }
@@ -178,9 +178,14 @@ def _display_cell(name: str, value: object) -> str:
     shows the Unknown bucket (ADR 0010), every other missing field shows
     empty. Structured output (`--format json`) skips this and emits the typed
     value — null stays null.
+
+    A set-valued field (genres, ADR 0022) joins with ", " for the eye; the
+    delimited shapes use "; " instead (see `_machine_cell`).
     """
     if value is None:
         return "Unknown Artist" if name == "artist" else ""
+    if isinstance(value, list):
+        return ", ".join(value)
     return str(value)
 
 
@@ -295,8 +300,12 @@ def _machine_cell(value: object) -> str:
     """A value for a delimited row: typed value stringified, genuine absence empty.
 
     No Unknown-Artist fallback — that is a human reading choice (ADR 0014/0019);
-    a machine row leaves an absent field blank.
+    a machine row leaves an absent field blank. A set-valued field (genres,
+    ADR 0022) joins with "; " — distinct from CSV's comma, so a consumer can
+    split the cell back into the set; JSON keeps it a real array instead.
     """
+    if isinstance(value, list):
+        return "; ".join(value)
     return "" if value is None else str(value)
 
 
