@@ -42,21 +42,25 @@ code and design change, and archive what is outdated or implemented.
 
 ## Workflow
 
-All work happens on a feature branch in its own worktree — always, even for small changes. Never edit the main checkout
-or commit to main directly. Claude creates the worktree with its worktree tooling (EnterWorktree), commits on the
-branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. EnterWorktree
-prepends `worktree-` to the branch it creates; immediately rename it to a bare kebab-case name describing the change
-(`leek-list`, `add-journal-entry`, `fix-integration-tests`) — the worktree's location already says it's a worktree, so
-the prefix is noise. main's history is semi-linear: branches are rebased onto main, then landed by Fredrik with a single
-`--no-ff` merge marker — an imperative title, plus a label when there is something to cite, like
+Never edit the main checkout or commit to main directly. All work happens on a feature branch in its own worktree —
+always, even for small changes. Claude creates the worktree with its worktree tooling (EnterWorktree), commits on the
+branch, runs `just check`, and leaves the branch unmerged — integrating into main is Fredrik's call. When Claude is done,
+declare 'effort at branch `fix-bug` is ready to land'.
+
+EnterWorktree prepends `worktree-` to the branch it creates; immediately rename it to a bare kebab-case name describing
+the change (`leek-list`, `add-journal-entry`, `fix-integration-tests`) — the worktree's location already says it's a
+worktree, so the prefix is noise.
+
+main's history is semi-linear: branches are rebased onto main, then landed by Fredrik using `just land`. The merge
+message, if present, is an imperative title, plus a label when there is something to cite, like
 `Add CLI skeleton (Slice 0)` — so `git log --first-parent` stays linear. Fredrik lands with `just land`, which offers
 marker-title suggestions: when Claude declares a branch ready, it writes three candidate titles (one per line) to
 `.git/info/land-suggestions/<branch>` so landing never waits on a model call.
 
 ## Local harness
 
-The ambition is a really good agentic feedback loop: Claude should be able to run, verify, and inspect everything
-locally and fast. Today that is:
+The ambition is to have a really good agentic feedback loop: Claude should be able to run, verify, and inspect
+everything locally and fast. Today that is:
 
 - `just fix` / `just check` — the quality gates
 - the fixture corpus (`tests/fixtures/`): fictional albums with documented, load-bearing quirks, materialised into
