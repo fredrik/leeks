@@ -2,6 +2,9 @@
 
 Status: Decided (2026-06-13)
 
+Amended by [0019](0019-the-default-output-is-for-humans-not-parsers.md) (2026-06-13): the bare-names listing is human
+output, not a scripting contract — scripts bind to `--format json`; the no-`isatty`-split observation stands.
+
 ## Decision
 
 A new verb, `leek fields`, prints the field namespace a subject exposes — the discovery side of `--fields`

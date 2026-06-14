@@ -19,8 +19,18 @@ Each kind of document has its own directory and lifecycle:
   State the decision, the context, and the alternatives considered.
 - Every record carries a mandatory `Status:` line with the lifecycle Proposed → Decided | Declined → Deprecated |
   Superseded. The status line is the one part of a record that may be edited after it lands; the body is append-only. To
-  reverse a decision, write a new record and mark the old one `Superseded by [NNNN](...)`. There is no separate index —
-  the filenames are the index, and `grep '^Status' docs/decisions/*.md` surveys the statuses.
+  reverse a decision wholesale, write a new record and mark the old one `Superseded by [NNNN](...)`. There is no
+  separate index — the filenames are the index, and `grep '^Status' docs/decisions/*.md` surveys the statuses.
+- When a new record revises only a *clause* of an older one that otherwise still stands, it is not a supersession — but
+  the older record must still say so. The amending record adds an
+  `Amended by [NNNN](NNNN-title.md) (YYYY-MM-DD): <what changed>` line — its own line, one blank line below the old
+  record's `Status:` line, so both stay greppable — saying in one sentence what changed and that the rest stands. The
+  obligation is on the author of the new record, in the same change. The point is bidirectional discoverability:
+  supersession redirects a reader off a dead record, but an amendment leaves the old record live and
+  authoritative-looking, so a reader who lands there from a code comment needs the forward pointer — otherwise the
+  amendment is findable only from the record that made it. The amend line lives in the status block, the one region
+  edits are allowed; the body stays append-only. A rule of thumb: if you find yourself amending the same record a third
+  time, or the amendment guts its decision, supersede it instead.
 - Design docs describe what the system should be; plans describe how to get there. When a plan is done, archive it — the
   design doc is the lasting record.
 - Keep design docs updated when code or design changes.

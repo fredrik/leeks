@@ -16,6 +16,12 @@ is the one line that may be edited after the record lands. The lifecycle:
 
 The date is the date of the most recent status change.
 
+When a later record revises only one clause and the rest of this record still stands, it is not superseded. The amending
+record adds a line of its own, one blank line below this Status line —
+`Amended by [NNNN](NNNN-title.md) (YYYY-MM-DD): <what changed>` — so the revision is discoverable here, not only from
+the record that made it. This is the one other edit the status block permits; the body stays append-only. Amend a third
+time, or gut the decision, and supersede instead.
+
 Title mood: imperative by default ("Store claims, not measurements"). Use declarative ("The library tree is for
 humans") only when the record fixes the shape or purpose of a thing and an imperative would distort it.
 -->

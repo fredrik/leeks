@@ -2,6 +2,9 @@
 
 Status: Decided (2026-06-13)
 
+Amended by [0019](0019-the-default-output-is-for-humans-not-parsers.md) (2026-06-13): a pipe no longer gets a
+tab-separated record — it gets the human format rendered plain; the rest of this record stands.
+
 ## Decision
 
 `leek list [TERM]...` lists the library. Its **default subject is albums** — one line per album in shelf order, exactly

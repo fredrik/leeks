@@ -2,6 +2,9 @@
 
 Status: Decided (2026-06-13)
 
+Amended by [0019](0019-the-default-output-is-for-humans-not-parsers.md) (2026-06-13): an unset `--format` sends a pipe
+the human format rendered plain, not a tab-separated record; the division of labour this record draws still stands.
+
 ## Decision
 
 `leek list --format <shape>` chooses the structured form output takes. `<shape>` is a **closed enum** — `json` first,
