@@ -1,4 +1,4 @@
-# 0023 — Give each field a colour, and let the artist pop
+# 0024 — Give each field a colour, and let the artist pop
 
 Status: Decided (2026-06-14)
 

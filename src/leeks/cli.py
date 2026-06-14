@@ -99,7 +99,7 @@ def version() -> None:
 
 def _print_added(added: "Added") -> None:
     console = Console()
-    # The detail line wears the field vocabulary (ADR 0023): the artist mauve so
+    # The detail line wears the field vocabulary (ADR 0024): the artist mauve so
     # it pops, the year peach, the track count quiet — each piece coloured for
     # its role rather than the whole line one grey.
     details = Text("  ")
@@ -172,7 +172,7 @@ _SELECTABLE_EXTRAS: dict[str, tuple[str, ...]] = {
 }
 
 # Each field's hue, keyed by the name --fields and the default columns share, so
-# a selected field keeps its vocabulary colour (ADR 0023) — the field's look
+# a selected field keeps its vocabulary colour (ADR 0024) — the field's look
 # follows the field, not the view, so a --fields table renders each column
 # exactly as the curated default does. artist and name (the artist's own name)
 # are the mauve that pops; id stays a muted handle. A field with no entry here
@@ -212,7 +212,7 @@ def _display_cell(name: str, value: object) -> str:
 
 
 def _artist_cell(artist: str | None) -> Text:
-    """The artist, mauve so it pops, dim italic when the Unknown fallback (ADR 0023/0010).
+    """The artist, mauve so it pops, dim italic when the Unknown fallback (ADR 0024/0010).
 
     The artist's hue (`theme.ARTIST`) rides the Text itself, not the column, so
     the same cell carries its colour into a heading where there is no column to
@@ -289,7 +289,7 @@ def _parse_fields(subject: str, spec: str) -> tuple[str, ...]:
 def _plain_table(rows: Sequence[Any], fields: Sequence[str]) -> Table:
     """The `--fields` table: one column per selected field, in the field vocabulary.
 
-    Each column wears its field's hue (ADR 0023), so a selected field looks
+    Each column wears its field's hue (ADR 0024), so a selected field looks
     exactly as it does in the curated default view — colour follows the field,
     not the view (this supersedes ADR 0016's plain-table note). The artist field
     is rendered per-cell by `_artist_cell` so its Unknown fallback keeps its own
@@ -616,7 +616,7 @@ def _print_track_card(
     heading.append(" — ", style=theme.SUBTEXT0)
     heading.append(card.title, style=theme.TITLE)
     console.print(heading)
-    # The context line wears the vocabulary too (ADR 0023): the host album
+    # The context line wears the vocabulary too (ADR 0024): the host album
     # sapphire, its year peach, the track number quiet.
     context = Text("  ")
     context.append(card.album, style=theme.ALBUM)

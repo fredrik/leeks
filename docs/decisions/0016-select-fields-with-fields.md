@@ -17,9 +17,9 @@ What this record settles:
 - **Field order is column order.** `--fields title,artist` prints title then artist.
 - **It replaces the curated default columns, not extends them.** You asked for exactly these; you get exactly these.
   What changes is *which* fields and *what order*, not how each looks: a selected field wears its vocabulary colour
-  ([ADR 0023](0023-a-field-colour-vocabulary.md)), the same it has in the default view, the italic unknown-artist bucket
+  ([ADR 0024](0024-a-field-colour-vocabulary.md)), the same it has in the default view, the italic unknown-artist bucket
   ([ADR 0010](0010-the-library-tree-is-for-humans.md)) included. (This record first called the `--fields` table plain
-  and utilitarian; ADR 0023 made colour a property of the field, not the view, and superseded that point — colour now
+  and utilitarian; ADR 0024 made colour a property of the field, not the view, and superseded that point — colour now
   follows the field wherever it appears.) If the *default* columns feel wrong, that is a default-columns decision, not a
   reason to type `--fields` every time.
 - **The namespace is per subject.** `--fields` means something only alongside a subject

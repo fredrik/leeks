@@ -42,7 +42,7 @@ SURFACE0 = "#313244"
 RAINBOW = [RED, PEACH, YELLOW, GREEN, SAPPHIRE, MAUVE]
 
 
-# The field vocabulary (ADR 0023): one hue per role, used in every view so the
+# The field vocabulary (ADR 0024): one hue per role, used in every view so the
 # eye learns it — the artist is always mauve, the year always peach. The content
 # fields (artist, title, album, year, genre) carry the colour; the structural
 # and technical ones (track number, measurements, provenance) stay muted, so the
