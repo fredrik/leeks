@@ -120,6 +120,8 @@ Markdown is formatted with mdformat (120-column wrap, configured in `.mdformat.t
   they were speculative design written before contact. Design from local information (see project-principles)
 - Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
 - Decision records live in `docs/decisions/` (template: `0000-template.md`); decisions that outlive a slice get one.
+  Before writing one, apply two tests, both must pass: *is it non-obvious from the code?* (if a reader could re-derive
+  it from the source, it's a comment, not an ADR) and *is it stable?* (if you can already see what supersedes it, wait).
   Scaffold one with `just adr-new <slug>`, which claims the next number from a shared bureau so parallel branches don't
   collide (ADR 0030)
 - CLI: click. Entry point is `leek` (singular). The verbs are the user interface, curated in `docs/design/verbs.md` —
