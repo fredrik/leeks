@@ -13,6 +13,7 @@ source layer (ADR 0011).
 
 import re
 import shutil
+from collections import defaultdict
 from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass
@@ -64,7 +65,7 @@ class Added:
 class Listed:
     """One album of `leek list`'s shelf."""
 
-    album_id: int
+    id: int
     artist: str | None
     year: int | None
     title: str
@@ -93,14 +94,77 @@ class ListedArtist:
     name: str
 
 
-def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
-    """The library's albums in shelf order, narrowed by terms (ADR 0011).
+@dataclass(frozen=True)
+class Claim:
+    """One source's claim about one field (ADR 0008), source resolved to its name.
 
-    Terms AND together and match, case-insensitively, anywhere in the
-    album's artist, title, or year — the merged view's data, never
-    display fallbacks.
+    The unit `--sources` reveals: who said what. Trivial today — every claim
+    is the `file_tags` source — but the seam that earns its keep at source #2.
     """
-    statement = (
+
+    source: str
+    field: str
+    value: str
+
+
+@dataclass(frozen=True)
+class ShownFile:
+    """The measurements of one file realising a track (ADR 0007).
+
+    Read off the file row, not the source layer: no source has a vote on
+    what the bytes are, so these are facts, not claims.
+    """
+
+    path: str
+    format: str
+    bitrate: int | None
+    samplerate: int | None
+    channels: int | None
+    duration: float | None
+    size: int
+    sha256: str
+
+
+@dataclass(frozen=True)
+class ShownTrack:
+    """One track of `leek show`, in depth: its files' measurements and claims."""
+
+    id: int
+    number: int | None
+    title: str
+    # The effective artist: the track's own credit when it overrides the
+    # album's, else the album artist — as `list_tracks` resolves it.
+    artist: str | None
+    files: list[ShownFile]
+    claims: list[Claim]
+
+
+@dataclass(frozen=True)
+class ShownAlbum:
+    """One album of `leek show`, in depth: the merged view, its tracks, its claims.
+
+    The typed projection every formatter reads (ADR 0014): merged identity on
+    top, the tracks (each with file measurements) beneath, and the claim layer
+    carried alongside for `--sources` and for JSON, which always includes it.
+    """
+
+    id: int
+    artist: str | None
+    year: int | None
+    title: str
+    genres: list[str]
+    tracks: list[ShownTrack]
+    claims: list[Claim]
+
+
+# An `id:N` query term: the first field-qualified term (the grammar
+# deferred by ADR 0012/0013), kept minimal and album-scoped for now.
+_ID_TERM = re.compile(r"id:(\d+)")
+
+
+def _shelf_statement():
+    """`select(Album, Artist.name)` joined and ordered as the shelf (ADR 0011)."""
+    return (
         select(Album, Artist.name)
         .outerjoin(Artist, Album.artist_id == Artist.id)
         # INNER join leans on an invariant: every album has at least one
@@ -117,18 +181,39 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
             Album.title.collate("NOCASE"),
         )
     )
+
+
+def _apply_album_terms(statement, terms: Sequence[str]):
+    """Narrow an album query by terms, ANDed (ADR 0011).
+
+    A bare term matches the album's artist, title, or year,
+    case-insensitively — the merged view's data, never display fallbacks. An
+    `id:N` term instead selects one album by primary key; it is the same
+    field-qualified term `show` uses to name one entity exactly (ADR 0020),
+    so `list` understands it too.
+    """
     for term in terms:
-        statement = statement.where(
-            or_(
-                Artist.name.icontains(term, autoescape=True),
-                Album.title.icontains(term, autoescape=True),
-                cast(Album.year, String).icontains(term, autoescape=True),
+        id_match = _ID_TERM.fullmatch(term)
+        if id_match is not None:
+            statement = statement.where(Album.id == int(id_match.group(1)))
+        else:
+            statement = statement.where(
+                or_(
+                    Artist.name.icontains(term, autoescape=True),
+                    Album.title.icontains(term, autoescape=True),
+                    cast(Album.year, String).icontains(term, autoescape=True),
+                )
             )
-        )
+    return statement
+
+
+def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
+    """The library's albums in shelf order, narrowed by terms (ADR 0011)."""
+    statement = _apply_album_terms(_shelf_statement(), terms)
     with db.session() as session:
         return [
             Listed(
-                album_id=album.id,
+                id=album.id,
                 artist=artist,
                 year=album.year,
                 title=album.title,
@@ -208,6 +293,117 @@ def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
         return [
             ListedArtist(artist_id=artist.id, name=artist.name)
             for artist in session.scalars(statement)
+        ]
+
+
+def _claims_by_entity(
+    session: Session, entity_type: str, entity_ids: Sequence[int]
+) -> dict[int, list[Claim]]:
+    """Every source's claims about these entities (ADR 0008), grouped by id."""
+    claims: dict[int, list[Claim]] = defaultdict(list)
+    if not entity_ids:
+        return claims
+    statement = (
+        select(SourceValue, Source.name)
+        .join(Source, SourceValue.source_id == Source.id)
+        .where(
+            SourceValue.entity_type == entity_type,
+            SourceValue.entity_id.in_(entity_ids),
+        )
+        .order_by(SourceValue.id)
+    )
+    for value, source in session.execute(statement):
+        claims[value.entity_id].append(
+            Claim(source=source, field=value.field, value=value.value)
+        )
+    return claims
+
+
+def show_albums(terms: Sequence[str] = ()) -> list[ShownAlbum]:
+    """The matching albums, each in depth: tracks, file measurements, claims.
+
+    The depth read behind `leek show` (ADR 0020): the same shelf-order
+    selection as `list_albums`, then each album hydrated with its tracks
+    (effective artist as `list_tracks` resolves it), the measurements of the
+    files realising them (ADR 0007), its genres, and every source's claims
+    (ADR 0008). Claims ride along for `--sources` and for JSON, which carries
+    them regardless. Several matches return several albums; `show` decides how
+    to present them.
+    """
+    album_artist = aliased(Artist)
+    track_artist = aliased(Artist)
+    with db.session() as session:
+        album_rows = session.execute(
+            _apply_album_terms(_shelf_statement(), terms)
+        ).all()
+        album_ids = [album.id for album, _ in album_rows]
+        if not album_ids:
+            return []
+
+        tracks_by_album: dict[int, list[tuple[Track, str | None]]] = defaultdict(list)
+        track_statement = (
+            select(Track, func.coalesce(track_artist.name, album_artist.name))
+            .join(Album, Track.album_id == Album.id)
+            .outerjoin(album_artist, Album.artist_id == album_artist.id)
+            .outerjoin(track_artist, Track.artist_id == track_artist.id)
+            .where(Track.album_id.in_(album_ids))
+            .order_by(Track.track.is_(None), Track.track, Track.id)
+        )
+        for track, artist in session.execute(track_statement):
+            tracks_by_album[track.album_id].append((track, artist))
+        track_ids = [track.id for rows in tracks_by_album.values() for track, _ in rows]
+
+        files_by_track: dict[int, list[ShownFile]] = defaultdict(list)
+        if track_ids:
+            for file in session.scalars(
+                select(File).where(File.track_id.in_(track_ids)).order_by(File.id)
+            ):
+                files_by_track[file.track_id].append(
+                    ShownFile(
+                        path=file.path,
+                        format=file.format,
+                        bitrate=file.bitrate,
+                        samplerate=file.samplerate,
+                        channels=file.channels,
+                        duration=file.duration,
+                        size=file.size,
+                        sha256=file.sha256,
+                    )
+                )
+
+        genres_by_album: dict[int, list[str]] = defaultdict(list)
+        for album_id, name in session.execute(
+            select(AlbumGenre.album_id, Genre.name)
+            .join(Genre, AlbumGenre.genre_id == Genre.id)
+            .where(AlbumGenre.album_id.in_(album_ids))
+            .order_by(Genre.name.collate("NOCASE"))
+        ):
+            genres_by_album[album_id].append(name)
+
+        album_claims = _claims_by_entity(session, "album", album_ids)
+        track_claims = _claims_by_entity(session, "track", track_ids)
+
+        return [
+            ShownAlbum(
+                id=album.id,
+                artist=artist,
+                year=album.year,
+                title=album.title,
+                genres=genres_by_album[album.id],
+                tracks=[
+                    ShownTrack(
+                        id=track.id,
+                        number=track.track,
+                        title=track.title,
+                        artist=effective_artist,
+                        files=files_by_track[track.id],
+                        claims=track_claims[track.id],
+                    )
+                    for track, effective_artist in tracks_by_album[album.id]
+                ],
+                claims=album_claims[album.id],
+            )
+            for album, artist in album_rows
         ]
 
 

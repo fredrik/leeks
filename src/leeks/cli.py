@@ -5,19 +5,30 @@ import json
 import sys
 import time
 from collections.abc import Callable, Sequence
+from dataclasses import asdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import rich_click as click
 from rich.console import Console
 from rich.live import Live
+from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
 
 from leeks import theme
 
 if TYPE_CHECKING:
-    from leeks.library import Added, Listed, ListedArtist, ListedTrack
+    from leeks.library import (
+        Added,
+        Claim,
+        Listed,
+        ListedArtist,
+        ListedTrack,
+        ShownAlbum,
+        ShownFile,
+        ShownTrack,
+    )
 
 theme.apply()
 
@@ -131,16 +142,26 @@ def add(directory: Path) -> None:
         raise click.ClickException(str(refusal)) from refusal
 
 
-# The renderable fields each subject projects, in column order. The names
+# The columns a listing prints when --fields is unset, in order. The names
 # are attributes of the matching Listed* dataclass (library.py), so a value
 # is a getattr away — the single typed seam every formatter reads (ADR 0014).
-# Today's namespace is the display columns; it grows (bitrate, path, …) when a
-# slice surfaces those facts, and `leek fields` reports it (ADR 0018).
-_FIELDS: dict[str, tuple[str, ...]] = {
+_DEFAULT_COLUMNS: dict[str, tuple[str, ...]] = {
     "albums": ("artist", "year", "title"),
     "tracks": ("artist", "album", "number", "title"),
     "artists": ("name",),
 }
+
+# Selectable handles beyond the default columns: names --fields accepts and
+# `leek fields` lists, but that a listing does not show by default. id is the
+# album's primary key, the handle `show id:N` names one entity by (ADR 0020) —
+# discoverable here, not shelf furniture. The namespace grows (bitrate, path,
+# …) as slices surface those facts (ADR 0018).
+_SELECTABLE_EXTRAS: dict[str, tuple[str, ...]] = {"albums": ("id",)}
+
+
+def _field_names(subject: str) -> tuple[str, ...]:
+    """The full field namespace for a subject: default columns then extras."""
+    return _DEFAULT_COLUMNS[subject] + _SELECTABLE_EXTRAS.get(subject, ())
 
 
 def _display_cell(name: str, value: object) -> str:
@@ -210,7 +231,7 @@ def _parse_fields(subject: str, spec: str) -> tuple[str, ...]:
     skip — so the exit code is non-zero. Duplicates are harmless and kept
     as given; field order is column order.
     """
-    valid = _FIELDS[subject]
+    valid = _field_names(subject)
     names = tuple(name.strip() for name in spec.split(","))
     for name in names:
         if not name:
@@ -297,7 +318,7 @@ def _emit(
     formatters, keying on the same resolved column list. Only `human` and
     `json` exist today; `csv` and `tsv` are deferred until the slice arrives.
     """
-    columns = fields if fields is not None else _FIELDS[subject]
+    columns = fields if fields is not None else _DEFAULT_COLUMNS[subject]
     if output_format == "json":
         _emit_json(rows, columns)
         return
@@ -390,6 +411,167 @@ def list_command(
         )
 
 
+def _duration(seconds: float | None) -> str:
+    """Seconds as m:ss, or empty when the duration was not decoded."""
+    if seconds is None:
+        return ""
+    total = round(seconds)
+    return f"{total // 60}:{total % 60:02d}"
+
+
+def _bitrate(bitrate: int | None) -> str:
+    """Bits per second as kbps (an ADR 0007 measurement), or empty when unknown."""
+    if bitrate is None:
+        return ""
+    return f"{bitrate // 1000} kbps"
+
+
+def _album_heading(album: "ShownAlbum") -> Text:
+    """`<artist> — <title> (<year>)`, the Unknown bucket styled (ADR 0010)."""
+    heading = _artist_cell(album.artist)  # a fresh Text, safe to append to
+    heading.append(" — ", style=theme.SUBTEXT0)
+    heading.append(album.title, style=f"bold {theme.TEXT}")
+    if album.year is not None:
+        heading.append(f" ({album.year})", style=theme.SUBTEXT0)
+    return heading
+
+
+def _measurements_table(tracks: "Sequence[ShownTrack]") -> Table:
+    """The depth view's track list: number, title, and each file's measurements."""
+    table = Table(box=None, show_header=False, pad_edge=False)
+    table.add_column(style=theme.SUBTEXT0, justify="right")  # number
+    table.add_column(style=theme.TEXT)  # title
+    table.add_column(style=theme.SUBTEXT0, justify="right")  # duration
+    table.add_column(style=theme.SUBTEXT0)  # format
+    table.add_column(style=theme.SUBTEXT0, justify="right")  # bitrate
+    for track in tracks:
+        # One file per track today; multi-file nesting is deferred (ADR 0020).
+        file: ShownFile | None = track.files[0] if track.files else None
+        table.add_row(
+            str(track.number) if track.number is not None else "",
+            track.title,
+            _duration(file.duration) if file else "",
+            file.format if file else "",
+            _bitrate(file.bitrate) if file else "",
+        )
+    return table
+
+
+def _claims_table(claims: "Sequence[Claim]") -> Table:
+    """The claim layer (ADR 0008): field, value, and the source that claimed it."""
+    table = Table(box=None, show_header=False, pad_edge=False, padding=(0, 3, 0, 0))
+    table.add_column(style=theme.SUBTEXT0)  # field
+    table.add_column(style=theme.TEXT)  # value
+    table.add_column(style=theme.OVERLAY1)  # source
+    for claim in claims:
+        table.add_row(claim.field, claim.value, claim.source)
+    return table
+
+
+def _print_album(console: Console, album: "ShownAlbum", *, with_sources: bool) -> None:
+    """One album in depth: the merged heading, its genres, then tracks or claims."""
+    console.print(_album_heading(album))
+    if album.genres:
+        console.print(Text("  " + ", ".join(album.genres), style=theme.SUBTEXT0))
+    console.print()
+    # expand=False keeps the indent without padding rows to the console width —
+    # the width-alignment a pipe must not carry (ADR 0019).
+    if not with_sources:
+        console.print(
+            Padding(_measurements_table(album.tracks), (0, 0, 0, 2), expand=False)
+        )
+        return
+    # --sources unfolds the claim layer: album fields, then each track (ADR 0020).
+    console.print(Text("  album", style=theme.SUBTEXT1))
+    console.print(Padding(_claims_table(album.claims), (0, 0, 0, 4), expand=False))
+    for track in album.tracks:
+        number = f"{track.number}  " if track.number is not None else ""
+        console.print(
+            Padding(
+                Text(f"{number}{track.title}", style=theme.TEXT),
+                (1, 0, 0, 2),
+                expand=False,
+            )
+        )
+        console.print(Padding(_claims_table(track.claims), (0, 0, 0, 4), expand=False))
+
+
+def _show_json(albums: "Sequence[ShownAlbum]") -> None:
+    """The depth projection as JSON: an array of nested album objects.
+
+    Always an array, one element per match, and always full — claims included
+    regardless of --sources (ADRs 0017/0019/0020). asdict walks the frozen
+    projection (ADR 0014), so years stay ints, durations floats, and genuine
+    absence stays null. Like list's JSON it ignores the isatty split: a script
+    asked for this shape, so it lands on a terminal or a pipe alike.
+    """
+    click.echo(json.dumps([asdict(album) for album in albums], indent=2))
+
+
+def _showing_summary(count: int, *, filtered: bool) -> str:
+    """The human-mode header: what `show` is about to print, and how much of it.
+
+    A count on stderr so a glance warns when a bare `show` is about to pour
+    out the whole shelf, without touching the readable stdout (ADR 0019).
+    """
+    if filtered:
+        albums = "album" if count == 1 else "albums"
+        return f"showing {count} matching {albums}"
+    if count == 1:
+        return "showing 1 album"
+    return f"showing all {count} albums"
+
+
+@leek.command(name="show")
+@click.argument("terms", nargs=-1)
+@click.option(
+    "--sources",
+    "with_sources",
+    is_flag=True,
+    help="Show where each field came from: the source behind every value.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["json"]),
+    default=None,
+    help="Print machine-readable output instead, e.g. json.",
+)
+def show_command(
+    terms: tuple[str, ...], with_sources: bool, output_format: str | None
+) -> None:
+    """Show an album in depth: its tracks, their files, and on request its sources.
+
+    Terms pick the album the way leek list does (by artist, title, or
+    year), or id:N names one exactly. A unique match is shown in full; when
+    several match, all of them are (a chooser to narrow them comes later).
+    --sources shows where each field came from, source by source. --format
+    json prints the whole projection, always as an array.
+    """
+    # Imported here so a bare `leek` never pays the pipeline's startup cost.
+    from leeks import library
+
+    albums = library.show_albums(terms)
+    if output_format == "json":
+        _show_json(albums)
+        return
+    if not albums:
+        note = (
+            "nothing on the shelf matches that"
+            if terms
+            else "the library is empty, leek add brings music in"
+        )
+        Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
+        return
+    summary = _showing_summary(len(albums), filtered=bool(terms))
+    Console(stderr=True).print(Text(summary, style=theme.SUBTEXT0))
+    console = Console()
+    for index, album in enumerate(albums):
+        if index:
+            console.print()  # a blank line between albums when several match
+        _print_album(console, album, with_sources=with_sources)
+
+
 @leek.command(name="fields")
 @click.option(
     "--albums",
@@ -415,12 +597,12 @@ def fields_command(subject: str, output_format: str | None) -> None:
     a JSON array with --format json. They are exactly the names --fields
     accepts for that subject.
     """
-    # The discovery side of --fields (ADR 0018), reading the same _FIELDS
-    # map --fields validates against (ADR 0016) so the two can never
-    # disagree. --format json mirrors list's structured shape (ADR 0017).
-    # No library import: the namespace is static, so `leek fields` never
-    # touches the database and pays no pipeline startup cost.
-    names = _FIELDS[subject]
+    # The discovery side of --fields (ADR 0018), reading the same namespace
+    # --fields validates against (ADR 0016) so the two can never disagree.
+    # --format json mirrors list's structured shape (ADR 0017). No library
+    # import: the namespace is static, so `leek fields` never touches the
+    # database and pays no pipeline startup cost.
+    names = _field_names(subject)
     if output_format == "json":
         click.echo(json.dumps(list(names)))
         return
