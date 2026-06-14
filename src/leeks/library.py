@@ -234,10 +234,10 @@ def _shelf_statement():
         .join(Track, Track.album_id == Album.id)
         .group_by(Album.id)
         .order_by(
-            func.coalesce(Artist.name, "Unknown Artist").collate(db.FOLD_COLLATION),
+            func.coalesce(Artist.name, "Unknown Artist").collate(db.SORT_COLLATION),
             Album.year.is_(None),
             Album.year,
-            Album.title.collate(db.FOLD_COLLATION),
+            Album.title.collate(db.SORT_COLLATION),
         )
     )
 
@@ -358,11 +358,11 @@ def list_tracks(terms: Sequence[str] = ()) -> list[ListedTrack]:
         .outerjoin(track_artist, Track.artist_id == track_artist.id)
         .order_by(
             func.coalesce(album_artist.name, "Unknown Artist").collate(
-                db.FOLD_COLLATION
+                db.SORT_COLLATION
             ),
             Album.year.is_(None),
             Album.year,
-            Album.title.collate(db.FOLD_COLLATION),
+            Album.title.collate(db.SORT_COLLATION),
             Album.id,
             Track.track.is_(None),
             Track.track,
@@ -393,7 +393,7 @@ def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
     artists): the honest view of what the table holds today. Terms AND
     together and match the name, case-insensitively.
     """
-    statement = select(Artist).order_by(Artist.name.collate(db.FOLD_COLLATION))
+    statement = select(Artist).order_by(Artist.name.collate(db.SORT_COLLATION))
     for term in terms:
         statement = statement.where(Artist.name.icontains(term, autoescape=True))
     with db.session() as session:
@@ -406,17 +406,18 @@ def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
 def _genres_by_album(
     session: Session, album_ids: Sequence[int]
 ) -> dict[int, list[str]]:
-    """Each album's genres in folded-name order — the merged set (ADR 0022).
+    """Each album's genres in name order — the merged set (ADR 0022).
 
     Shared by the shelf (`list_albums`) and the depth read (`show_albums`):
-    one batched query, grouped by album, so neither does it per row.
+    one batched query, grouped by album, so neither does it per row. Names
+    sort in the library's Swedish order (ADR 0026), like every other listing.
     """
     genres: dict[int, list[str]] = defaultdict(list)
     for album_id, name in session.execute(
         select(AlbumGenre.album_id, Genre.name)
         .join(Genre, AlbumGenre.genre_id == Genre.id)
         .where(AlbumGenre.album_id.in_(album_ids))
-        .order_by(Genre.name.collate(db.FOLD_COLLATION))
+        .order_by(Genre.name.collate(db.SORT_COLLATION))
     ):
         genres[album_id].append(name)
     return genres
@@ -534,11 +535,11 @@ def show_tracks(terms: Sequence[str] = ()) -> list[ShownTrackCard]:
         .outerjoin(track_artist, Track.artist_id == track_artist.id)
         .order_by(
             func.coalesce(album_artist.name, "Unknown Artist").collate(
-                db.FOLD_COLLATION
+                db.SORT_COLLATION
             ),
             Album.year.is_(None),
             Album.year,
-            Album.title.collate(db.FOLD_COLLATION),
+            Album.title.collate(db.SORT_COLLATION),
             Album.id,
             Track.track.is_(None),
             Track.track,
@@ -579,7 +580,7 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
     an overriding credit.
     """
     ids, text = _take_id(terms)
-    statement = select(Artist).order_by(Artist.name.collate(db.FOLD_COLLATION))
+    statement = select(Artist).order_by(Artist.name.collate(db.SORT_COLLATION))
     if ids:
         statement = statement.where(Artist.id.in_(ids))
     for term in text:
@@ -595,7 +596,7 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
             select(Album)
             .where(Album.artist_id.in_(artist_ids))
             .order_by(
-                Album.year.is_(None), Album.year, Album.title.collate(db.FOLD_COLLATION)
+                Album.year.is_(None), Album.year, Album.title.collate(db.SORT_COLLATION)
             )
         ):
             if album.artist_id is not None:
@@ -609,7 +610,7 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
             .join(Album, Track.album_id == Album.id)
             .where(Track.artist_id.in_(artist_ids))
             .order_by(
-                Album.title.collate(db.FOLD_COLLATION),
+                Album.title.collate(db.SORT_COLLATION),
                 Track.track.is_(None),
                 Track.track,
                 Track.id,

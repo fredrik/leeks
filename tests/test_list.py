@@ -14,17 +14,17 @@ def add_corpus(corpus, materialise):
 def shelf_key(album: "library.Listed") -> tuple[Any, ...]:
     """The shelf-order sort the SQL ORDER BY must reproduce (ADR 0011).
 
-    The library folds case and accents at the connection (ADR 0021), so a
-    faithful reference folds the same way — Åsa shelves among the A's, not
-    past Z where SQLite's ASCII-only NOCASE once stranded it.
+    The library sorts in Swedish order at the connection (ADR 0026), so a
+    faithful reference uses the same sort key — Åsa shelves last, after Z, not
+    among the A's.
     """
-    from leeks.db import fold
+    from leeks.db import sort_key
 
     return (
-        fold(album.artist or "Unknown Artist"),
+        sort_key(album.artist or "Unknown Artist"),
         album.year is None,
         album.year or 0,
-        fold(album.title),
+        sort_key(album.title),
     )
 
 
@@ -80,12 +80,18 @@ def test_shelf_order_folds_artist_case(shelve):
     assert [album.title for album in library.list_albums()] == ["First", "Second"]
 
 
-def test_shelf_order_folds_accents(shelve):
-    # Åsa belongs among the A's, not stranded past Z (ADR 0021).
+def test_shelf_order_sorts_swedish(shelve):
+    # Å is a letter of its own, sorting after Z — Åsa shelves last (ADR 0026).
     shelve("Ringer", artist="Bo")
     shelve("Snön", artist="Åsa")
     shelve("Alm", artist="Alm")
-    assert [album.title for album in library.list_albums()] == ["Alm", "Snön", "Ringer"]
+    shelve("Wave", artist="Öje")
+    assert [album.title for album in library.list_albums()] == [
+        "Alm",
+        "Ringer",
+        "Snön",  # Åsa
+        "Wave",  # Öje — ö sorts after å
+    ]
 
 
 def test_terms_fold_case_and_accents(corpus, materialise):
@@ -224,10 +230,10 @@ def test_a_track_term_is_text_not_a_pattern(corpus, materialise):
 
 
 def name_key(name: str) -> str:
-    """Folded like the library's NOCASE collation: case and accents (ADR 0021)."""
-    from leeks.db import fold
+    """Sorted like the library's SORT collation: Swedish order (ADR 0026)."""
+    from leeks.db import sort_key
 
-    return fold(name)
+    return sort_key(name)
 
 
 def test_an_empty_library_lists_no_artists():
@@ -248,7 +254,7 @@ def test_artists_are_every_row_in_name_order(corpus, materialise):
     }
     assert set(names) == expected
     assert "Tin Hatch Choir feat. Vesna Holloway" in expected  # the wart, present
-    # Folded name order, whatever the corpus grows (Åsa among the A's now).
+    # Swedish name order, whatever the corpus grows (Åsa Vinterhök last).
     assert names == sorted(names, key=name_key)
 
 
