@@ -840,8 +840,10 @@ def _record_claims(
     def record(entity_type: str, entity_id: int, source_obj: object) -> None:
         # The registry says which fields exist and their arity (ADR 0025): a
         # set-valued field yields one claim per value, a scalar at most one.
+        # An untagged field is a path-only release fact (ADR 0033): file_tags
+        # has no attribute for it, so this write path passes it by.
         for f in CLAIMS:
-            if f.entity != entity_type:
+            if f.entity != entity_type or not f.tagged:
                 continue
             raw = getattr(source_obj, f.model_attr)
             for value in raw if f.multi else [raw]:

@@ -32,6 +32,11 @@ class ClaimField:
     # The AlbumInfo/TrackInfo attribute, when it differs from the field name
     # (the genre field reads the plural `genres` list).
     attr: str | None = None
+    # Whether file_tags assembles this field from the audio tags. A path-only
+    # release fact (medium, catalogue) is not tagged: no AlbumInfo/TrackInfo
+    # attribute backs it, so the file_tags write path skips it and only the
+    # path source claims it (ADR 0033).
+    tagged: bool = True
 
     @property
     def model_attr(self) -> str:
@@ -39,13 +44,20 @@ class ClaimField:
 
 
 # Order is the order claims are recorded and `show --sources` displays them:
-# the scalars an album leads with, then its set-valued genre.
+# the scalars an album leads with, then its set-valued genre, then the
+# path-only release facts.
 CLAIMS: tuple[ClaimField, ...] = (
     ClaimField("title", "album", cast=str),
     ClaimField("artist", "album"),
     ClaimField("year", "album", cast=int),
     ClaimField("tracktotal", "album"),
     ClaimField("genre", "album", multi=True, attr="genres"),
+    # Release facts only the path asserts (ADR 0033): no file_tags attribute
+    # backs them, and no consumer yet earns a merged column, so they are
+    # claim-only — recorded in the source layer, cast to no column.
+    ClaimField("medium", "album", tagged=False),
+    ClaimField("region", "album", tagged=False),
+    ClaimField("catalogue", "album", tagged=False),
     ClaimField("title", "track", cast=str),
     ClaimField("artist", "track"),
     ClaimField("track", "track", cast=int),

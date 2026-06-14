@@ -27,13 +27,89 @@ claims = [
 ]
 
 # The catalogue/label braces hold their own " - "; stripping the bracketed
-# groups before the split keeps it from being read as the artist separator.
+# groups before the split keeps it from being read as the artist separator. The
+# brace is the label–catalogue form, so the part after its " - " is the
+# catalogue number; the label is discarded. [FLAC] is the encoding — a
+# measurement read from the bytes (ADR 0007), never a claim.
 [[cases]]
 name = "The Avalanches - Since I Left You (2001) [FLAC] {XL Recordings - XLCD 138}"
 claims = [
     { field = "artist", value = "The Avalanches" },
     { field = "title", value = "Since I Left You" },
     { field = "year", value = "2001" },
+    { field = "catalogue", value = "XLCD 138" },
+]
+
+# --- Path-only release facts: medium, region, catalogue (ADR 0033) ----------
+
+# Medium is the release's physical form (vinyl/CD/cassette) — what MusicBrainz
+# calls its "format". The bracket is punctuation; the content is the fact, so a
+# medium reads the same in any bracket. Here it rides in parens, with no year.
+[[cases]]
+name = "Talk Talk - Spirit of Eden (Vinyl)"
+claims = [
+    { field = "artist", value = "Talk Talk" },
+    { field = "title", value = "Spirit of Eden" },
+    { field = "medium", value = "Vinyl" },
+]
+
+# Two square-bracket groups, one each side of the encoding/medium line: [FLAC]
+# is the encoding (a measurement, stripped and unclaimed); [CD] is the medium.
+[[cases]]
+name = "Boards of Canada - Geogaddi (2002) [FLAC] [CD]"
+claims = [
+    { field = "artist", value = "Boards of Canada" },
+    { field = "title", value = "Geogaddi" },
+    { field = "year", value = "2002" },
+    { field = "medium", value = "CD" },
+]
+
+# Medium in braces, no year — recognised by its content, not its bracket.
+[[cases]]
+name = "Cocteau Twins - Treasure {Cassette}"
+claims = [
+    { field = "artist", value = "Cocteau Twins" },
+    { field = "title", value = "Treasure" },
+    { field = "medium", value = "Cassette" },
+]
+
+# Region: a closed vocabulary of unambiguous tokens, silent on the rest.
+[[cases]]
+name = "Bo Hansson - Sagan om ringen (1972) {Scandinavia}"
+claims = [
+    { field = "artist", value = "Bo Hansson" },
+    { field = "title", value = "Sagan om ringen" },
+    { field = "year", value = "1972" },
+    { field = "region", value = "Scandinavia" },
+]
+
+# Catalogue with its label, beside the year — the label leads, catalogue follows.
+[[cases]]
+name = "Aphex Twin - Drukqs (2001) {Warp - WARPCD92}"
+claims = [
+    { field = "artist", value = "Aphex Twin" },
+    { field = "title", value = "Drukqs" },
+    { field = "year", value = "2001" },
+    { field = "catalogue", value = "WARPCD92" },
+]
+
+# An encoding token alone in brackets is a measurement, so nothing is claimed
+# from it; the dash-split still reads artist and title.
+[[cases]]
+name = "Klotvar - Nattskift [V0]"
+claims = [
+    { field = "artist", value = "Klotvar" },
+    { field = "title", value = "Nattskift" },
+]
+
+# A bare brace token that is neither a known medium nor region nor the
+# label–catalogue form could be a label; the parser stays silent rather than
+# guess it a catalogue.
+[[cases]]
+name = "Klotvar - Nattskift {Vandal Press}"
+claims = [
+    { field = "artist", value = "Klotvar" },
+    { field = "title", value = "Nattskift" },
 ]
 
 # --- Partial shapes ---------------------------------------------------------

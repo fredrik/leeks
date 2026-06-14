@@ -17,6 +17,10 @@ Coining a new term of art means adding it here in the same change.
   `leek fields` exposes, which is a different list.
 - **Measurement** — a fact about bytes we hold, locally recomputable, with no room for disagreement: bitrate, duration
   as decoded, sha256. Lives as columns on the file row, never in the source layer (ADR 0007).
+- **Encoding** vs **medium** — two senses of the loose word "format", kept apart (ADR 0033). The **encoding**
+  (FLAC/MP3/V0) is how the bytes are stored: a measurement, read from the file, never a claim. The **medium** (vinyl,
+  CD, cassette — what MusicBrainz calls a release's format) is the release's physical form, which the bytes cannot
+  reveal: a claim, asserted by a source like the path.
 - **Source** — a named origin of claims: `file_tags` and `path` today; `musicbrainz`, `user` later. Each carries a
   **priority** that resolves the merge (ADR 0031); sources are layers, none ever overwrites another.
 - **Analyzer** — a source whose claims are heuristic inferences from bytes (BPM detection, path parsing). Its claims

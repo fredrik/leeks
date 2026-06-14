@@ -370,6 +370,43 @@ def test_path_fills_a_missing_year_from_the_directory_name(tmp_path, leeks_root)
     assert added.destination == leeks_root / "Cordel Vane" / "2001 Phantom Atlas"
 
 
+def test_path_claims_release_facts_tags_never_carry(tmp_path, leeks_root):
+    # medium and catalogue are facts tags don't carry; they land as path claims
+    # in the source layer and earn no merged column (ADR 0033). The [FLAC] token
+    # is the encoding — a measurement, never a claim (ADR 0007).
+    source = _album_named(
+        tmp_path
+        / "Cordel Vane - Phantom Atlas (2001) (Vinyl) [FLAC] {Vandal Press - VP-07}"
+    )
+    library.add(source)
+    with db.session() as session:
+        path_src = session.scalar(select(orm.Source).where(orm.Source.name == "path"))
+        assert path_src is not None
+        path_claims = {
+            (c.field, c.value)
+            for c in rows(session, orm.SourceValue)
+            if c.source_id == path_src.id
+        }
+        assert path_claims == {
+            ("artist", "Cordel Vane"),
+            ("title", "Phantom Atlas"),
+            ("year", "2001"),
+            ("medium", "Vinyl"),
+            ("catalogue", "VP-07"),
+        }
+        # The facts are claim-only: file_tags claimed neither, and the album row
+        # carries no column for them — they live in the source layer alone.
+        (album,) = rows(session, orm.Album)
+        assert not hasattr(album, "medium")
+        assert not hasattr(album, "catalogue")
+        fact_sources = {
+            c.source.name
+            for c in rows(session, orm.SourceValue)
+            if c.field in {"medium", "catalogue"}
+        }
+        assert fact_sources == {"path"}
+
+
 def test_file_tags_year_outranks_the_path(tmp_path, leeks_root):
     # Both sources claim a year; file_tags has the higher priority, so it wins
     # and the path's folder-year stays a recorded-but-beaten claim (ADR 0031).

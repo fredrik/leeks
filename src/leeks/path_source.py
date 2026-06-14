@@ -1,16 +1,19 @@
 """The path source: claims read from a release's directory name (ADR 0008).
 
 A second, local source. A filesystem name carries real release metadata —
-artist, title, year, format, catalogue number — that file tags often lack.
+artist, title, year, medium, catalogue number — that file tags often lack.
 Reading it is heuristic, so the path source is an analyzer (ADR 0007): its
 claims carry confidence.
 
-The grammar is the common scene shape, `Artist - Album (Year) [Format]
-{Label - Cat#}`, and is deliberately conservative: it claims artist and
-title only from an explicit " - " split, and a year only when parenthesised,
-staying silent rather than guessing. Format, label, and catalogue number are
-recognised — stripped so they don't pollute the title — but not yet claimed
-(their own slice). The harness in tests/fixtures/path_names.toml is the
+The grammar is the common scene shape, `Artist - Album (Year) [Encoding]
+{Label - Cat#}`, and is deliberately conservative: it claims artist and title
+only from an explicit " - " split, staying silent rather than guessing. Every
+bracketed group — `(...)`, `[...]`, `{...}` — is classified by its *content*,
+not its bracket: the bracket is punctuation, the content is the fact (ADR
+0033). A four-digit number in parens is the year; a known medium, region, or a
+label–catalogue brace becomes that claim; everything else — the `[FLAC]`
+encoding among it, which is a measurement, not a claim (ADR 0007) — is stripped
+and claimed as nothing. The harness in tests/fixtures/path_names.toml is the
 verifier this grammar is built against.
 """
 
@@ -19,24 +22,35 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# A parenthesised four-digit year, e.g. the "(2001)" in
-# "The Avalanches - Since I Left You (2001)". A bare year is ambiguous (a label
-# code, a track count), so only the parenthesised form counts.
-_YEAR = re.compile(r"\((\d{4})\)")
-
-# Metadata groups in brackets or braces — "[FLAC]", "{Label - CAT#}". Stripped
-# before anything else so a brace's own " - " can't be read as the separator.
-_BRACKETED = re.compile(r"[\[{][^\]}]*[\]}]")
+# A bracketed group of any kind — "(2001)", "[FLAC]", "{Label - CAT#}". One scan
+# classifies every group by content; the same scan, blanked, leaves the
+# artist/title. Stripping the groups before the split also keeps a brace's own
+# " - " from being read as the artist separator.
+_GROUP = re.compile(r"([(\[{])([^)\]}]*)[)\]}]")
 
 # The artist/album boundary: a spaced hyphen, never a bare one, so hyphenated
 # names ("Selected Ambient Works 85-92", "Jean-Luc") stay intact.
 _SEPARATOR = " - "
 
+# A release's medium — its physical form, what MusicBrainz calls its "format".
+# Distinct from the encoding ([FLAC]), which is read from the bytes (ADR 0007)
+# and never claimed. A small closed vocabulary, matched case-folded; it grows
+# with the harness, like the grammar itself.
+_MEDIA = frozenset({"vinyl", "cd", "cassette", "digital"})
+
+# Regions appear unreliably and open-endedly, so a closed set catches the
+# unambiguous tokens and stays silent on the rest. Also grows with the harness.
+_REGIONS = frozenset(
+    {"eu", "europe", "us", "usa", "uk", "japan", "scandinavia", "worldwide"}
+)
+
 # A parenthesised year is rarely anything else; the dash split is the common
-# convention but less certain. Both are recorded, neither yet decides the merge
-# (ADR 0031) — priority does.
+# convention but less certain; the release facts are recognised from a token or
+# the label–catalogue structure, less certain again. All are recorded, none yet
+# decides the merge (ADR 0031) — priority does.
 YEAR_CONFIDENCE = 0.9
 SPLIT_CONFIDENCE = 0.7
+FACT_CONFIDENCE = 0.6
 
 
 @dataclass(frozen=True)
@@ -52,19 +66,47 @@ def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _year(content: str) -> str | None:
+    """A plausible four-digit year, or None — the bounds AlbumInfo.year accepts."""
+    text = content.strip()
+    if text.isdigit() and len(text) == 4 and 1000 <= int(text) <= 2999:
+        return text
+    return None
+
+
+def _fact(opener: str, content: str) -> PathClaim | None:
+    """The release fact a non-year group asserts, or None (ADR 0033)."""
+    text = _clean(content)
+    folded = text.casefold()
+    if folded in _MEDIA:
+        return PathClaim("medium", text, FACT_CONFIDENCE)
+    if folded in _REGIONS:
+        return PathClaim("region", text, FACT_CONFIDENCE)
+    # The label–catalogue brace, "{Label - Cat#}": the label leads, the
+    # catalogue follows. We claim the catalogue (clear structure) and discard
+    # the label, which is an entity of its own and waits for a reason.
+    if opener == "{" and _SEPARATOR in text:
+        catalogue = text.split(_SEPARATOR, 1)[1].strip()
+        if catalogue:
+            return PathClaim("catalogue", catalogue, FACT_CONFIDENCE)
+    return None
+
+
 def parse(name: str) -> list[PathClaim]:
     """The claims a directory name makes, by the common scene shape (ADR 0008)."""
+    year: str | None = None
+    facts: list[PathClaim] = []
+    for opener, content in _GROUP.findall(name):
+        # A bare year is ambiguous (a label code, a track count), so only the
+        # parenthesised form counts; the first such group wins.
+        if year is None and opener == "(" and (found := _year(content)) is not None:
+            year = found
+            continue
+        if (fact := _fact(opener, content)) is not None:
+            facts.append(fact)
+
     claims: list[PathClaim] = []
-    working = _BRACKETED.sub(" ", name)
-
-    year_match = _YEAR.search(working)
-    year = None
-    # The same bounds AlbumInfo.year accepts — an implausible number is not one.
-    if year_match is not None and 1000 <= int(year_match.group(1)) <= 2999:
-        year = year_match.group(1)
-        working = working[: year_match.start()] + working[year_match.end() :]
-
-    working = _clean(working)
+    working = _clean(_GROUP.sub(" ", name))
     if _SEPARATOR in working:
         artist, title = (part.strip() for part in working.split(_SEPARATOR, 1))
         if artist:
@@ -73,4 +115,5 @@ def parse(name: str) -> list[PathClaim]:
             claims.append(PathClaim("title", title, SPLIT_CONFIDENCE))
     if year is not None:
         claims.append(PathClaim("year", year, YEAR_CONFIDENCE))
+    claims.extend(facts)
     return claims
