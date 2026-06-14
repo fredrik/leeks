@@ -248,11 +248,13 @@ def test_readd_is_refused(corpus, materialise):
     assert after == before
 
 
-def _album_named(directory, *, year_tag=None, album_tag="Phantom Atlas"):
+def _album_named(
+    directory, *, year_tag=None, album_tag="Phantom Atlas", artist_tag="Cordel Vane"
+):
     """One tagged FLAC under a directory whose name the path source will parse.
 
-    album_tag=None leaves the album untitled in the tags, so file_tags claims
-    no title and the path's title is the only one to merge.
+    An album_tag/artist_tag of None leaves that field untagged, so file_tags
+    claims nothing for it and the path's claim is the only one to merge.
     """
     import shutil
 
@@ -265,12 +267,47 @@ def _album_named(directory, *, year_tag=None, album_tag="Phantom Atlas"):
     media = MediaFile(str(track))
     if album_tag is not None:
         media.album = album_tag
-    media.artist = "Cordel Vane"
+    if artist_tag is not None:
+        media.artist = artist_tag
     media.title = "Opening"
     if year_tag is not None:
         media.year = year_tag
     media.save()
     return directory
+
+
+def test_path_supplies_the_artist_when_tags_are_silent(tmp_path, leeks_root):
+    # No artist tag: the path's artist is the only claim, so relational merge
+    # sets the FK and the album shelves under it, not Unknown Artist (ADR 0032).
+    source = _album_named(
+        tmp_path / "Boards of Canada - Geogaddi (2002)",
+        artist_tag=None,
+        album_tag=None,
+    )
+    added = library.add(source)
+    assert added.artist == "Boards of Canada"
+    with db.session() as session:
+        (album,) = rows(session, orm.Album)
+        artist = session.get(orm.Artist, album.artist_id)
+        assert artist is not None and artist.name == "Boards of Canada"
+    assert added.destination == leeks_root / "Boards of Canada" / "2002 Geogaddi"
+
+
+def test_file_tags_artist_outranks_the_path(tmp_path, leeks_root):
+    # Both name an artist; file_tags wins the FK and the path's is a recorded
+    # but beaten claim (ADR 0031/0032).
+    source = _album_named(tmp_path / "Path Artist - Phantom Atlas (2001)")
+    library.add(source)
+    with db.session() as session:
+        (album,) = rows(session, orm.Album)
+        artist = session.get(orm.Artist, album.artist_id)
+        assert artist is not None and artist.name == "Cordel Vane"
+        claimed = {
+            c.source.name: c.value
+            for c in rows(session, orm.SourceValue)
+            if c.field == "artist" and c.entity_type == "album"
+        }
+        assert claimed == {"file_tags": "Cordel Vane", "path": "Path Artist"}
 
 
 def test_a_realistic_name_records_a_path_claim_for_each_field(tmp_path, leeks_root):

@@ -26,12 +26,13 @@ Coining a new term of art means adding it here in the same change.
 - **Merged view** — the computed "effective" library: the albums/tracks/artists/genres tables that queries, the CLI, and
   the path scheme read. Derived from claims; never authoritative over them.
 - **Scalar** — a single atomic value: one string, one number, one cell of one row. Album year is scalar; an album's
-  genres (a set, via junction rows) and its artist (a foreign key) are relational, not scalar. Scalars can be merged by
-  assigning a winning claim (ADR 0031); relational fields must be merged by reconciling rows — a harder, still-open
-  problem, deferred until a source claims one (the path source claims only the scalar year for now).
+  genres (a set, via junction rows) and its artist (a foreign key) are relational, not scalar. Scalars are merged by
+  assigning a winning claim (ADR 0031); relational fields are merged by reconciling the winning claim to a row. The
+  artist foreign key does this now (ADR 0032); genre, a junction, waits for a second source to claim it.
 - **Merged column** — a scalar column in the merged view whose value `merge()` computes from the entity's claims (album
-  title and year; track title and number). Relational fields are written directly at write time and are not merged
-  columns.
+  title and year; track title and number). A relational field is not a merged column: the artist foreign key is resolved
+  by `merge()` to a row (ADR 0032), and genre is still linked at write time until a source other than file_tags claims
+  it.
 - **Merge** — recomputing merged columns from claims: each column takes the value of the highest-priority source that
   claims it (ADR 0031). **Identity merge** is the degenerate case where one source claims a field — the value copies
   through. Claim **confidence** is recorded but does not yet enter resolution; richer strategies and the review queue

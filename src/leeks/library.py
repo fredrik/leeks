@@ -683,13 +683,16 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
         ]
 
 
-def merge(session: Session, entity_type: str, entity_id: int, row: object) -> None:
-    """Recompute merged columns from claims, by source priority (ADR 0031).
+def merge(
+    session: Session, entity_type: str, entity_id: int, row: Album | Track
+) -> None:
+    """Recompute the merged view from claims, by source priority (ADR 0031).
 
-    Each merged column takes the value of the highest-priority source that
-    claims it; confidence is recorded but does not yet enter the contest.
-    Collapses to identity while one source claims a field — the file_tags-only
-    case — and resolves the contest once the path source claims it too.
+    A scalar column takes the highest-priority claim, cast back from text. The
+    artist foreign key takes the highest-priority artist claim too, but
+    reconciled to an Artist row rather than stored as a string — relational
+    merge (ADR 0032). Confidence is recorded but does not yet decide; merging
+    collapses to identity while one source claims a field.
     """
     casts = MERGED_FIELDS[entity_type]
     best: dict[str, tuple[int, str]] = {}
@@ -701,10 +704,16 @@ def merge(session: Session, entity_type: str, entity_id: int, row: object) -> No
             SourceValue.entity_id == entity_id,
         )
     ):
-        if name in casts and (name not in best or priority > best[name][0]):
+        if name not in best or priority > best[name][0]:
             best[name] = (priority, value)
-    for name, (_priority, value) in best.items():
-        setattr(row, name, casts[name](value))
+    for name, caster in casts.items():
+        if name in best:
+            setattr(row, name, caster(best[name][1]))
+    # The artist is a foreign key, not a column: the winning claim's name
+    # resolves to an Artist row (ADR 0032). genre, a junction, joins relational
+    # merge when a second source claims it — the path source does not.
+    if "artist" in best:
+        row.artist_id = _get_or_create(session, Artist, best["artist"][1]).id
 
 
 def add(directory: Path) -> Added:
@@ -721,9 +730,6 @@ def add(directory: Path) -> Added:
 
         # The directory name is the fallback for the NOT NULL title, not a claim.
         album = Album(title=info.title or directory.name, added=now)
-        artist = _get_or_create(session, Artist, info.artist) if info.artist else None
-        if artist is not None:
-            album.artist_id = artist.id
         session.add(album)
         session.flush()
         _link_genres(session, info, album)
@@ -732,10 +738,13 @@ def add(directory: Path) -> Added:
         claims = _record_claims(session, info, album, tracks, file_tags, now)
         path = session.scalars(select(Source).where(Source.name == "path")).one()
         _record_path_claims(session, directory, album, path, now)
+        # merge sets the artist foreign key from the claims (ADR 0032), so the
+        # album's artist is read back from the merged row, not from file_tags.
         merge(session, "album", album.id, album)
         for row in tracks:
             merge(session, "track", row.id, row)
 
+        artist = session.get(Artist, album.artist_id) if album.artist_id else None
         destination = _destination(root, album, artist.name if artist else None)
         try:
             _copy_files(session, info, tracks, destination, now)
@@ -791,14 +800,14 @@ def _create_tracks(
     rows = []
     for track in info.tracks:
         # The file stem is the fallback for the NOT NULL title, not a claim.
+        # The artist override, when present, is set by merge from the claims
+        # (ADR 0032), the same path the album artist takes.
         row = Track(
             album_id=album.id,
             title=track.title or track.path.stem,
             track=track.track,
             added=now,
         )
-        if track.artist:
-            row.artist_id = _get_or_create(session, Artist, track.artist).id
         session.add(row)
         session.flush()
         rows.append(row)
