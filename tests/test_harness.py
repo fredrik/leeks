@@ -15,7 +15,7 @@ def test_clean_album_round_trips(corpus, materialise):
     directory = materialise(album)
     files = sorted(directory.iterdir())
     assert len(files) == len(album["tracks"])
-    assert {p.suffix for p in files} == {".flac", ".mp3"}
+    assert {p.suffix for p in files} == {".flac"}
     for track, path in zip(album["tracks"], files):
         tags = MediaFile(str(path))
         assert tags.title == track["title"]

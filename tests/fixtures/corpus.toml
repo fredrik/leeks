@@ -14,6 +14,7 @@ artist = "Tin Hatch Choir"
 year = 2019
 genre = "Indie Rock"
 tracktotal = 5
+format = "flac"
 
 [[albums.tracks]]
 title = "Inventory of Small Storms"
@@ -45,6 +46,7 @@ artist = "Tin Hatch Choir"
 year = 2022
 genre = "Dream Pop"
 tracktotal = 4
+format = "mp3"
 
 [[albums.tracks]]
 title = "Meridian Line"
@@ -75,6 +77,7 @@ artist = "Vesna Holloway"
 year = 2017
 genre = "Folk"
 tracktotal = 4
+format = "flac"
 
 [[albums.tracks]]
 title = "Atlas of Held Breath"
@@ -100,6 +103,7 @@ track = 4
 [[albums]]
 title = "Tape Hiss Archipelago"
 artist = "Polder Arcade"
+format = "flac"
 
 [[albums.tracks]]
 title = "Arcade Rain"
@@ -128,6 +132,7 @@ artist = "The Extraordinarily Long-Winded Orchestral Collective of Greater Scand
 year = 2021
 genre = "Modern Classical"
 tracktotal = 3
+format = "mp3"
 
 [[albums.tracks]]
 title = "Overture for a Very Patient Lighthouse"
@@ -154,6 +159,7 @@ artist = "Åsa Vinterhök"
 year = 2020
 genre = "Nordic Folk"
 tracktotal = 5
+format = "flac"
 
 # Deliberate: authored in NFD (decomposed) form — every å/ä/ö is a base
 # letter plus a combining diacritic, not a precomposed codepoint. The macOS

@@ -155,7 +155,7 @@ def test_artists_are_not_duplicated_across_albums(corpus, materialise):
 
 
 def test_copy_name_collisions_are_suffixed(materialise):
-    # Two unnumbered tracks with the same title and format must both land.
+    # Two unnumbered tracks with the same title must both land.
     album = {
         "title": "Echoes of Echoes",
         "artist": "Polder Arcade",
@@ -163,7 +163,7 @@ def test_copy_name_collisions_are_suffixed(materialise):
     }
     added = library.add(materialise(album))
     names = sorted(p.name for p in added.destination.iterdir())
-    assert names == ["Echo-2.flac", "Echo.flac", "Filler.mp3"]
+    assert names == ["Echo-2.flac", "Echo.flac", "Filler.flac"]
 
 
 def test_album_dir_collisions_fold_case(tmp_path, leeks_root):

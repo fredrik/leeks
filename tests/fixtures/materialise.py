@@ -21,8 +21,6 @@ from mediafile import MediaFile
 FIXTURES = Path(__file__).parent
 AUDIO = FIXTURES / "audio"
 TONE_COUNT = 5
-# Alternated per track, so every album exercises both formats.
-FORMATS = ("flac", "mp3")
 
 
 def corpus() -> dict[str, Any]:
@@ -37,10 +35,11 @@ def _dashed(text: str) -> str:
 
 def materialise_album(album: dict[str, Any], dest: Path) -> Path:
     """Write a corpus album as a directory of tagged audio files."""
+    # One format per album, set by the corpus entry's optional "format" key (default flac).
+    fmt = album.get("format", "flac")
     directory = dest / _dashed(album["title"])
     directory.mkdir(parents=True)
     for position, track in enumerate(album["tracks"]):
-        fmt = FORMATS[position % len(FORMATS)]
         tone = AUDIO / f"tone-{position % TONE_COUNT:03d}.{fmt}"
         path = directory / f"{position + 1:02d}-{_dashed(track['title'])}.{fmt}"
         shutil.copyfile(tone, path)

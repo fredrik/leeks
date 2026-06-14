@@ -26,8 +26,10 @@ real MusicBrainz data. Five artists, six albums, twenty-five tracks:
 
 Readable with stdlib `tomllib`. A top-level `[[albums]]` array; each album has an inline `[[albums.tracks]]` array.
 
-Album fields: `title`, `artist`, `year`, `genre`, `tracktotal`. Track fields: `title`, `track`, and an optional `artist`
-that overrides the album artist for that track only (tracks without it inherit the album artist).
+Album fields: `title`, `artist`, `year`, `genre`, `tracktotal`, and `format` (optional; `"flac"` or `"mp3"`, defaults to
+`"flac"`). Every track in an album materialises in that single format — a real album is one format. The corpus as a
+whole exercises both FLAC and MP3 by assigning different formats across albums. Track fields: `title`, `track`, and an
+optional `artist` that overrides the album artist for that track only (tracks without it inherit the album artist).
 
 Sparse fields are **omitted entirely** — never present as empty strings. Consumers should treat a missing key as "this
 tag is absent from the file".
