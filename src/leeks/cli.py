@@ -687,9 +687,9 @@ def show_command(
     or year; tracks by title; artists by name), or id:N names one exactly.
     --albums, --tracks, and --artists choose the subject, one at a time; with
     none, you get albums. A unique match is shown in full; when several match,
-    all of them are. --sources unfolds the claim layer beneath each field, for
-    albums and tracks. --format json prints the whole projection, always as an
-    array.
+    all of them are. --sources shows where each field came from, source by
+    source, for albums and tracks. --format json prints the whole projection,
+    always as an array.
     """
     # Imported here so a bare `leek` never pays the pipeline's startup cost.
     from leeks import library
