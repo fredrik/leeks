@@ -47,3 +47,42 @@ def test_migration_matches_orm_metadata(leeks_root):
         context = MigrationContext.configure(connection)
         diffs = compare_metadata(context, orm.Base.metadata)
     assert diffs == []
+
+
+def _claim(field: str, value: str) -> orm.SourceValue:
+    from datetime import UTC, datetime
+
+    return orm.SourceValue(
+        source_id=1,  # file_tags, inserted at migration
+        entity_type="album",
+        entity_id=1,
+        field=field,
+        value=value,
+        added=datetime.now(UTC).replace(tzinfo=None),
+    )
+
+
+def test_schema_bars_two_claims_for_a_single_valued_field(leeks_root):
+    # Arity is the schema's job now, not the write path's (ADR 0025): one
+    # source cannot claim two years for one album.
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    with db.session() as session:
+        session.add_all([_claim("year", "2019"), _claim("year", "2020")])
+        with pytest.raises(IntegrityError):
+            session.flush()
+
+
+def test_schema_allows_several_genres_but_no_duplicate(leeks_root):
+    # genre is set-valued, so several rows are fine — but the same one twice
+    # is barred by the wide unique (ADR 0022/0025).
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    with db.session() as session:
+        session.add_all([_claim("genre", "Ambient"), _claim("genre", "Dub Techno")])
+        session.flush()  # several genres: no violation
+        session.add(_claim("genre", "Ambient"))
+        with pytest.raises(IntegrityError):
+            session.flush()

@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session, aliased
 
 from leeks import db, tags
 from leeks.detect import detect
+from leeks.fields import CLAIMS, merged_fields
 from leeks.models import AlbumInfo
 from leeks.orm import (
     Album,
@@ -37,10 +38,11 @@ from leeks.orm import (
     Track,
 )
 
-# The scalar columns merge() owns, with their casts back from claim text.
+# The scalar columns merge() owns, derived from the registry (ADR 0025):
+# every claim field that carries a cast is a merged column.
 MERGED_FIELDS: dict[str, dict[str, type]] = {
-    "album": {"title": str, "year": int},
-    "track": {"title": str, "track": int},
+    "album": merged_fields("album"),
+    "track": merged_fields("track"),
 }
 
 
@@ -768,15 +770,19 @@ def _record_claims(
                 )
             )
 
-    for name in ("title", "artist", "year", "tracktotal"):
-        claim("album", album.id, name, getattr(info, name))
-    # Genre is set-valued: one claim row per genre (ADR 0022).
-    for genre in info.genres:
-        claim("album", album.id, "genre", genre)
+    def record(entity_type: str, entity_id: int, source_obj: object) -> None:
+        # The registry says which fields exist and their arity (ADR 0025): a
+        # set-valued field yields one claim per value, a scalar at most one.
+        for f in CLAIMS:
+            if f.entity != entity_type:
+                continue
+            raw = getattr(source_obj, f.model_attr)
+            for value in raw if f.multi else [raw]:
+                claim(entity_type, entity_id, f.name, value)
+
+    record("album", album.id, info)
     for track, row in zip(info.tracks, tracks):
-        claim("track", row.id, "title", track.title)
-        claim("track", row.id, "artist", track.artist)
-        claim("track", row.id, "track", track.track)
+        record("track", row.id, track)
     session.add_all(claimed)
     return len(claimed)
 

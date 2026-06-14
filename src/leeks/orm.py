@@ -10,8 +10,25 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, MetaData, String, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    Index,
+    MetaData,
+    String,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from leeks.fields import MULTI_FIELDS
+
+# The single-valued claim fields get one row per source: a partial unique
+# index over every field the registry does not mark set-valued (ADR 0025).
+# genre and any future set field are excluded, free to repeat by value.
+_SINGLE_VALUED_WHERE = "field NOT IN ({})".format(
+    ", ".join(f"'{name}'" for name in MULTI_FIELDS)
+)
 
 # Deterministic constraint names, so future migrations can refer to them.
 NAMING_CONVENTION = {
@@ -128,9 +145,20 @@ class SourceValue(Base):
     __table_args__ = (
         # value is in the key: a field may be set-valued (genre), so one
         # source can make several claims for it — but never the same one
-        # twice (ADR 0022). Single-valued fields stay single by the write
-        # path's discipline, not this constraint.
+        # twice (ADR 0022). This bars identical duplicates for every field.
         UniqueConstraint("source_id", "entity_type", "entity_id", "field", "value"),
+        # And single-valued fields get at most one row per source: the schema
+        # itself enforces arity now, not the write path (ADR 0025). A partial
+        # unique index over the fields the registry does not mark set-valued.
+        Index(
+            "uq_source_values_single",
+            "source_id",
+            "entity_type",
+            "entity_id",
+            "field",
+            unique=True,
+            sqlite_where=text(_SINGLE_VALUED_WHERE),
+        ),
         CheckConstraint("entity_type IN ('album', 'track')", name="entity_type"),
     )
 
