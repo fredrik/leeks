@@ -228,10 +228,10 @@ def _shelf_statement():
         .join(Track, Track.album_id == Album.id)
         .group_by(Album.id)
         .order_by(
-            func.coalesce(Artist.name, "Unknown Artist").collate("NOCASE"),
+            func.coalesce(Artist.name, "Unknown Artist").collate(db.FOLD_COLLATION),
             Album.year.is_(None),
             Album.year,
-            Album.title.collate("NOCASE"),
+            Album.title.collate(db.FOLD_COLLATION),
         )
     )
 
@@ -348,10 +348,12 @@ def list_tracks(terms: Sequence[str] = ()) -> list[ListedTrack]:
         .outerjoin(album_artist, Album.artist_id == album_artist.id)
         .outerjoin(track_artist, Track.artist_id == track_artist.id)
         .order_by(
-            func.coalesce(album_artist.name, "Unknown Artist").collate("NOCASE"),
+            func.coalesce(album_artist.name, "Unknown Artist").collate(
+                db.FOLD_COLLATION
+            ),
             Album.year.is_(None),
             Album.year,
-            Album.title.collate("NOCASE"),
+            Album.title.collate(db.FOLD_COLLATION),
             Album.id,
             Track.track.is_(None),
             Track.track,
@@ -382,7 +384,7 @@ def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
     artists): the honest view of what the table holds today. Terms AND
     together and match the name, case-insensitively.
     """
-    statement = select(Artist).order_by(Artist.name.collate("NOCASE"))
+    statement = select(Artist).order_by(Artist.name.collate(db.FOLD_COLLATION))
     for term in terms:
         statement = statement.where(Artist.name.icontains(term, autoescape=True))
     with db.session() as session:
@@ -456,7 +458,7 @@ def show_albums(terms: Sequence[str] = ()) -> list[ShownAlbum]:
             select(AlbumGenre.album_id, Genre.name)
             .join(Genre, AlbumGenre.genre_id == Genre.id)
             .where(AlbumGenre.album_id.in_(album_ids))
-            .order_by(Genre.name.collate("NOCASE"))
+            .order_by(Genre.name.collate(db.FOLD_COLLATION))
         ):
             genres_by_album[album_id].append(name)
 
@@ -510,10 +512,12 @@ def show_tracks(terms: Sequence[str] = ()) -> list[ShownTrackCard]:
         .outerjoin(album_artist, Album.artist_id == album_artist.id)
         .outerjoin(track_artist, Track.artist_id == track_artist.id)
         .order_by(
-            func.coalesce(album_artist.name, "Unknown Artist").collate("NOCASE"),
+            func.coalesce(album_artist.name, "Unknown Artist").collate(
+                db.FOLD_COLLATION
+            ),
             Album.year.is_(None),
             Album.year,
-            Album.title.collate("NOCASE"),
+            Album.title.collate(db.FOLD_COLLATION),
             Album.id,
             Track.track.is_(None),
             Track.track,
@@ -554,7 +558,7 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
     an overriding credit.
     """
     ids, text = _take_id(terms)
-    statement = select(Artist).order_by(Artist.name.collate("NOCASE"))
+    statement = select(Artist).order_by(Artist.name.collate(db.FOLD_COLLATION))
     if ids:
         statement = statement.where(Artist.id.in_(ids))
     for term in text:
@@ -569,7 +573,9 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
         for album in session.scalars(
             select(Album)
             .where(Album.artist_id.in_(artist_ids))
-            .order_by(Album.year.is_(None), Album.year, Album.title.collate("NOCASE"))
+            .order_by(
+                Album.year.is_(None), Album.year, Album.title.collate(db.FOLD_COLLATION)
+            )
         ):
             if album.artist_id is not None:
                 albums_by_artist[album.artist_id].append(
@@ -582,7 +588,7 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
             .join(Album, Track.album_id == Album.id)
             .where(Track.artist_id.in_(artist_ids))
             .order_by(
-                Album.title.collate("NOCASE"),
+                Album.title.collate(db.FOLD_COLLATION),
                 Track.track.is_(None),
                 Track.track,
                 Track.id,
