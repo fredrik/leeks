@@ -30,6 +30,24 @@ def test_list_narrows_with_terms(corpus, materialise):
     assert "Paper Lung Atlas" not in result.stdout
 
 
+def test_a_qualified_term_narrows_to_one_field(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Paper Lung Atlas")))  # 2017
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))  # 2019
+    result = CliRunner().invoke(leek, ["list", "year:2017"])
+    assert result.exit_code == 0
+    assert "Paper Lung Atlas" in result.stdout
+    assert "Cartography for Sleepwalkers" not in result.stdout
+
+
+def test_an_unknown_field_is_a_loud_usage_error(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "bogus:x"])
+    assert result.exit_code != 0
+    assert result.stdout == ""
+    assert "bogus" in result.stderr
+    assert "choose from" in result.stderr
+
+
 def test_an_empty_library_points_at_add():
     result = CliRunner().invoke(leek, ["list"])
     assert result.exit_code == 0
