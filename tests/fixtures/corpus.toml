@@ -5,6 +5,70 @@
 # see tests/fixtures/README.md before "fixing" anything here.
 
 # ---------------------------------------------------------------------------
+# Aurelia Fenn — Almanac of Trees (2018)
+# The control specimen: every field leeks consumes is present and correct,
+# all twelve tracks numbered, no duplicate titles, no typographic traps. It
+# is the one album entangled in no quirk — the untouchable baseline the other
+# fixtures are measured against, and (sorting first) the head of the shelf.
+# Keep it pristine: it exists precisely so something never has to change.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "Almanac of Trees"
+artist = "Aurelia Fenn"
+year = 2018
+genre = "Ambient"
+tracktotal = 12
+format = "flac"
+
+[[albums.tracks]]
+title = "Birch in First Light"
+track = 1
+
+[[albums.tracks]]
+title = "The Alder Keeps Counting"
+track = 2
+
+[[albums.tracks]]
+title = "Rowan, Late September"
+track = 3
+
+[[albums.tracks]]
+title = "Hazel Understory"
+track = 4
+
+[[albums.tracks]]
+title = "Ash Before the Rain"
+track = 5
+
+[[albums.tracks]]
+title = "Hornbeam Hymn"
+track = 6
+
+[[albums.tracks]]
+title = "Aspen Tremor"
+track = 7
+
+[[albums.tracks]]
+title = "Hawthorn Almanac"
+track = 8
+
+[[albums.tracks]]
+title = "Willow, Unhurried"
+track = 9
+
+[[albums.tracks]]
+title = "Elder and Ember"
+track = 10
+
+[[albums.tracks]]
+title = "Beech in the Off-Season"
+track = 11
+
+[[albums.tracks]]
+title = "Larch Goes Last"
+track = 12
+
+# ---------------------------------------------------------------------------
 # Tin Hatch Choir — Cartography for Sleepwalkers (2019)
 # Fully and cleanly tagged.
 # ---------------------------------------------------------------------------

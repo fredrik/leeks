@@ -39,6 +39,38 @@ def test_multi_genre_album_writes_several_genre_tags(corpus, materialise):
         assert tags.genres == album["genre"]
 
 
+def test_control_album_is_complete_and_unentangled(corpus):
+    # Almanac of Trees is the control specimen (see fixtures/README.md): every
+    # field leeks consumes is present, all tracks numbered in order, and —
+    # unlike the "clean" albums — it carries no quirk. This pins that contract
+    # so a careless edit can't quietly turn the baseline into another edge case.
+    album = by_title(corpus, "Almanac of Trees")
+    for field in ("title", "artist", "year", "genre", "tracktotal", "format"):
+        assert field in album, field
+
+    titles = [t["title"] for t in album["tracks"]]
+    numbers = [t.get("track") for t in album["tracks"]]
+    assert len(titles) == album["tracktotal"]
+    assert numbers == list(range(1, len(titles) + 1))  # numbered, consecutive
+    assert all("artist" not in t for t in album["tracks"])  # no override credits
+    assert len(set(titles)) == len(titles)  # no duplicate within
+
+    # Disjoint from every other album's tracks: sharing a title is the
+    # duplicate-title quirk's job (Cartography/Paper Lung Atlas), not the control's.
+    others = {
+        track["title"]
+        for other in corpus["albums"]
+        if other["title"] != album["title"]
+        for track in other["tracks"]
+    }
+    assert not set(titles) & others
+
+    # Pristine text: ASCII and NFC, none of the typography Vinterhök reserves.
+    for text in [album["title"], album["artist"], *titles]:
+        assert text.isascii(), text
+        assert unicodedata.is_normalized("NFC", text)
+
+
 def test_tracks_carry_varied_durations(corpus, materialise):
     # The tones run different lengths (generate.py's DURATIONS, cycled), so a
     # materialised album holds files of genuinely different duration rather than

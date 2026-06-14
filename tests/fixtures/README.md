@@ -12,17 +12,20 @@ directly) writes the corpus as real tagged albums for playing with `leek` by han
 ## The corpus
 
 Everything in `corpus.toml` is fictional — invented artists, albums, and titles chosen so tests never accidentally match
-real MusicBrainz data. Six artists, seven albums, twenty-nine tracks:
+real MusicBrainz data. Seven artists, eight albums, forty-one tracks. The role column is each fixture's reason to exist
+— the one thing it stresses; the deep cases are written up under
+[Deliberate quirks](#deliberate-quirks--do-not-fix-these):
 
-| Artist                                                                       | Album                                  | Tracks | Tagging                |
-| ---------------------------------------------------------------------------- | -------------------------------------- | ------ | ---------------------- |
-| Tin Hatch Choir                                                              | Cartography for Sleepwalkers (2019)    | 5      | clean                  |
-| Tin Hatch Choir                                                              | Salt Meridian (2022)                   | 4      | clean                  |
-| Vesna Holloway                                                               | Paper Lung Atlas (2017)                | 4      | clean                  |
-| Polder Arcade                                                                | Tape Hiss Archipelago                  | 4      | deliberately sparse    |
-| The Extraordinarily Long-Winded Orchestral Collective of Greater Scandinavia | I Wrote My Heart in Beacon Code (2021) | 3      | clean, very long names |
-| Åsa Vinterhök                                                                | Vägen åter till sjön (2020)            | 5      | clean, non-ASCII       |
-| Cordel Vane                                                                  | Genrezvous Telemetry (2021)            | 4      | clean, multiple genres |
+| Artist                                                                       | Album                                  | Tracks | Role — what it stresses                       |
+| ---------------------------------------------------------------------------- | -------------------------------------- | ------ | --------------------------------------------- |
+| Aurelia Fenn                                                                 | Almanac of Trees (2018)                | 12     | clean control — no quirk; the stable baseline |
+| Tin Hatch Choir                                                              | Cartography for Sleepwalkers (2019)    | 5      | duplicate track title (shared, quirk 3)       |
+| Tin Hatch Choir                                                              | Salt Meridian (2022)                   | 4      | raw multi-artist feat. credit (quirk 1)       |
+| Vesna Holloway                                                               | Paper Lung Atlas (2017)                | 4      | duplicate track title (shared, quirk 3)       |
+| Polder Arcade                                                                | Tape Hiss Archipelago                  | 4      | sparse / badly tagged (quirk 2)               |
+| The Extraordinarily Long-Winded Orchestral Collective of Greater Scandinavia | I Wrote My Heart in Beacon Code (2021) | 3      | extravagantly long strings (quirk 4)          |
+| Åsa Vinterhök                                                                | Vägen åter till sjön (2020)            | 5      | non-ASCII & typography (quirk 5)              |
+| Cordel Vane                                                                  | Genrezvous Telemetry (2021)            | 4      | multiple genres as a set (quirk 6)            |
 
 ## Schema
 
@@ -82,4 +85,11 @@ The corpus exists to exercise the import pipeline's edge cases. Each quirk below
    `leek show`'s genres list exists to display. Keep all tracks' genres identical — whole-set consensus claims nothing
    when files disagree — and do not collapse the set into one delimited string.
 
-The remaining albums are fully and cleanly tagged on purpose: they are the happy-path control group.
+Every album above carries one of these quirks — even the "clean" ones, which is the point: *Cartography* and *Paper Lung
+Atlas* are clean except for the duplicate title they share, *Salt Meridian* clean except for the feat. credit. None of
+them is a baseline you can lean on, because adjusting a quirk shifts the album that carries it.
+
+That is what *Almanac of Trees* by *Aurelia Fenn* is for: the control specimen, every consumed field present and
+correct, entangled in no quirk. It is the one album the suite can treat as fixed — the happy path with nothing else
+going on — and it sorts first, so the shelf opens on something correct. Keep it pristine; if you need a new edge case,
+add a fixture rather than bending this one.
