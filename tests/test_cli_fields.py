@@ -16,9 +16,10 @@ from test_harness import by_title
 def test_fields_defaults_to_albums():
     result = CliRunner().invoke(leek, ["fields"])
     assert result.exit_code == 0
-    # Albums by default, one name per line, in column order then the id handle
-    # (ADRs 0016/0018/0020): the default columns first, the selectable extra last.
-    assert result.stdout.splitlines() == ["artist", "year", "title", "id"]
+    # Albums by default, one name per line, default columns first then the
+    # selectable extras (ADRs 0016/0018/0020): the id handle and genres, the
+    # opt-in set-valued field (ADR 0022).
+    assert result.stdout.splitlines() == ["artist", "year", "title", "id", "genres"]
 
 
 def test_fields_albums_option_matches_the_default():
@@ -80,7 +81,7 @@ def test_fields_format_json_is_an_array_of_names():
 def test_fields_format_json_defaults_to_albums():
     result = CliRunner().invoke(leek, ["fields", "--format", "json"])
     assert result.exit_code == 0
-    assert json.loads(result.stdout) == ["artist", "year", "title", "id"]
+    assert json.loads(result.stdout) == ["artist", "year", "title", "id", "genres"]
 
 
 def test_fields_format_human_matches_the_default():

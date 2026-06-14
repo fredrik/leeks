@@ -75,7 +75,7 @@ def test_add_clean_album(corpus, materialise, leeks_root):
 def test_add_multi_genre_album(corpus, materialise):
     # A set-valued genre lands as one Genre row, one junction row, and one
     # claim per genre — all from the single file_tags source (ADR 0022).
-    album = by_title(corpus, "Saltmarsh Telemetry")
+    album = by_title(corpus, "Genrezvous Telemetry")
     library.add(materialise(album))
     with db.session() as session:
         assert {g.name for g in rows(session, orm.Genre)} == set(album["genre"])

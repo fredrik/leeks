@@ -29,9 +29,9 @@ def test_clean_album_round_trips(corpus, materialise):
 
 
 def test_multi_genre_album_writes_several_genre_tags(corpus, materialise):
-    # Saltmarsh Telemetry's corpus genre is a list; every track carries the
+    # Genrezvous Telemetry's corpus genre is a list; every track carries the
     # whole set as real, separate genre tags (the multi-genre quirk).
-    album = by_title(corpus, "Saltmarsh Telemetry")
+    album = by_title(corpus, "Genrezvous Telemetry")
     assert isinstance(album["genre"], list) and len(album["genre"]) > 1
     directory = materialise(album)
     for path in directory.iterdir():

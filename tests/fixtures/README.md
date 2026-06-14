@@ -22,7 +22,7 @@ real MusicBrainz data. Six artists, seven albums, twenty-nine tracks:
 | Polder Arcade                                                                | Tape Hiss Archipelago                  | 4      | deliberately sparse    |
 | The Extraordinarily Long-Winded Orchestral Collective of Greater Scandinavia | I Wrote My Heart in Beacon Code (2021) | 3      | clean, very long names |
 | Åsa Vinterhök                                                                | Vägen åter till sjön (2020)            | 5      | clean, non-ASCII       |
-| Cordel Vane                                                                  | Saltmarsh Telemetry (2021)             | 4      | clean, multiple genres |
+| Cordel Vane                                                                  | Genrezvous Telemetry (2021)            | 4      | clean, multiple genres |
 
 ## Schema
 
@@ -76,7 +76,7 @@ The corpus exists to exercise the import pipeline's edge cases. Each quirk below
    Punctuation is deliberately limited to those three marks — enough to expose the hazards without becoming a Unicode
    torture test. Do not normalise, straighten, de-accent, or ASCII-fold any of it.
 
-6. **Multiple genres** — *Saltmarsh Telemetry* by *Cordel Vane* carries three genres (Ambient, Dub Techno, Field
+6. **Multiple genres** — *Genrezvous Telemetry* by *Cordel Vane* carries three genres (Ambient, Dub Techno, Field
    Recording), every track tagged with the identical set. Genre is the one field a source asserts as a *set*, not a
    scalar (ADR 0022): it materialises as several genre tags per file, lands as one claim per genre, and is the data
    `leek show`'s genres list exists to display. Keep all tracks' genres identical — whole-set consensus claims nothing

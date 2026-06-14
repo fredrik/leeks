@@ -49,6 +49,20 @@ def test_listed_albums_carry_their_year(corpus, materialise):
     assert cartography.year == 2019
 
 
+def test_listed_albums_carry_their_genres(corpus, materialise):
+    # The shelf carries the merged genre set, folded-name ordered, same as the
+    # depth read (ADR 0022); an untagged album carries an empty set.
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
+    library.add(materialise(by_title(corpus, "Tape Hiss Archipelago")))
+    listed = {album.title: album for album in library.list_albums()}
+    assert listed["Genrezvous Telemetry"].genres == [
+        "Ambient",
+        "Dub Techno",
+        "Field Recording",
+    ]
+    assert listed["Tape Hiss Archipelago"].genres == []
+
+
 def test_missing_years_shelve_last_within_an_artist(shelve):
     shelve("Undated", artist="Quiet Pines")
     shelve("Later", artist="Quiet Pines", year=2003)

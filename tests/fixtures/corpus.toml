@@ -191,7 +191,7 @@ title = "ÅTERSKEN ÖVER ÄNGEN"
 track = 5
 
 # ---------------------------------------------------------------------------
-# Cordel Vane — Saltmarsh Telemetry (2021)
+# Cordel Vane — Genrezvous Telemetry (2021)
 # Multi-genre specimen: every track carries the same three genre tags, so the
 # album's claim is a set, not a scalar. It exercises set-valued claims (one
 # source_values row per genre) and `show`'s genres list with real data.
@@ -199,7 +199,7 @@ track = 5
 # genres identical, or whole-set consensus (ADR 0022) claims nothing.
 # ---------------------------------------------------------------------------
 [[albums]]
-title = "Saltmarsh Telemetry"
+title = "Genrezvous Telemetry"
 artist = "Cordel Vane"
 year = 2021
 genre = ["Ambient", "Dub Techno", "Field Recording"]

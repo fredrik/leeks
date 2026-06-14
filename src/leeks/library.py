@@ -69,6 +69,9 @@ class Listed:
     artist: str | None
     year: int | None
     title: str
+    # The album's genres, a set (ADR 0022) — empty when none is claimed.
+    # Opt-in via --fields, not a default shelf column.
+    genres: list[str]
 
 
 @dataclass(frozen=True)
@@ -307,14 +310,17 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
     """The library's albums in shelf order, narrowed by terms (ADR 0011)."""
     statement = _apply_album_terms(_shelf_statement(), terms)
     with db.session() as session:
+        rows = list(session.execute(statement))
+        genres = _genres_by_album(session, [album.id for album, _ in rows])
         return [
             Listed(
                 id=album.id,
                 artist=artist,
                 year=album.year,
                 title=album.title,
+                genres=genres[album.id],
             )
-            for album, artist in session.execute(statement)
+            for album, artist in rows
         ]
 
 
@@ -394,6 +400,25 @@ def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
         ]
 
 
+def _genres_by_album(
+    session: Session, album_ids: Sequence[int]
+) -> dict[int, list[str]]:
+    """Each album's genres in folded-name order — the merged set (ADR 0022).
+
+    Shared by the shelf (`list_albums`) and the depth read (`show_albums`):
+    one batched query, grouped by album, so neither does it per row.
+    """
+    genres: dict[int, list[str]] = defaultdict(list)
+    for album_id, name in session.execute(
+        select(AlbumGenre.album_id, Genre.name)
+        .join(Genre, AlbumGenre.genre_id == Genre.id)
+        .where(AlbumGenre.album_id.in_(album_ids))
+        .order_by(Genre.name.collate(db.FOLD_COLLATION))
+    ):
+        genres[album_id].append(name)
+    return genres
+
+
 def _claims_by_entity(
     session: Session, entity_type: str, entity_ids: Sequence[int]
 ) -> dict[int, list[Claim]]:
@@ -453,14 +478,7 @@ def show_albums(terms: Sequence[str] = ()) -> list[ShownAlbum]:
 
         files_by_track = _files_by_track(session, track_ids)
 
-        genres_by_album: dict[int, list[str]] = defaultdict(list)
-        for album_id, name in session.execute(
-            select(AlbumGenre.album_id, Genre.name)
-            .join(Genre, AlbumGenre.genre_id == Genre.id)
-            .where(AlbumGenre.album_id.in_(album_ids))
-            .order_by(Genre.name.collate(db.FOLD_COLLATION))
-        ):
-            genres_by_album[album_id].append(name)
+        genres_by_album = _genres_by_album(session, album_ids)
 
         album_claims = _claims_by_entity(session, "album", album_ids)
         track_claims = _claims_by_entity(session, "track", track_ids)
