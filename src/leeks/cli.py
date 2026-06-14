@@ -185,7 +185,7 @@ def _display_cell(name: str, value: object) -> str:
     if value is None:
         return "Unknown Artist" if name == "artist" else ""
     if isinstance(value, list):
-        return ", ".join(value)
+        return ", ".join(str(item) for item in value)
     return str(value)
 
 
@@ -305,7 +305,7 @@ def _machine_cell(value: object) -> str:
     split the cell back into the set; JSON keeps it a real array instead.
     """
     if isinstance(value, list):
-        return "; ".join(value)
+        return "; ".join(str(item) for item in value)
     return "" if value is None else str(value)
 
 
