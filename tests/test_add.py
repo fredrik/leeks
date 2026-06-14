@@ -248,8 +248,12 @@ def test_readd_is_refused(corpus, materialise):
     assert after == before
 
 
-def _album_named(directory, *, year_tag=None):
-    """One tagged FLAC under a directory whose name the path source will parse."""
+def _album_named(directory, *, year_tag=None, album_tag="Phantom Atlas"):
+    """One tagged FLAC under a directory whose name the path source will parse.
+
+    album_tag=None leaves the album untitled in the tags, so file_tags claims
+    no title and the path's title is the only one to merge.
+    """
     import shutil
 
     from fixtures.materialise import AUDIO
@@ -259,13 +263,53 @@ def _album_named(directory, *, year_tag=None):
     track = directory / "track.flac"
     shutil.copyfile(AUDIO / "tone-000.flac", track)
     media = MediaFile(str(track))
-    media.album = "Phantom Atlas"
+    if album_tag is not None:
+        media.album = album_tag
     media.artist = "Cordel Vane"
     media.title = "Opening"
     if year_tag is not None:
         media.year = year_tag
     media.save()
     return directory
+
+
+def test_a_realistic_name_records_a_path_claim_for_each_field(tmp_path, leeks_root):
+    # The full grammar flows end to end: artist, title, and year all land as
+    # path claims (ADR 0008), beside file_tags' own (ADR 0031).
+    source = _album_named(tmp_path / "Cordel Vane - Phantom Atlas (2001)")
+    library.add(source)
+    with db.session() as session:
+        path_src = session.scalar(select(orm.Source).where(orm.Source.name == "path"))
+        assert path_src is not None
+        path_claims = {
+            (c.field, c.value)
+            for c in rows(session, orm.SourceValue)
+            if c.source_id == path_src.id
+        }
+        assert path_claims == {
+            ("artist", "Cordel Vane"),
+            ("title", "Phantom Atlas"),
+            ("year", "2001"),
+        }
+
+
+def test_path_supplies_the_title_when_tags_are_silent(tmp_path, leeks_root):
+    # No album tag, so file_tags claims no album title; the path's title is the
+    # only claimant and wins the merge, filling a gap rather than overriding.
+    source = _album_named(
+        tmp_path / "The Avalanches - Since I Left You (2001)", album_tag=None
+    )
+    added = library.add(source)
+    assert added.title == "Since I Left You"  # recovered from the folder
+    with db.session() as session:
+        (album,) = rows(session, orm.Album)
+        assert album.title == "Since I Left You"
+        titles = {
+            c.source.name: c.value
+            for c in rows(session, orm.SourceValue)
+            if c.field == "title" and c.entity_type == "album"
+        }
+        assert titles == {"path": "Since I Left You"}
 
 
 def test_path_fills_a_missing_year_from_the_directory_name(tmp_path, leeks_root):

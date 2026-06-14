@@ -1,0 +1,80 @@
+# Path-source parse harness: directory names mapped to the claims the parser
+# should read from them (ADR 0008). Risk leads with verification — this table
+# is the verifier the grammar is built against, and it grows with every shape
+# the wild throws at it. The matcher port will reuse this fixture shape.
+#
+# Each case lists the directory name and the claims expected, by field and
+# value; the parser test checks confidence by field (year high, the
+# dash-split fields lower), so it is not repeated per case. A case with no
+# claims asserts the parser stays silent rather than guessing.
+
+# --- The canonical scene shape, and what hangs off it -----------------------
+
+[[cases]]
+name = "The Avalanches - Since I Left You (2001)"
+claims = [
+    { field = "artist", value = "The Avalanches" },
+    { field = "title", value = "Since I Left You" },
+    { field = "year", value = "2001" },
+]
+
+[[cases]]
+name = "Boards of Canada - Music Has the Right to Children (1998) [FLAC]"
+claims = [
+    { field = "artist", value = "Boards of Canada" },
+    { field = "title", value = "Music Has the Right to Children" },
+    { field = "year", value = "1998" },
+]
+
+# The catalogue/label braces hold their own " - "; stripping the bracketed
+# groups before the split keeps it from being read as the artist separator.
+[[cases]]
+name = "The Avalanches - Since I Left You (2001) [FLAC] {XL Recordings - XLCD 138}"
+claims = [
+    { field = "artist", value = "The Avalanches" },
+    { field = "title", value = "Since I Left You" },
+    { field = "year", value = "2001" },
+]
+
+# --- Partial shapes ---------------------------------------------------------
+
+# No year: artist and title still split cleanly.
+[[cases]]
+name = "Tin Hatch Choir - Salt Meridian"
+claims = [
+    { field = "artist", value = "Tin Hatch Choir" },
+    { field = "title", value = "Salt Meridian" },
+]
+
+# Year but no artist separator: only the year is sure (the slice-3 floor).
+[[cases]]
+name = "Phantom Atlas (2001)"
+claims = [{ field = "year", value = "2001" }]
+
+# Only the first " - " splits, so a subtitle's dash stays with the title.
+[[cases]]
+name = "Aphex Twin - Selected Ambient Works 85-92 (1992)"
+claims = [
+    { field = "artist", value = "Aphex Twin" },
+    { field = "title", value = "Selected Ambient Works 85-92" },
+    { field = "year", value = "1992" },
+]
+
+# --- The parser stays silent rather than guess ------------------------------
+
+# A bare name with no separator and no year: a hyphenated word is not a split
+# (only " - " is), so nothing is claimed. This is the materialised-fixture
+# shape, kept claim-free so the corpus is unaffected.
+[[cases]]
+name = "Genrezvous-Telemetry"
+claims = []
+
+[[cases]]
+name = "Discovery"
+claims = []
+
+# An implausible four-digit number in parens is not a year, and on its own
+# leaves nothing to claim.
+[[cases]]
+name = "Output 9999"
+claims = []
