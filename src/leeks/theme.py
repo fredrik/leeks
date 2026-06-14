@@ -42,6 +42,27 @@ SURFACE0 = "#313244"
 RAINBOW = [RED, PEACH, YELLOW, GREEN, SAPPHIRE, MAUVE]
 
 
+# The field vocabulary (ADR 0023): one hue per role, used in every view so the
+# eye learns it — the artist is always mauve, the year always peach. The content
+# fields (artist, title, album, year, genre) carry the colour; the structural
+# and technical ones (track number, measurements, provenance) stay muted, so the
+# content leads and the artist pops. These compose with bold/italic, so they are
+# style fragments, not bare colours. Absence keeps its own look: UNKNOWN is the
+# dim italic the Unknown bucket wears (ADR 0010).
+ARTIST = f"bold {MAUVE}"
+TITLE = f"bold {TEXT}"
+ALBUM = SAPPHIRE
+YEAR = PEACH
+GENRE = GREEN
+NUMBER = SUBTEXT0
+MEASURE = SUBTEXT0
+PATH = BLUE
+SOURCE = OVERLAY1
+CLAIM_FIELD = SUBTEXT0
+LABEL = SUBTEXT1
+UNKNOWN = f"italic {OVERLAY1}"
+
+
 def rainbow(text: str, offset: int = 0) -> Text:
     """Colour each character from the accent cycle, starting at offset."""
     out = Text()

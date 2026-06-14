@@ -99,25 +99,31 @@ def version() -> None:
 
 def _print_added(added: "Added") -> None:
     console = Console()
-    details = " · ".join(
-        part
-        for part in (
-            added.artist,
-            str(added.year) if added.year else None,
-            f"{added.tracks} tracks",
-        )
-        if part
+    # The detail line wears the field vocabulary (ADR 0023): the artist mauve so
+    # it pops, the year peach, the track count quiet — each piece coloured for
+    # its role rather than the whole line one grey.
+    details = Text("  ")
+    pieces = (
+        (added.artist, theme.ARTIST),
+        (str(added.year) if added.year else None, theme.YEAR),
+        (f"{added.tracks} tracks", theme.SUBTEXT1),
     )
+    for value, style in pieces:
+        if not value:
+            continue
+        if details.plain.strip():
+            details.append(" · ", style=theme.SUBTEXT0)
+        details.append(value, style=style)
     console.print(
         Text.assemble(
             ("✓ ", f"bold {theme.GREEN}"),
             ("added ", theme.SUBTEXT0),
-            (added.title, f"bold {theme.TEXT}"),
+            (added.title, theme.TITLE),
         )
     )
-    console.print(Text(f"  {details}", style=theme.SUBTEXT1))
+    console.print(details)
     console.print(
-        Text.assemble(("  → ", theme.SUBTEXT0), (str(added.destination), theme.BLUE))
+        Text.assemble(("  → ", theme.SUBTEXT0), (str(added.destination), theme.PATH))
     )
     console.print(
         Text(f"  {added.claims} values read from the file tags", style=theme.SUBTEXT0)
@@ -190,17 +196,22 @@ def _display_cell(name: str, value: object) -> str:
 
 
 def _artist_cell(artist: str | None) -> Text:
-    """The artist column, dim italic when it is the Unknown fallback (ADR 0010)."""
+    """The artist, mauve so it pops, dim italic when the Unknown fallback (ADR 0023/0010).
+
+    The artist's hue (`theme.ARTIST`) rides the Text itself, not the column, so
+    the same cell carries its colour into a heading where there is no column to
+    inherit from (`_album_heading`, `_print_track_card`).
+    """
     if artist:
-        return Text(artist)
-    return Text("Unknown Artist", style=f"italic {theme.OVERLAY1}")
+        return Text(artist, style=theme.ARTIST)
+    return Text("Unknown Artist", style=theme.UNKNOWN)
 
 
 def _shelf_table(albums: "Sequence[Listed]") -> Table:
     shelf = Table(box=None, show_header=False, pad_edge=False)
-    shelf.add_column(style=theme.TEXT)  # artist
-    shelf.add_column(style=theme.SUBTEXT0, justify="right")  # year
-    shelf.add_column(style=f"bold {theme.TEXT}")  # title
+    shelf.add_column()  # artist — _artist_cell carries its own hue (or UNKNOWN)
+    shelf.add_column(style=theme.YEAR, justify="right")  # year
+    shelf.add_column(style=theme.TITLE)  # title
     for album in albums:
         shelf.add_row(
             _artist_cell(album.artist),
@@ -212,10 +223,10 @@ def _shelf_table(albums: "Sequence[Listed]") -> Table:
 
 def _track_table(tracks: "Sequence[ListedTrack]") -> Table:
     table = Table(box=None, show_header=False, pad_edge=False)
-    table.add_column(style=theme.TEXT)  # artist
-    table.add_column(style=theme.SUBTEXT0)  # album
-    table.add_column(style=theme.SUBTEXT0, justify="right")  # number
-    table.add_column(style=f"bold {theme.TEXT}")  # title
+    table.add_column()  # artist — _artist_cell carries its own hue (or UNKNOWN)
+    table.add_column(style=theme.ALBUM)  # album
+    table.add_column(style=theme.NUMBER, justify="right")  # number
+    table.add_column(style=theme.TITLE)  # title
     for track in tracks:
         table.add_row(
             _artist_cell(track.artist),
@@ -228,7 +239,7 @@ def _track_table(tracks: "Sequence[ListedTrack]") -> Table:
 
 def _artist_table(artists: "Sequence[ListedArtist]") -> Table:
     table = Table(box=None, show_header=False, pad_edge=False)
-    table.add_column(style=theme.TEXT)
+    table.add_column(style=theme.ARTIST)
     for artist in artists:
         table.add_row(artist.name)
     return table
@@ -496,20 +507,20 @@ def _album_heading(album: "ShownAlbum") -> Text:
     """`<artist> — <title> (<year>)`, the Unknown bucket styled (ADR 0010)."""
     heading = _artist_cell(album.artist)  # a fresh Text, safe to append to
     heading.append(" — ", style=theme.SUBTEXT0)
-    heading.append(album.title, style=f"bold {theme.TEXT}")
+    heading.append(album.title, style=theme.TITLE)
     if album.year is not None:
-        heading.append(f" ({album.year})", style=theme.SUBTEXT0)
+        heading.append(f" ({album.year})", style=theme.YEAR)
     return heading
 
 
 def _measurements_table(tracks: "Sequence[ShownTrack]") -> Table:
     """The depth view's track list: number, title, and each file's measurements."""
     table = Table(box=None, show_header=False, pad_edge=False)
-    table.add_column(style=theme.SUBTEXT0, justify="right")  # number
-    table.add_column(style=theme.TEXT)  # title
-    table.add_column(style=theme.SUBTEXT0, justify="right")  # duration
-    table.add_column(style=theme.SUBTEXT0)  # format
-    table.add_column(style=theme.SUBTEXT0, justify="right")  # bitrate
+    table.add_column(style=theme.NUMBER, justify="right")  # number
+    table.add_column(style=theme.TITLE)  # title
+    table.add_column(style=theme.MEASURE, justify="right")  # duration
+    table.add_column(style=theme.MEASURE)  # format
+    table.add_column(style=theme.MEASURE, justify="right")  # bitrate
     for track in tracks:
         # One file per track today; multi-file nesting is deferred (ADR 0020).
         file: ShownFile | None = track.files[0] if track.files else None
@@ -526,9 +537,9 @@ def _measurements_table(tracks: "Sequence[ShownTrack]") -> Table:
 def _claims_table(claims: "Sequence[Claim]") -> Table:
     """The claim layer (ADR 0008): field, value, and the source that claimed it."""
     table = Table(box=None, show_header=False, pad_edge=False, padding=(0, 3, 0, 0))
-    table.add_column(style=theme.SUBTEXT0)  # field
+    table.add_column(style=theme.CLAIM_FIELD)  # field
     table.add_column(style=theme.TEXT)  # value
-    table.add_column(style=theme.OVERLAY1)  # source
+    table.add_column(style=theme.SOURCE)  # source
     for claim in claims:
         table.add_row(claim.field, claim.value, claim.source)
     return table
@@ -538,7 +549,7 @@ def _print_album(console: Console, album: "ShownAlbum", *, with_sources: bool) -
     """One album in depth: the merged heading, its genres, then tracks or claims."""
     console.print(_album_heading(album))
     if album.genres:
-        console.print(Text("  " + ", ".join(album.genres), style=theme.SUBTEXT0))
+        console.print(Text("  " + ", ".join(album.genres), style=theme.GENRE))
     console.print()
     # expand=False keeps the indent without padding rows to the console width —
     # the width-alignment a pipe must not carry (ADR 0019).
@@ -548,17 +559,14 @@ def _print_album(console: Console, album: "ShownAlbum", *, with_sources: bool) -
         )
         return
     # --sources unfolds the claim layer: album fields, then each track (ADR 0020).
-    console.print(Text("  album", style=theme.SUBTEXT1))
+    console.print(Text("  album", style=theme.LABEL))
     console.print(Padding(_claims_table(album.claims), (0, 0, 0, 4), expand=False))
     for track in album.tracks:
-        number = f"{track.number}  " if track.number is not None else ""
-        console.print(
-            Padding(
-                Text(f"{number}{track.title}", style=theme.TEXT),
-                (1, 0, 0, 2),
-                expand=False,
-            )
-        )
+        line = Text()
+        if track.number is not None:
+            line.append(f"{track.number}  ", style=theme.NUMBER)
+        line.append(track.title, style=theme.TITLE)
+        console.print(Padding(line, (1, 0, 0, 2), expand=False))
         console.print(Padding(_claims_table(track.claims), (0, 0, 0, 4), expand=False))
 
 
@@ -580,14 +588,18 @@ def _print_track_card(
     """One track in depth: its title, the album hosting it, and its measurements."""
     heading = _artist_cell(card.artist)
     heading.append(" — ", style=theme.SUBTEXT0)
-    heading.append(card.title, style=f"bold {theme.TEXT}")
+    heading.append(card.title, style=theme.TITLE)
     console.print(heading)
-    context = card.album
+    # The context line wears the vocabulary too (ADR 0023): the host album
+    # sapphire, its year peach, the track number quiet.
+    context = Text("  ")
+    context.append(card.album, style=theme.ALBUM)
     if card.year is not None:
-        context += f" ({card.year})"
+        context.append(f" ({card.year})", style=theme.YEAR)
     if card.number is not None:
-        context += f" · track {card.number}"
-    console.print(Text("  " + context, style=theme.SUBTEXT0))
+        context.append(" · ", style=theme.SUBTEXT0)
+        context.append(f"track {card.number}", style=theme.NUMBER)
+    console.print(context)
     file = card.files[0] if card.files else None  # one file per track today
     if file is not None:
         measured = " · ".join(
@@ -596,7 +608,7 @@ def _print_track_card(
             if part
         )
         if measured:
-            console.print(Text("  " + measured, style=theme.SUBTEXT0))
+            console.print(Text("  " + measured, style=theme.MEASURE))
     if with_sources and card.claims:
         console.print(Padding(_claims_table(card.claims), (0, 0, 0, 2), expand=False))
 
@@ -606,21 +618,21 @@ def _print_artist(console: Console, artist: "ShownArtist") -> None:
 
     No --sources here: an artist carries no claims of its own (ADR 0007/0008).
     """
-    console.print(Text(artist.name, style=f"bold {theme.TEXT}"))
+    console.print(Text(artist.name, style=theme.ARTIST))
     if artist.albums:
-        console.print(Text("  albums", style=theme.SUBTEXT1))
+        console.print(Text("  albums", style=theme.LABEL))
         shelf = Table(box=None, show_header=False, pad_edge=False)
-        shelf.add_column(style=theme.SUBTEXT0, justify="right")  # year
-        shelf.add_column(style=theme.TEXT)  # title
+        shelf.add_column(style=theme.YEAR, justify="right")  # year
+        shelf.add_column(style=theme.TITLE)  # title
         for ref in artist.albums:
             shelf.add_row(_display_cell("year", ref.year), ref.title)
         console.print(Padding(shelf, (0, 0, 0, 4), expand=False))
     if artist.guests:
-        console.print(Text("  guest on", style=theme.SUBTEXT1))
+        console.print(Text("  guest on", style=theme.LABEL))
         guests = Table(box=None, show_header=False, pad_edge=False)
-        guests.add_column(style=theme.SUBTEXT0)  # album
-        guests.add_column(style=theme.SUBTEXT0, justify="right")  # number
-        guests.add_column(style=theme.TEXT)  # title
+        guests.add_column(style=theme.ALBUM)  # album
+        guests.add_column(style=theme.NUMBER, justify="right")  # number
+        guests.add_column(style=theme.TITLE)  # title
         for guest in artist.guests:
             guests.add_row(
                 guest.album, _display_cell("number", guest.number), guest.title
