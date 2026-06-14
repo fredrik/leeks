@@ -389,13 +389,18 @@ def _emit(
 @click.argument("terms", nargs=-1)
 @click.option(
     "--albums",
+    "--album",
     "subject",
     flag_value="albums",
     default=True,
     help="List albums (default).",
 )
-@click.option("--tracks", "subject", flag_value="tracks", help="List tracks.")
-@click.option("--artists", "subject", flag_value="artists", help="List artists.")
+@click.option(
+    "--tracks", "--track", "subject", flag_value="tracks", help="List tracks."
+)
+@click.option(
+    "--artists", "--artist", "subject", flag_value="artists", help="List artists."
+)
 @click.option(
     "--fields",
     "fields_spec",
@@ -645,13 +650,18 @@ _NO_MATCH_NOTES = {
 @click.argument("terms", nargs=-1)
 @click.option(
     "--albums",
+    "--album",
     "subject",
     flag_value="albums",
     default=True,
     help="Show albums (default).",
 )
-@click.option("--tracks", "subject", flag_value="tracks", help="Show tracks.")
-@click.option("--artists", "subject", flag_value="artists", help="Show artists.")
+@click.option(
+    "--tracks", "--track", "subject", flag_value="tracks", help="Show tracks."
+)
+@click.option(
+    "--artists", "--artist", "subject", flag_value="artists", help="Show artists."
+)
 @click.option(
     "--sources",
     "with_sources",
@@ -723,13 +733,18 @@ def show_command(
 @leek.command(name="fields")
 @click.option(
     "--albums",
+    "--album",
     "subject",
     flag_value="albums",
     default=True,
     help="Fields of albums (default).",
 )
-@click.option("--tracks", "subject", flag_value="tracks", help="Fields of tracks.")
-@click.option("--artists", "subject", flag_value="artists", help="Fields of artists.")
+@click.option(
+    "--tracks", "--track", "subject", flag_value="tracks", help="Fields of tracks."
+)
+@click.option(
+    "--artists", "--artist", "subject", flag_value="artists", help="Fields of artists."
+)
 @click.option(
     "--format",
     "output_format",

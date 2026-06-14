@@ -207,6 +207,14 @@ def test_show_rejects_delimited_formats(corpus, materialise):
     assert result.exit_code != 0
 
 
+def test_show_singular_subject_synonyms_are_accepted(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    plural = CliRunner().invoke(leek, ["show", "--artists", "tin"])
+    singular = CliRunner().invoke(leek, ["show", "--artist", "tin"])
+    assert singular.exit_code == 0
+    assert singular.stdout == plural.stdout
+
+
 def test_show_help_mentions_subjects():
     result = CliRunner().invoke(leek, ["show", "--help"])
     assert "--tracks" in result.output

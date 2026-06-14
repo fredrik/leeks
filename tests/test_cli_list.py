@@ -109,6 +109,15 @@ def test_list_summarises_the_count_on_stderr(corpus, materialise):
     assert "listing 1 album" in one.stderr  # singular for a count of one
 
 
+def test_singular_subject_synonyms_are_accepted(corpus, materialise):
+    # --track is --tracks; the plural and singular are the same listing.
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    plural = CliRunner().invoke(leek, ["list", "--tracks"])
+    singular = CliRunner().invoke(leek, ["list", "--track"])
+    assert singular.exit_code == 0
+    assert singular.stdout == plural.stdout
+
+
 def test_list_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "list" in result.output

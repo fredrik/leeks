@@ -63,6 +63,13 @@ def test_fields_subject_options_are_mutually_exclusive():
     assert result.stdout.splitlines() == ["name", "id"]  # artists won
 
 
+def test_fields_singular_subject_synonyms_are_accepted():
+    plural = CliRunner().invoke(leek, ["fields", "--artists"])
+    singular = CliRunner().invoke(leek, ["fields", "--artist"])
+    assert singular.exit_code == 0
+    assert singular.stdout == plural.stdout
+
+
 def test_fields_format_json_is_an_array_of_names():
     result = CliRunner().invoke(leek, ["fields", "--tracks", "--format", "json"])
     assert result.exit_code == 0
