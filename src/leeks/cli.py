@@ -468,11 +468,12 @@ def list_command(
 ) -> None:
     """List the library, in shelf order, albums by default.
 
-    Terms narrow the listing: an album stays only when it matches all of
-    them. --albums, --tracks, and --artists choose what to list, one at a
-    time; with none, you get albums. --fields picks which fields to print,
-    in place of the usual columns. --format names the output shape: human
-    (the default), json, csv, or tsv.
+    Terms narrow the listing, all of them at once: a bare word matches the
+    descriptive fields (a track also by its album), field:value matches that
+    one field, and id:N names one exactly. --albums, --tracks, and
+    --artists choose what to list, one at a time; with none, you get albums.
+    --fields picks which fields to print, in place of the usual columns.
+    --format names the output shape: human (the default), json, csv, or tsv.
     """
     # --fields and --format are orthogonal: --format keys on the same
     # fields --fields resolves, so the two compose (ADRs 0016, 0017).
@@ -481,9 +482,19 @@ def list_command(
 
     fields = _parse_fields(subject, fields_spec) if fields_spec is not None else None
 
+    try:
+        if subject == "tracks":
+            rows: list[Any] = library.list_tracks(terms)
+        elif subject == "artists":
+            rows = library.list_artists(terms)
+        else:
+            rows = library.list_albums(terms)
+    except library.QueryError as error:
+        raise click.BadParameter(str(error), param_hint="TERM") from error
+
     if subject == "tracks":
         _emit(
-            library.list_tracks(terms),
+            rows,
             subject="tracks",
             table=_track_table,
             note="no tracks match that"
@@ -494,7 +505,7 @@ def list_command(
         )
     elif subject == "artists":
         _emit(
-            library.list_artists(terms),
+            rows,
             subject="artists",
             table=_artist_table,
             note="no artists match that" if terms else "no artists yet",
@@ -503,7 +514,7 @@ def list_command(
         )
     else:
         _emit(
-            library.list_albums(terms),
+            rows,
             subject="albums",
             table=_shelf_table,
             note="nothing on the shelf matches that"
@@ -730,8 +741,9 @@ def show_command(
 ) -> None:
     """Show an album, track, or artist in depth.
 
-    Terms pick what to show the way leek list does (albums by artist, title,
-    or year; tracks by title; artists by name), or id:N names one exactly.
+    Terms pick what to show the way leek list does: a bare word matches the
+    descriptive fields (a track also by its album), field:value matches that
+    one field, and id:N names one exactly.
     --albums, --tracks, and --artists choose the subject, one at a time; with
     none, you get albums. A unique match is shown in full; when several match,
     all of them are. --sources shows where each field came from, source by
@@ -742,15 +754,18 @@ def show_command(
     from leeks import library
 
     rows: list[Any]
-    if subject == "tracks":
-        rows = library.show_tracks(terms)
-        noun = "track"
-    elif subject == "artists":
-        rows = library.show_artists(terms)
-        noun = "artist"
-    else:
-        rows = library.show_albums(terms)
-        noun = "album"
+    try:
+        if subject == "tracks":
+            rows = library.show_tracks(terms)
+            noun = "track"
+        elif subject == "artists":
+            rows = library.show_artists(terms)
+            noun = "artist"
+        else:
+            rows = library.show_albums(terms)
+            noun = "album"
+    except library.QueryError as error:
+        raise click.BadParameter(str(error), param_hint="TERM") from error
 
     if output_format == "json":
         _show_json(rows)

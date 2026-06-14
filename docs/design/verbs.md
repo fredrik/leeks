@@ -48,8 +48,8 @@ words. `add`, not `ingest`; `review`, not `reconcile-pending-changes`.
   into the files". Not needed until the verb is.
 - Whether `organize` is the right word, or whether the reconciler and a future "show me what's stale" preview are one
   verb or two.
-- How `list` queries grow: field-qualified terms, comparisons, negation, and a term's cross-entity reach (should a
-  `--tracks` term match the album artist?). The punt is bare substring terms, ANDed, matching the listed entity's own
-  text — album by artist/title/year, track by title, artist by name — until a real query demands more. Mutual-exclusion
-  errors between the subject options (`--tracks`/`--artists`/`--genres`) are part of that deferred grammar; today the
-  last option wins.
+- How `list` and `show` queries grow further. ADR 0029 settled the first step: a term is `[field:]value`, substring and
+  ANDed, with bare terms reaching up the tree (a `--tracks` term matches the album artist) and `id:N` the exact
+  selector. Still open, deferred until a real query demands them: ranges (`year:1990..1999`), comparisons, negation, OR,
+  and sort terms (ADR 0012), and `genre:` once genre enters the namespace. Mutual-exclusion errors between the subject
+  options (`--tracks`/`--artists`/`--genres`) remain part of that deferred grammar too; today the last option wins.

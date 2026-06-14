@@ -96,6 +96,22 @@ def test_show_tracks_id_selects_one(corpus, materialise):
     assert one.title == "Glass Harbour"
 
 
+def test_show_tracks_reach_up_to_the_album(corpus, materialise):
+    # show shares list's resolver (ADR 0029): a bare term reaches the album,
+    # so "tin hatch" returns the whole album in depth, not title matches only.
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    cards = library.show_tracks(["tin hatch"])
+    assert {c.album for c in cards} == {"Salt Meridian"}
+    assert "Meridian Line" in {c.title for c in cards}  # matched via the album
+
+
+def test_show_tracks_qualified_term_names_one_field(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    cards = library.show_tracks(["album:salt meridian"])
+    assert {c.album for c in cards} == {"Salt Meridian"}
+    assert len(cards) == 4
+
+
 def test_show_tracks_carries_an_overriding_credit(corpus, materialise):
     # The effective artist is the track's own feat. credit (ADR 0013).
     library.add(materialise(by_title(corpus, "Salt Meridian")))

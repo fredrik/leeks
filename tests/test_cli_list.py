@@ -5,7 +5,7 @@ import json
 from click.testing import CliRunner
 
 from leeks import library
-from leeks.cli import leek
+from leeks.cli import _field_names, leek
 from test_harness import by_title
 
 
@@ -28,6 +28,44 @@ def test_list_narrows_with_terms(corpus, materialise):
     assert result.exit_code == 0
     assert "Cartography for Sleepwalkers" in result.stdout
     assert "Paper Lung Atlas" not in result.stdout
+
+
+def test_a_qualified_term_narrows_to_one_field(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Paper Lung Atlas")))  # 2017
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))  # 2019
+    result = CliRunner().invoke(leek, ["list", "year:2017"])
+    assert result.exit_code == 0
+    assert "Paper Lung Atlas" in result.stdout
+    assert "Cartography for Sleepwalkers" not in result.stdout
+
+
+def test_an_unknown_field_is_a_loud_usage_error(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list", "bogus:x"])
+    assert result.exit_code != 0
+    assert result.stdout == ""
+    assert "bogus" in result.stderr
+    assert "choose from" in result.stderr
+
+
+def test_genre_filters_the_shelf(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Paper Lung Atlas")))  # Folk
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))  # Rock
+    result = CliRunner().invoke(leek, ["list", "genre:folk"])
+    assert result.exit_code == 0
+    assert "Paper Lung Atlas" in result.stdout
+    assert "Cartography for Sleepwalkers" not in result.stdout
+
+
+def test_every_listable_field_is_filterable(corpus, materialise):
+    # One namespace (ADR 0029): every field leek fields lists is also one you
+    # can filter on — guards against a field drifting listable-but-not-queryable.
+    library.add(materialise(by_title(corpus, "Genrezvous Telemetry")))
+    options = {"albums": "--albums", "tracks": "--tracks", "artists": "--artists"}
+    for subject, option in options.items():
+        for name in _field_names(subject):
+            result = CliRunner().invoke(leek, ["list", option, f"{name}:0"])
+            assert result.exit_code == 0, f"{subject}.{name}: {result.output}"
 
 
 def test_an_empty_library_points_at_add():

@@ -216,9 +216,70 @@ class ShownArtist:
     guests: list[ShownGuestTrack]
 
 
-# An `id:N` query term: the first field-qualified term (the grammar
-# deferred by ADR 0012/0013), kept minimal across the show subjects.
-_ID_TERM = re.compile(r"id:(\d+)")
+class QueryError(Exception):
+    """A query term names an unknown field or a malformed value (ADR 0029)."""
+
+
+# Singular spellings a qualified term may use, mapped to the canonical field
+# name the namespace exposes (ADR 0029). `genre:folk` reads as a membership
+# test; `genres` is the name `leek fields` lists and `--fields` selects.
+_FIELD_ALIASES = {"genre": "genres"}
+
+
+def _substr(column):
+    """A matcher: value -> a folded substring test on `column` (ADR 0021)."""
+    return lambda value: column.icontains(value, autoescape=True)
+
+
+def _album_has_genre(value: str):
+    """A matcher: the album has a genre whose name contains `value`.
+
+    Genre is relational — a set via the AlbumGenre junction (ADR 0022), not a
+    column — so it filters by membership (an EXISTS over the junction), not a
+    substring on a column. The reach to the genre table is a query-time join,
+    like every other reach (ADR 0029); storage stays normalised.
+    """
+    return Album.id.in_(
+        select(AlbumGenre.album_id)
+        .join(Genre, AlbumGenre.genre_id == Genre.id)
+        .where(Genre.name.icontains(value, autoescape=True))
+    )
+
+
+def _apply_terms(statement, terms: Sequence[str], *, fields, bare, pk):
+    """Narrow a statement by query terms, ANDed (ADRs 0011, 0029).
+
+    Each term is `[field:]value`. A bare term substring-matches any of `bare`
+    — the subject's descriptive fields, which reach up the tree over the
+    statement's own joins (a track's `bare` includes its album's artist and
+    title, so `leek list --tracks radiohead computer` finds OK Computer). A
+    qualified `field:value` applies the named field's matcher in `fields` (a
+    substring on a column, or a membership test for a set-valued field like
+    genres); `id:N` matches the primary key `pk` exactly, the lone exact term
+    (ADR 0020). Matching folds case and accents through SQLite's overridden
+    LIKE (ADR 0021).
+
+    A term naming a field outside the namespace, or an `id:` value that is not
+    a whole number, raises QueryError — loud, never silent: a stray colon
+    becomes a clear error, not a silently guessed field query (ADR 0012).
+    """
+    for term in terms:
+        field, sep, value = term.partition(":")
+        field = _FIELD_ALIASES.get(field, field)
+        if not sep:
+            statement = statement.where(
+                or_(*(column.icontains(term, autoescape=True) for column in bare))
+            )
+        elif field == "id":
+            if not value.isdigit():
+                raise QueryError(f"id: takes a whole number, not {value!r}")
+            statement = statement.where(pk == int(value))
+        elif field in fields:
+            statement = statement.where(fields[field](value))
+        else:
+            valid = ", ".join((*fields, "id"))
+            raise QueryError(f"no field called {field!r}; choose from {valid}")
+    return statement
 
 
 def _shelf_statement():
@@ -243,45 +304,49 @@ def _shelf_statement():
 
 
 def _apply_album_terms(statement, terms: Sequence[str]):
-    """Narrow an album query by terms, ANDed (ADR 0011).
+    """Narrow an album query by terms over the shelf statement (ADR 0029).
 
-    A bare term matches the album's artist, title, or year,
-    case-insensitively — the merged view's data, never display fallbacks. An
-    `id:N` term instead selects one album by primary key; it is the same
-    field-qualified term `show` uses to name one entity exactly (ADR 0020),
-    so `list` understands it too.
+    A bare term reaches the album's artist, title, and year; the same names
+    qualify a term, `genre:`/`genres:` filters by genre membership (ADR 0023),
+    and `id:N` selects one album exactly. Shared by `list_albums` and
+    `show_albums`, which both build on `_shelf_statement` (so its single
+    `Artist` join is in scope).
     """
-    for term in terms:
-        id_match = _ID_TERM.fullmatch(term)
-        if id_match is not None:
-            statement = statement.where(Album.id == int(id_match.group(1)))
-        else:
-            statement = statement.where(
-                or_(
-                    Artist.name.icontains(term, autoescape=True),
-                    Album.title.icontains(term, autoescape=True),
-                    cast(Album.year, String).icontains(term, autoescape=True),
-                )
-            )
-    return statement
+    fields = {
+        "artist": _substr(Artist.name),
+        "title": _substr(Album.title),
+        "year": _substr(cast(Album.year, String)),
+        "genres": _album_has_genre,
+    }
+    bare = [Artist.name, Album.title, cast(Album.year, String)]
+    return _apply_terms(statement, terms, fields=fields, bare=bare, pk=Album.id)
 
 
-def _take_id(terms: Sequence[str]) -> tuple[list[int], list[str]]:
-    """Split terms into `id:N` selectors and the remaining substring terms.
+def _apply_track_terms(statement, terms: Sequence[str], effective_artist):
+    """Narrow a track query by terms, reaching up the tree (ADR 0029).
 
-    `id:N` names one entity by primary key — the same field-qualified term
-    across the show subjects (ADR 0020); each `show_*` applies the ids to its
-    own entity, and ANDs the substring terms as usual.
+    A bare term reaches the track's title and its album's artist and title,
+    so `leek list --tracks radiohead computer` returns OK Computer. Qualified
+    terms add the album and the track number; `id:N` selects one track.
+    `effective_artist` is the track's own credit over the album's, as the
+    caller's joins resolve it.
     """
-    ids: list[int] = []
-    rest: list[str] = []
-    for term in terms:
-        match = _ID_TERM.fullmatch(term)
-        if match is not None:
-            ids.append(int(match.group(1)))
-        else:
-            rest.append(term)
-    return ids, rest
+    fields = {
+        "artist": _substr(effective_artist),
+        "album": _substr(Album.title),
+        "title": _substr(Track.title),
+        "number": _substr(cast(Track.track, String)),
+    }
+    bare = [effective_artist, Album.title, Track.title]
+    return _apply_terms(statement, terms, fields=fields, bare=bare, pk=Track.id)
+
+
+def _apply_artist_terms(statement, terms: Sequence[str]):
+    """Narrow an artist query by name, or by `id:N` exactly (ADR 0029)."""
+    fields = {"name": _substr(Artist.name)}
+    return _apply_terms(
+        statement, terms, fields=fields, bare=[Artist.name], pk=Artist.id
+    )
 
 
 def _files_by_track(
@@ -338,20 +403,17 @@ def list_tracks(terms: Sequence[str] = ()) -> list[ListedTrack]:
     unnumbered tracks.) `Album.id` keeps one album's tracks contiguous when
     two albums share shelf coordinates.
 
-    Terms AND together and match the track title, case-insensitively. A term
-    does not reach up to the album artist; that cross-entity reach is
-    deferred to the query grammar (ADR 0013), and the punt is title-only.
+    Terms AND together and reach up the tree: a bare term matches the track
+    title and its album's artist and title, qualified terms add the album and
+    number, and `id:N` selects one track (ADR 0029).
     """
     # Two artist joins: the album artist sets the shelf (and the sort); the
     # track artist overrides the display when a track carries its own credit.
     album_artist = aliased(Artist)
     track_artist = aliased(Artist)
+    effective_artist = func.coalesce(track_artist.name, album_artist.name)
     statement = (
-        select(
-            Track,
-            func.coalesce(track_artist.name, album_artist.name),
-            Album.title,
-        )
+        select(Track, effective_artist, Album.title)
         # INNER: every track has an album (NOT NULL album_id).
         .join(Album, Track.album_id == Album.id)
         .outerjoin(album_artist, Album.artist_id == album_artist.id)
@@ -369,8 +431,7 @@ def list_tracks(terms: Sequence[str] = ()) -> list[ListedTrack]:
             Track.id,
         )
     )
-    for term in terms:
-        statement = statement.where(Track.title.icontains(term, autoescape=True))
+    statement = _apply_track_terms(statement, terms, effective_artist)
     with db.session() as session:
         return [
             ListedTrack(
@@ -391,11 +452,10 @@ def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
     Every row of the artists table, raw multi-artist credit strings included
     ("… feat. …", until artist-credit splitting refines them into real
     artists): the honest view of what the table holds today. Terms AND
-    together and match the name, case-insensitively.
+    together and match the name, or `id:N` exactly (ADR 0029).
     """
     statement = select(Artist).order_by(Artist.name.collate(db.SORT_COLLATION))
-    for term in terms:
-        statement = statement.where(Artist.name.icontains(term, autoescape=True))
+    statement = _apply_artist_terms(statement, terms)
     with db.session() as session:
         return [
             ListedArtist(id=artist.id, name=artist.name)
@@ -515,21 +575,17 @@ def show_tracks(terms: Sequence[str] = ()) -> list[ShownTrackCard]:
     """The matching tracks, each in depth: its album, file measurements, claims.
 
     `leek show --tracks` (ADR 0020): tracks in tree-walk order (as
-    `list_tracks` defines it), narrowed by title or by `id:N` (the track's
-    id), each hydrated with the measurements of the files realising it
+    `list_tracks` defines it), narrowed the same way `list_tracks` narrows —
+    bare terms reaching up to the album, qualified terms and `id:N` too
+    (ADR 0029) — each hydrated with the measurements of the files realising it
     (ADR 0007) and every source's claims (ADR 0008). The effective artist is
     the track's own credit when it overrides the album's, else the album's.
     """
-    ids, text = _take_id(terms)
     album_artist = aliased(Artist)
     track_artist = aliased(Artist)
+    effective_artist = func.coalesce(track_artist.name, album_artist.name)
     statement = (
-        select(
-            Track,
-            func.coalesce(track_artist.name, album_artist.name),
-            Album.title,
-            Album.year,
-        )
+        select(Track, effective_artist, Album.title, Album.year)
         .join(Album, Track.album_id == Album.id)
         .outerjoin(album_artist, Album.artist_id == album_artist.id)
         .outerjoin(track_artist, Track.artist_id == track_artist.id)
@@ -546,10 +602,7 @@ def show_tracks(terms: Sequence[str] = ()) -> list[ShownTrackCard]:
             Track.id,
         )
     )
-    if ids:
-        statement = statement.where(Track.id.in_(ids))
-    for term in text:
-        statement = statement.where(Track.title.icontains(term, autoescape=True))
+    statement = _apply_track_terms(statement, terms, effective_artist)
     with db.session() as session:
         rows = session.execute(statement).all()
         track_ids = [track.id for track, _, _, _ in rows]
@@ -574,17 +627,13 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
     """The matching artists, each in depth: their shelf and their guest spots.
 
     `leek show --artists` (ADR 0020): artists in case-folded name order,
-    narrowed by name or by `id:N` (the artist's id). An artist has no
-    measurements or claims of its own (the source layer is album/track only),
-    so its depth is the albums credited to it and the tracks it guests on by
-    an overriding credit.
+    narrowed by name or by `id:N` (the artist's id, ADR 0029). An artist has
+    no measurements or claims of its own (the source layer is album/track
+    only), so its depth is the albums credited to it and the tracks it guests
+    on by an overriding credit.
     """
-    ids, text = _take_id(terms)
     statement = select(Artist).order_by(Artist.name.collate(db.SORT_COLLATION))
-    if ids:
-        statement = statement.where(Artist.id.in_(ids))
-    for term in text:
-        statement = statement.where(Artist.name.icontains(term, autoescape=True))
+    statement = _apply_artist_terms(statement, terms)
     with db.session() as session:
         artists = session.scalars(statement).all()
         artist_ids = [artist.id for artist in artists]

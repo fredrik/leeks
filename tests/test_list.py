@@ -2,6 +2,8 @@
 
 from typing import Any
 
+import pytest
+
 from leeks import library
 from test_harness import by_title
 
@@ -213,11 +215,25 @@ def test_track_terms_match_the_title(corpus, materialise):
     assert len(harbours) == 2  # case-insensitive, both songs
 
 
-def test_track_terms_do_not_reach_the_album_artist(corpus, materialise):
-    # The deferred cross-entity reach (ADR 0013): a --tracks term matches the
-    # track title only, never the album artist. "Tin Hatch" finds no tracks.
+def test_track_terms_reach_up_to_the_album(corpus, materialise):
+    # Bare track terms reach up the tree (ADR 0029): "tin hatch" matches the
+    # album artist, so every track of the two Tin Hatch Choir albums comes
+    # back — including ones whose own title holds no "tin hatch".
     add_corpus(corpus, materialise)
-    assert library.list_tracks(["tin hatch"]) == []
+    reached = library.list_tracks(["tin hatch"])
+    assert {t.album for t in reached} == {
+        "Cartography for Sleepwalkers",
+        "Salt Meridian",
+    }
+    assert "Meridian Line" in {t.title for t in reached}  # matched via the album
+
+
+def test_track_terms_reach_the_album_title(corpus, materialise):
+    # The OK Computer case: a bare term on the album title returns its tracks.
+    add_corpus(corpus, materialise)
+    tracks = library.list_tracks(["cartography"])
+    assert {t.album for t in tracks} == {"Cartography for Sleepwalkers"}
+    assert len(tracks) == 5  # all of the album, none reached by title alone
 
 
 def test_a_track_term_is_text_not_a_pattern(corpus, materialise):
@@ -276,3 +292,89 @@ def test_artist_terms_match_the_name(corpus, materialise):
         "Vesna Holloway",
         "Tin Hatch Choir feat. Vesna Holloway",
     }
+
+
+# --- field-qualified terms: [field:]value (ADR 0029) ---
+
+
+def test_qualified_terms_name_one_field(corpus, materialise):
+    add_corpus(corpus, materialise)
+    assert [a.title for a in library.list_albums(["year:2017"])] == ["Paper Lung Atlas"]
+    assert [a.title for a in library.list_albums(["artist:holloway"])] == [
+        "Paper Lung Atlas"
+    ]
+    assert {a.title for a in library.list_albums(["title:meridian"])} == {
+        "Salt Meridian"
+    }
+    # A qualified term stays on its field: "hatch" is an artist, not a title.
+    assert library.list_albums(["title:hatch"]) == []
+
+
+def test_track_qualified_terms_name_one_field(corpus, materialise):
+    add_corpus(corpus, materialise)
+    # album: names the host album; the four Salt Meridian tracks come back.
+    salt = library.list_tracks(["album:salt meridian"])
+    assert {t.album for t in salt} == {"Salt Meridian"}
+    assert len(salt) == 4
+
+
+def test_a_track_number_is_queryable_but_not_bare(corpus, materialise):
+    add_corpus(corpus, materialise)
+    # number: matches the track number explicitly (it is qualified-only — a
+    # bare term never fans across it, ADR 0029).
+    threes = library.list_tracks(["number:3"])
+    assert threes
+    assert all(str(t.number) == "3" for t in threes)
+
+
+def test_id_selects_one_row_exactly(corpus, materialise):
+    add_corpus(corpus, materialise)
+    target = library.list_albums(["year:2017"])[0]
+    assert [a.id for a in library.list_albums([f"id:{target.id}"])] == [target.id]
+
+
+def test_an_unknown_field_is_a_loud_error(corpus, materialise):
+    add_corpus(corpus, materialise)
+    with pytest.raises(library.QueryError):
+        library.list_albums(["bogus:anything"])
+
+
+def test_a_non_numeric_id_is_a_loud_error(corpus, materialise):
+    add_corpus(corpus, materialise)
+    with pytest.raises(library.QueryError):
+        library.list_albums(["id:abc"])
+
+
+# --- genre: a set-valued field, filtered by membership (ADR 0023/0029) ---
+
+
+def test_genre_filters_albums_by_membership(corpus, materialise):
+    add_corpus(corpus, materialise)
+    # Substring and folded: "folk" matches both "Folk" and "Nordic Folk".
+    assert {a.title for a in library.list_albums(["genre:folk"])} == {
+        "Paper Lung Atlas",
+        "Vägen åter till sjön",
+    }
+    # A multi-genre album matches on any one of its genres (the set, ADR 0022).
+    assert {a.title for a in library.list_albums(["genre:techno"])} == {
+        "Genrezvous Telemetry"
+    }
+
+
+def test_genre_and_genres_are_the_same_filter(corpus, materialise):
+    # The singular is an alias; genres is the canonical name (ADR 0029).
+    add_corpus(corpus, materialise)
+    assert [a.title for a in library.list_albums(["genres:rock"])] == [
+        "Cartography for Sleepwalkers"
+    ]
+    assert [a.title for a in library.list_albums(["genre:rock"])] == [
+        a.title for a in library.list_albums(["genres:rock"])
+    ]
+
+
+def test_genre_ands_with_other_terms(corpus, materialise):
+    add_corpus(corpus, materialise)
+    # "folk" alone matches two albums; ANDed with the artist, just the one.
+    assert [a.title for a in library.list_albums(["genre:folk", "holloway"])] == [
+        "Paper Lung Atlas"
+    ]
