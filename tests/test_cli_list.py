@@ -87,6 +87,28 @@ def test_forced_colour_does_not_wrap_a_pipe(shelve, monkeypatch):
     assert "\x1b[" not in result.stdout  # no ANSI escapes leaked into the pipe
 
 
+def test_list_can_select_id_for_every_subject(corpus, materialise):
+    # id is selectable for tracks and artists, not only albums (ADR 0020):
+    # the handle a user needs for show id:N, no longer a confusing error.
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    for subject in ("--albums", "--tracks", "--artists"):
+        result = CliRunner().invoke(leek, ["list", subject, "--fields", "id"])
+        assert result.exit_code == 0, result.output
+        # Every line is the bare integer id of one row.
+        assert all(line.isdigit() for line in result.stdout.splitlines())
+
+
+def test_list_summarises_the_count_on_stderr(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["list"])
+    assert result.exit_code == 0
+    assert "listing 2 albums" in result.stderr
+    assert "listing" not in result.stdout  # the count rides stderr, not the list
+    one = CliRunner().invoke(leek, ["list", "salt"])
+    assert "listing 1 album" in one.stderr  # singular for a count of one
+
+
 def test_list_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "list" in result.output

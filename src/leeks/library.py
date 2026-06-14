@@ -75,7 +75,7 @@ class Listed:
 class ListedTrack:
     """One track of `leek list --tracks`, in tree-walk order (ADR 0013)."""
 
-    track_id: int
+    id: int
     album_id: int
     number: int | None
     title: str
@@ -90,7 +90,7 @@ class ListedTrack:
 class ListedArtist:
     """One artist of `leek list --artists`."""
 
-    artist_id: int
+    id: int
     name: str
 
 
@@ -363,7 +363,7 @@ def list_tracks(terms: Sequence[str] = ()) -> list[ListedTrack]:
     with db.session() as session:
         return [
             ListedTrack(
-                track_id=track.id,
+                id=track.id,
                 album_id=track.album_id,
                 number=track.track,
                 title=track.title,
@@ -387,7 +387,7 @@ def list_artists(terms: Sequence[str] = ()) -> list[ListedArtist]:
         statement = statement.where(Artist.name.icontains(term, autoescape=True))
     with db.session() as session:
         return [
-            ListedArtist(artist_id=artist.id, name=artist.name)
+            ListedArtist(id=artist.id, name=artist.name)
             for artist in session.scalars(statement)
         ]
 

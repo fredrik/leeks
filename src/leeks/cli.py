@@ -155,10 +155,14 @@ _DEFAULT_COLUMNS: dict[str, tuple[str, ...]] = {
 
 # Selectable handles beyond the default columns: names --fields accepts and
 # `leek fields` lists, but that a listing does not show by default. id is the
-# album's primary key, the handle `show id:N` names one entity by (ADR 0020) —
-# discoverable here, not shelf furniture. The namespace grows (bitrate, path,
-# …) as slices surface those facts (ADR 0018).
-_SELECTABLE_EXTRAS: dict[str, tuple[str, ...]] = {"albums": ("id",)}
+# entity's primary key, the handle `show id:N` names one entity by (ADR 0020) —
+# discoverable here, not shelf furniture. Every subject has one. The namespace
+# grows (bitrate, path, …) as slices surface those facts (ADR 0018).
+_SELECTABLE_EXTRAS: dict[str, tuple[str, ...]] = {
+    "albums": ("id",),
+    "tracks": ("id",),
+    "artists": ("id",),
+}
 
 
 def _field_names(subject: str) -> tuple[str, ...]:
@@ -286,6 +290,16 @@ def _emit_json(rows: Sequence[Any], columns: Sequence[str]) -> None:
     click.echo(json.dumps(payload, indent=2))
 
 
+def _listing_summary(count: int, subject: str) -> str:
+    """`listing N album/albums`: a stderr line naming what a listing holds.
+
+    The subject is plural (`albums`); singularise it for a count of one. A
+    glance says what came back and how much, off the readable stdout (ADR 0019).
+    """
+    noun = subject[:-1] if count == 1 else subject
+    return f"listing {count} {noun}"
+
+
 def _emit(
     rows: Sequence[Any],
     *,
@@ -327,6 +341,10 @@ def _emit(
     if not rows:
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
         return
+    # A count on stderr says what came back, off the readable stdout (ADR 0019).
+    Console(stderr=True).print(
+        Text(_listing_summary(len(rows), subject), style=theme.SUBTEXT0)
+    )
     if not sys.stdout.isatty():
         for row in rows:
             cells = (_display_cell(name, getattr(row, name)) for name in columns)
@@ -704,6 +722,9 @@ def fields_command(subject: str, output_format: str | None) -> None:
     if output_format == "json":
         click.echo(json.dumps(list(names)))
         return
+    # A stderr header names the subject whose fields these are; stdout stays
+    # the bare names, the readable form people eyeball (ADR 0018/0019).
+    Console(stderr=True).print(Text(f"fields of {subject}", style=theme.SUBTEXT0))
     for name in names:
         click.echo(name)
 

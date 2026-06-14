@@ -31,13 +31,21 @@ def test_fields_albums_option_matches_the_default():
 def test_fields_tracks():
     result = CliRunner().invoke(leek, ["fields", "--tracks"])
     assert result.exit_code == 0
-    assert result.stdout.splitlines() == ["artist", "album", "number", "title"]
+    # id is the selectable handle every subject exposes now (ADR 0020).
+    assert result.stdout.splitlines() == ["artist", "album", "number", "title", "id"]
 
 
 def test_fields_artists():
     result = CliRunner().invoke(leek, ["fields", "--artists"])
     assert result.exit_code == 0
-    assert result.stdout.splitlines() == ["name"]
+    assert result.stdout.splitlines() == ["name", "id"]
+
+
+def test_fields_human_names_the_subject_on_stderr():
+    # The human output says whose fields these are; the names stay on stdout.
+    result = CliRunner().invoke(leek, ["fields", "--tracks"])
+    assert "fields of tracks" in result.stderr
+    assert "fields of" not in result.stdout
 
 
 def test_fields_needs_no_library():
@@ -52,14 +60,14 @@ def test_fields_subject_options_are_mutually_exclusive():
     # (an explicit error is the deferred mutual-exclusion question, ADR 0013).
     result = CliRunner().invoke(leek, ["fields", "--albums", "--artists"])
     assert result.exit_code == 0
-    assert result.stdout.splitlines() == ["name"]  # artists won
+    assert result.stdout.splitlines() == ["name", "id"]  # artists won
 
 
 def test_fields_format_json_is_an_array_of_names():
     result = CliRunner().invoke(leek, ["fields", "--tracks", "--format", "json"])
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
-    assert payload == ["artist", "album", "number", "title"]
+    assert payload == ["artist", "album", "number", "title", "id"]
 
 
 def test_fields_format_json_defaults_to_albums():
