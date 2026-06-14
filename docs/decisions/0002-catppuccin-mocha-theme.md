@@ -9,6 +9,11 @@ palette as constants and applies it to rich-click's style globals; all future st
 errors) draws from the same constants. Styles are truecolor; rich downgrades them on less capable terminals and drops
 them when output is piped or `NO_COLOR` is set.
 
+> **Update (ADR 0028):** Mocha is now the *default*, not the only theme — `LEEKS_THEME` selects among Mocha, Latte, and
+> Gruvbox. `theme.py` no longer exposes loose palette constants; it binds style *roles* (artist, title, …) per theme.
+> The "draws from the same constants" mechanism is superseded by the role binding, but the spirit holds: one source,
+> read everywhere.
+
 ## Context
 
 The joy rule in [project principles](../design/project-principles.md) makes the CLI's look a requirement, not a garnish.

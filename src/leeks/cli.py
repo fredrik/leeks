@@ -46,16 +46,16 @@ def _print_about() -> None:
     console.print(
         Text.assemble(
             theme.rainbow("leek"),
-            (", a music library organiser", f"bold {theme.TEXT}"),
+            (", a music library organiser", theme.TITLE),
         )
     )
-    console.print(Text("the spiritual successor to beets", style=theme.SUBTEXT0))
+    console.print(Text("the spiritual successor to beets", style=theme.MUTED))
     console.print()
     console.print(
         Text.assemble(
-            ("run ", theme.SUBTEXT0),
-            ("leek help", f"bold {theme.BLUE}"),
-            (" to see what it can do", theme.SUBTEXT0),
+            ("run ", theme.MUTED),
+            ("leek help", theme.LINK),
+            (" to see what it can do", theme.MUTED),
         )
     )
 
@@ -71,7 +71,7 @@ def leek(ctx: click.Context) -> None:
 
 def _version_line(version: str, offset: int) -> Text:
     return Text.assemble(
-        theme.rainbow("leek", offset), (f", version {version}", theme.TEXT)
+        theme.rainbow("leek", offset), (f", version {version}", theme.BODY)
     )
 
 
@@ -106,27 +106,27 @@ def _print_added(added: "Added") -> None:
     pieces = (
         (added.artist, theme.ARTIST),
         (str(added.year) if added.year else None, theme.YEAR),
-        (f"{added.tracks} tracks", theme.SUBTEXT1),
+        (f"{added.tracks} tracks", theme.MUTED),
     )
     for value, style in pieces:
         if not value:
             continue
         if details.plain.strip():
-            details.append(" · ", style=theme.SUBTEXT0)
+            details.append(" · ", style=theme.MUTED)
         details.append(value, style=style)
     console.print(
         Text.assemble(
-            ("✓ ", f"bold {theme.GREEN}"),
-            ("added ", theme.SUBTEXT0),
+            ("✓ ", theme.SUCCESS),
+            ("added ", theme.MUTED),
             (added.title, theme.TITLE),
         )
     )
     console.print(details)
     console.print(
-        Text.assemble(("  → ", theme.SUBTEXT0), (str(added.destination), theme.PATH))
+        Text.assemble(("  → ", theme.MUTED), (str(added.destination), theme.PATH))
     )
     console.print(
-        Text(f"  {added.claims} values read from the file tags", style=theme.SUBTEXT0)
+        Text(f"  {added.claims} values read from the file tags", style=theme.MUTED)
     )
 
 
@@ -417,11 +417,11 @@ def _emit(
         _emit_delimited(rows, columns, output_format=output_format)
         return
     if not rows:
-        Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
+        Console(stderr=True).print(Text(note, style=theme.MUTED))
         return
     # A count on stderr says what came back, off the readable stdout (ADR 0019).
     Console(stderr=True).print(
-        Text(_listing_summary(len(rows), subject), style=theme.SUBTEXT0)
+        Text(_listing_summary(len(rows), subject), style=theme.MUTED)
     )
     if not sys.stdout.isatty():
         for row in rows:
@@ -532,7 +532,7 @@ def _bitrate(bitrate: int | None) -> str:
 def _album_heading(album: "ShownAlbum") -> Text:
     """`<artist> — <title> (<year>)`, the Unknown bucket styled (ADR 0010)."""
     heading = _artist_cell(album.artist)  # a fresh Text, safe to append to
-    heading.append(" — ", style=theme.SUBTEXT0)
+    heading.append(" — ", style=theme.MUTED)
     heading.append(album.title, style=theme.TITLE)
     if album.year is not None:
         heading.append(f" ({album.year})", style=theme.YEAR)
@@ -564,7 +564,7 @@ def _claims_table(claims: "Sequence[Claim]") -> Table:
     """The claim layer (ADR 0008): field, value, and the source that claimed it."""
     table = Table(box=None, show_header=False, pad_edge=False, padding=(0, 3, 0, 0))
     table.add_column(style=theme.CLAIM_FIELD)  # field
-    table.add_column(style=theme.TEXT)  # value
+    table.add_column(style=theme.BODY)  # value
     table.add_column(style=theme.SOURCE)  # source
     for claim in claims:
         table.add_row(claim.field, claim.value, claim.source)
@@ -613,7 +613,7 @@ def _print_track_card(
 ) -> None:
     """One track in depth: its title, the album hosting it, and its measurements."""
     heading = _artist_cell(card.artist)
-    heading.append(" — ", style=theme.SUBTEXT0)
+    heading.append(" — ", style=theme.MUTED)
     heading.append(card.title, style=theme.TITLE)
     console.print(heading)
     # The context line wears the vocabulary too (ADR 0024): the host album
@@ -623,7 +623,7 @@ def _print_track_card(
     if card.year is not None:
         context.append(f" ({card.year})", style=theme.YEAR)
     if card.number is not None:
-        context.append(" · ", style=theme.SUBTEXT0)
+        context.append(" · ", style=theme.MUTED)
         context.append(f"track {card.number}", style=theme.NUMBER)
     console.print(context)
     file = card.files[0] if card.files else None  # one file per track today
@@ -757,10 +757,10 @@ def show_command(
         return
     if not rows:
         notes = _NO_MATCH_NOTES if terms else _EMPTY_NOTES
-        Console(stderr=True).print(Text(notes[subject], style=theme.SUBTEXT0))
+        Console(stderr=True).print(Text(notes[subject], style=theme.MUTED))
         return
     summary = _showing_summary(len(rows), noun=noun, filtered=bool(terms))
-    Console(stderr=True).print(Text(summary, style=theme.SUBTEXT0))
+    Console(stderr=True).print(Text(summary, style=theme.MUTED))
     console = Console()
     for index, row in enumerate(rows):
         if index:
@@ -818,7 +818,7 @@ def fields_command(subject: str, output_format: str | None) -> None:
         return
     # A stderr header names the subject whose fields these are; stdout stays
     # the bare names, the readable form people eyeball (ADR 0018/0019).
-    Console(stderr=True).print(Text(f"fields of {subject}", style=theme.SUBTEXT0))
+    Console(stderr=True).print(Text(f"fields of {subject}", style=theme.MUTED))
     for name in names:
         click.echo(name)
 
