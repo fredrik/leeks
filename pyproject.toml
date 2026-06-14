@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "leeks is a music library organiser and spiritual successor to beets"
 readme = "README.md"
 authors = [
-    { name = "Fredrik Möllerstrand", email = "leeks@2880p.se" }
+    { name = "Fredrik Möllerstrand", email = "fredrik@mollerstrand.se" }
 ]
 requires-python = ">=3.12"
 dependencies = [
