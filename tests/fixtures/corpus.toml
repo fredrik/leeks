@@ -189,3 +189,35 @@ track = 4
 [[albums.tracks]]
 title = "ÅTERSKEN ÖVER ÄNGEN"
 track = 5
+
+# ---------------------------------------------------------------------------
+# Cordel Vane — Saltmarsh Telemetry (2021)
+# Multi-genre specimen: every track carries the same three genre tags, so the
+# album's claim is a set, not a scalar. It exercises set-valued claims (one
+# source_values row per genre) and `show`'s genres list with real data.
+# Genre is a list here; the other albums keep a bare string. Keep all tracks'
+# genres identical, or whole-set consensus (ADR 0022) claims nothing.
+# ---------------------------------------------------------------------------
+[[albums]]
+title = "Saltmarsh Telemetry"
+artist = "Cordel Vane"
+year = 2021
+genre = ["Ambient", "Dub Techno", "Field Recording"]
+tracktotal = 4
+format = "flac"
+
+[[albums.tracks]]
+title = "Tidal Gauge"
+track = 1
+
+[[albums.tracks]]
+title = "Sluice Weather"
+track = 2
+
+[[albums.tracks]]
+title = "Brackish Drift"
+track = 3
+
+[[albums.tracks]]
+title = "Last Light on the Levees"
+track = 4

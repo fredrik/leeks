@@ -126,7 +126,11 @@ class SourceValue(Base):
 
     __tablename__ = "source_values"
     __table_args__ = (
-        UniqueConstraint("source_id", "entity_type", "entity_id", "field"),
+        # value is in the key: a field may be set-valued (genre), so one
+        # source can make several claims for it — but never the same one
+        # twice (ADR 0022). Single-valued fields stay single by the write
+        # path's discipline, not this constraint.
+        UniqueConstraint("source_id", "entity_type", "entity_id", "field", "value"),
         CheckConstraint("entity_type IN ('album', 'track')", name="entity_type"),
     )
 

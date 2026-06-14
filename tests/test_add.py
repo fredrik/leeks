@@ -72,6 +72,18 @@ def test_add_clean_album(corpus, materialise, leeks_root):
         assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
 
 
+def test_add_multi_genre_album(corpus, materialise):
+    # A set-valued genre lands as one Genre row, one junction row, and one
+    # claim per genre — all from the single file_tags source (ADR 0022).
+    album = by_title(corpus, "Saltmarsh Telemetry")
+    library.add(materialise(album))
+    with db.session() as session:
+        assert {g.name for g in rows(session, orm.Genre)} == set(album["genre"])
+        assert len(rows(session, orm.AlbumGenre)) == len(album["genre"])
+        genre_claims = [c for c in rows(session, orm.SourceValue) if c.field == "genre"]
+        assert {c.value for c in genre_claims} == set(album["genre"])
+
+
 def test_add_sparse_album(corpus, materialise, leeks_root):
     album = by_title(corpus, "Tape Hiss Archipelago")
     added = library.add(materialise(album))

@@ -8,7 +8,8 @@ Coining a new term of art means adding it here in the same change.
 
 - **Claim** — an assertion by a source about the music: `title = "Karma Police"`, `year = 1997`. Stored verbatim as a
   `source_values` row. A claim records only what the source actually said: disagreement and absence produce no claim
-  (ADR 0008).
+  (ADR 0008). Most fields are single-valued, but a field may be **set-valued** — genre, today — and a source then claims
+  each value as its own row (ADR 0022).
 - **Measurement** — a fact about bytes we hold, locally recomputable, with no room for disagreement: bitrate, duration
   as decoded, sha256. Lives as columns on the file row, never in the source layer (ADR 0007).
 - **Source** — a named origin of claims: `file_tags` today; `musicbrainz`, `path`, `user` later. Sources are layers;
@@ -44,7 +45,8 @@ Coining a new term of art means adding it here in the same change.
 - **Assembly** — turning per-file claims into one `AlbumInfo`: album-level fields by consensus, tracks ordered by track
   number then filename.
 - **Consensus** — unanimity-or-nothing among the files that speak: if tagged files disagree on a field, no claim is
-  recorded (ADR 0008). Never plurality voting.
+  recorded (ADR 0008). Never plurality voting. For a set-valued field (genre), unanimity is on the whole set — the files
+  must carry the identical set, else nothing (ADR 0022); union is the deferred, truer rule.
 - **Write time** — the transaction in the add pipeline that creates merged-view rows, records claims, and runs merge.
   Fallbacks are applied at write time.
 - **Copy time** — the step after write time when bytes enter the library: destination paths are derived from the (just

@@ -12,7 +12,7 @@ directly) writes the corpus as real tagged albums for playing with `leek` by han
 ## The corpus
 
 Everything in `corpus.toml` is fictional — invented artists, albums, and titles chosen so tests never accidentally match
-real MusicBrainz data. Five artists, six albums, twenty-five tracks:
+real MusicBrainz data. Six artists, seven albums, twenty-nine tracks:
 
 | Artist                                                                       | Album                                  | Tracks | Tagging                |
 | ---------------------------------------------------------------------------- | -------------------------------------- | ------ | ---------------------- |
@@ -22,6 +22,7 @@ real MusicBrainz data. Five artists, six albums, twenty-five tracks:
 | Polder Arcade                                                                | Tape Hiss Archipelago                  | 4      | deliberately sparse    |
 | The Extraordinarily Long-Winded Orchestral Collective of Greater Scandinavia | I Wrote My Heart in Beacon Code (2021) | 3      | clean, very long names |
 | Åsa Vinterhök                                                                | Vägen åter till sjön (2020)            | 5      | clean, non-ASCII       |
+| Cordel Vane                                                                  | Saltmarsh Telemetry (2021)             | 4      | clean, multiple genres |
 
 ## Schema
 
@@ -29,8 +30,10 @@ Readable with stdlib `tomllib`. A top-level `[[albums]]` array; each album has a
 
 Album fields: `title`, `artist`, `year`, `genre`, `tracktotal`, and `format` (optional; `"flac"` or `"mp3"`, defaults to
 `"flac"`). Every track in an album materialises in that single format — a real album is one format. The corpus as a
-whole exercises both FLAC and MP3 by assigning different formats across albums. Track fields: `title`, `track`, and an
-optional `artist` that overrides the album artist for that track only (tracks without it inherit the album artist).
+whole exercises both FLAC and MP3 by assigning different formats across albums. `genre` is a string for one genre or a
+**list** for several; a list writes one genre tag per entry, the same set onto every track. Track fields: `title`,
+`track`, and an optional `artist` that overrides the album artist for that track only (tracks without it inherit the
+album artist).
 
 Sparse fields are **omitted entirely** — never present as empty strings. Consumers should treat a missing key as "this
 tag is absent from the file".
@@ -72,5 +75,11 @@ The corpus exists to exercise the import pipeline's edge cases. Each quirk below
 
    Punctuation is deliberately limited to those three marks — enough to expose the hazards without becoming a Unicode
    torture test. Do not normalise, straighten, de-accent, or ASCII-fold any of it.
+
+6. **Multiple genres** — *Saltmarsh Telemetry* by *Cordel Vane* carries three genres (Ambient, Dub Techno, Field
+   Recording), every track tagged with the identical set. Genre is the one field a source asserts as a *set*, not a
+   scalar (ADR 0022): it materialises as several genre tags per file, lands as one claim per genre, and is the data
+   `leek show`'s genres list exists to display. Keep all tracks' genres identical — whole-set consensus claims nothing
+   when files disagree — and do not collapse the set into one delimited string.
 
 The remaining albums are fully and cleanly tagged on purpose: they are the happy-path control group.

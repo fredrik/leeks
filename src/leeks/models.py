@@ -25,6 +25,8 @@ class AlbumInfo(BaseModel):
     title: str | None = None
     artist: str | None = None
     year: int | None = Field(default=None, ge=1000, le=2999)
-    genre: str | None = None
+    # Genre is a set, not a scalar: a source claims as many genres as it
+    # carries, each its own claim (ADR 0022). Empty means no genre claim.
+    genres: list[str] = []
     tracktotal: int | None = Field(default=None, ge=1)
     tracks: list[TrackInfo] = []

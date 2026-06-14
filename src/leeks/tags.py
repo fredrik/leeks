@@ -24,7 +24,8 @@ class FileTags:
     albumartist: str | None
     album: str | None
     year: int | None
-    genre: str | None
+    # A set: the file's genre tags, each verbatim (ADR 0022). Empty when silent.
+    genres: list[str]
     track: int | None
     tracktotal: int | None
 
@@ -62,7 +63,10 @@ def read_tags(path: Path) -> FileTags | None:
         albumartist=_text(media.albumartist),
         album=_text(media.album),
         year=media.year,
-        genre=_text(media.genre),
+        # mediafile gives the format-native list (multiple Vorbis comments,
+        # ID3v2.4 multi-value, MP4 lists), or None when silent; whitespace-only
+        # entries are absent.
+        genres=[g for g in (_text(g) for g in (media.genres or [])) if g],
         track=media.track,
         tracktotal=media.tracktotal,
     )
@@ -93,6 +97,21 @@ def _consensus[T](values: list[T | None]) -> T | None:
     return distinct.pop() if len(distinct) == 1 else None
 
 
+def _consensus_set(values: list[list[str]]) -> list[str]:
+    """The genre set every file that speaks agrees on, else nothing (ADR 0022).
+
+    Unanimity on the whole set, like _consensus on a scalar: if the files
+    that carry a genre tag don't all carry the identical set, the source has
+    disagreed with itself and claims nothing. Order is not meaningful at the
+    claim layer, so the agreed set is returned sorted, for a stable claim.
+
+    (Union — folding three tracks' folk/jangle-pop/pop into one album set — is
+    the truer rule for genre and is deferred; see ADR 0022.)
+    """
+    speaking = {frozenset(genres) for genres in values if genres}
+    return sorted(speaking.pop()) if len(speaking) == 1 else []
+
+
 def assemble(files: list[FileTags]) -> AlbumInfo:
     """Per-file claims become one album: consensus above, tracks below.
 
@@ -117,7 +136,7 @@ def assemble(files: list[FileTags]) -> AlbumInfo:
         title=_consensus([f.album for f in files]),
         artist=album_artist,
         year=_consensus([f.year for f in files]),
-        genre=_consensus([f.genre for f in files]),
+        genres=_consensus_set([f.genres for f in files]),
         tracktotal=_consensus([f.tracktotal for f in files]),
         tracks=tracks,
     )

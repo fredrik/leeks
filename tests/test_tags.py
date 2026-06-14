@@ -35,7 +35,7 @@ def test_whitespace_only_tags_are_absent(corpus, materialise):
     media.genre = "   "
     media.save()
     file_tags = tags.read_tags(path)
-    assert file_tags is not None and file_tags.genre is None
+    assert file_tags is not None and file_tags.genres == []
 
 
 def test_absent_tags_are_none(corpus, materialise):
@@ -43,7 +43,7 @@ def test_absent_tags_are_none(corpus, materialise):
     directory = materialise(album)
     for file_tags in materialised_tags(directory):
         assert file_tags.year is None
-        assert file_tags.genre is None
+        assert file_tags.genres == []
         assert file_tags.tracktotal is None
 
 
@@ -66,10 +66,30 @@ def test_assemble_clean_album(corpus, materialise):
     assert info.title == album["title"]
     assert info.artist == album["artist"]
     assert info.year == album["year"]
-    assert info.genre == album["genre"]
+    assert info.genres == [album["genre"]]
     assert info.tracktotal == album["tracktotal"]
     assert [t.title for t in info.tracks] == [t["title"] for t in album["tracks"]]
     assert all(t.artist is None for t in info.tracks)  # nothing overrides
+
+
+def test_assemble_multi_genre_album(corpus, materialise):
+    # Every file carries the same three genres, so the album claims the set,
+    # returned sorted (ADR 0022): order is not meaningful at the claim layer.
+    album = by_title(corpus, "Saltmarsh Telemetry")
+    info = tags.assemble(materialised_tags(materialise(album)))
+    assert info.genres == sorted(album["genre"])
+    assert info.genres == ["Ambient", "Dub Techno", "Field Recording"]
+
+
+def test_assemble_set_consensus_is_unanimity(corpus, materialise):
+    # Files that disagree on their genre set claim nothing, just as a scalar
+    # field does under disagreement (ADR 0008/0022).
+    album = by_title(corpus, "Saltmarsh Telemetry")
+    files = materialised_tags(materialise(album))
+    import dataclasses
+
+    files[0] = dataclasses.replace(files[0], genres=["Ambient"])
+    assert tags.assemble(files).genres == []
 
 
 def test_assemble_feat_override(corpus, materialise):
@@ -84,7 +104,7 @@ def test_assemble_sparse_album(corpus, materialise):
     album = by_title(corpus, "Tape Hiss Archipelago")
     info = tags.assemble(materialised_tags(materialise(album)))
     assert info.year is None
-    assert info.genre is None
+    assert info.genres == []
     assert info.tracktotal is None
     # Track number then filename: numbered tracks first, the rest by name.
     assert [t.title for t in info.tracks] == [

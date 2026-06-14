@@ -649,7 +649,7 @@ def add(directory: Path) -> Added:
             album.artist_id = artist.id
         session.add(album)
         session.flush()
-        _link_genre(session, info, album)
+        _link_genres(session, info, album)
         tracks = _create_tracks(session, info, album, now)
 
         claims = _record_claims(session, info, album, tracks, file_tags, now)
@@ -699,9 +699,10 @@ def _get_or_create[R: (Artist, Genre)](
     return row
 
 
-def _link_genre(session: Session, info: AlbumInfo, album: Album) -> None:
-    if info.genre:
-        genre = _get_or_create(session, Genre, info.genre)
+def _link_genres(session: Session, info: AlbumInfo, album: Album) -> None:
+    # An album's genres are a set (ADR 0022): each links its own junction row.
+    for name in info.genres:
+        genre = _get_or_create(session, Genre, name)
         session.add(AlbumGenre(album_id=album.id, genre_id=genre.id))
 
 
@@ -748,8 +749,11 @@ def _record_claims(
                 )
             )
 
-    for field in ("title", "artist", "year", "genre", "tracktotal"):
+    for field in ("title", "artist", "year", "tracktotal"):
         claim("album", album.id, field, getattr(info, field))
+    # Genre is set-valued: one claim row per genre (ADR 0022).
+    for genre in info.genres:
+        claim("album", album.id, "genre", genre)
     for track, row in zip(info.tracks, tracks):
         claim("track", row.id, "title", track.title)
         claim("track", row.id, "artist", track.artist)

@@ -28,6 +28,17 @@ def test_clean_album_round_trips(corpus, materialise):
         assert tags.tracktotal == album["tracktotal"]
 
 
+def test_multi_genre_album_writes_several_genre_tags(corpus, materialise):
+    # Saltmarsh Telemetry's corpus genre is a list; every track carries the
+    # whole set as real, separate genre tags (the multi-genre quirk).
+    album = by_title(corpus, "Saltmarsh Telemetry")
+    assert isinstance(album["genre"], list) and len(album["genre"]) > 1
+    directory = materialise(album)
+    for path in directory.iterdir():
+        tags = MediaFile(str(path))
+        assert tags.genres == album["genre"]
+
+
 def test_tracks_carry_varied_durations(corpus, materialise):
     # The tones run different lengths (generate.py's DURATIONS, cycled), so a
     # materialised album holds files of genuinely different duration rather than

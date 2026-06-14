@@ -51,7 +51,10 @@ def materialise_album(album: dict[str, Any], dest: Path) -> Path:
         if "year" in album:
             tags.year = album["year"]
         if "genre" in album:
-            tags.genre = album["genre"]
+            # A list materialises as several genre tags (ADR 0022); a bare
+            # string as one. mediafile writes the format-native multi-value.
+            genre = album["genre"]
+            tags.genres = genre if isinstance(genre, list) else [genre]
         if "tracktotal" in album:
             tags.tracktotal = album["tracktotal"]
         if "track" in track:
