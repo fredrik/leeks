@@ -1,5 +1,6 @@
 """The leek command-line interface."""
 
+import csv
 import importlib.metadata
 import json
 import sys
@@ -290,6 +291,35 @@ def _emit_json(rows: Sequence[Any], columns: Sequence[str]) -> None:
     click.echo(json.dumps(payload, indent=2))
 
 
+def _machine_cell(value: object) -> str:
+    """A value for a delimited row: typed value stringified, genuine absence empty.
+
+    No Unknown-Artist fallback — that is a human reading choice (ADR 0014/0019);
+    a machine row leaves an absent field blank.
+    """
+    return "" if value is None else str(value)
+
+
+def _emit_delimited(
+    rows: Sequence[Any], columns: Sequence[str], *, output_format: str
+) -> None:
+    """Emit the listing as CSV or TSV: one row per entity, keyed by `columns`.
+
+    The delimited machine shapes (ADR 0019). CSV carries a header row, the
+    spreadsheet convention (Excel, pandas); TSV omits it, the shell-pipeline
+    convention so `cut -f2` reads pure data. The csv module handles quoting, so
+    a comma or quote in a title never breaks the row. Like JSON these ignore
+    the isatty split; an empty listing emits nothing (CSV: the header alone) at
+    a clean exit 0.
+    """
+    delimiter = "," if output_format == "csv" else "\t"
+    writer = csv.writer(sys.stdout, delimiter=delimiter, lineterminator="\n")
+    if output_format == "csv":
+        writer.writerow(columns)
+    for row in rows:
+        writer.writerow(_machine_cell(getattr(row, name)) for name in columns)
+
+
 def _listing_summary(count: int, subject: str) -> str:
     """`listing N album/albums`: a stderr line naming what a listing holds.
 
@@ -329,14 +359,16 @@ def _emit(
     the TTY's plain, unstyled table both read exactly those.
 
     `--format` names the output shape and is orthogonal to `--fields` (ADR
-    0017). `human` is the default and takes the isatty split above; a
-    structured shape like `json` bypasses the split and replaces the human
-    formatters, keying on the same resolved column list. Only `human` and
-    `json` exist today; `csv` and `tsv` are deferred until the slice arrives.
+    0017). `human` is the default and takes the isatty split above; the
+    structured shapes `json`, `csv`, and `tsv` bypass the split and replace the
+    human formatters, keying on the same resolved column list (ADR 0019).
     """
     columns = fields if fields is not None else _DEFAULT_COLUMNS[subject]
     if output_format == "json":
         _emit_json(rows, columns)
+        return
+    if output_format in ("csv", "tsv"):
+        _emit_delimited(rows, columns, output_format=output_format)
         return
     if not rows:
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
@@ -373,9 +405,9 @@ def _emit(
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice(["human", "json"]),
+    type=click.Choice(["human", "json", "csv", "tsv"]),
     default="human",
-    help="Output shape: human (default) or json.",
+    help="Output shape: human (default), json, csv, or tsv.",
 )
 def list_command(
     terms: tuple[str, ...],
@@ -389,7 +421,7 @@ def list_command(
     them. --albums, --tracks, and --artists choose what to list, one at a
     time; with none, you get albums. --fields picks which fields to print,
     in place of the usual columns. --format names the output shape: human
-    (the default) or json.
+    (the default), json, csv, or tsv.
     """
     # --fields and --format are orthogonal: --format keys on the same
     # fields --fields resolves, so the two compose (ADRs 0016, 0017).
@@ -629,9 +661,9 @@ _NO_MATCH_NOTES = {
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice(["json"]),
-    default=None,
-    help="Print machine-readable output instead, e.g. json.",
+    type=click.Choice(["human", "json"]),
+    default="human",
+    help="Output shape: human (default) or json.",
 )
 def show_command(
     terms: tuple[str, ...],

@@ -190,6 +190,23 @@ def test_show_tracks_empty_and_no_match_notes(corpus, materialise):
     assert "no tracks match that" in nomatch.stderr
 
 
+def test_show_format_human_names_the_default(corpus, materialise):
+    # --format human is the readable shape you already get with no --format.
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    explicit = CliRunner().invoke(leek, ["show", "sleepwalkers", "--format", "human"])
+    default = CliRunner().invoke(leek, ["show", "sleepwalkers"])
+    assert explicit.exit_code == 0
+    assert explicit.stdout == default.stdout
+
+
+def test_show_rejects_delimited_formats(corpus, materialise):
+    # show is the depth verb: its nested view has no flat csv/tsv shape, so
+    # only human and json are offered (the delimited shapes live on list).
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    result = CliRunner().invoke(leek, ["show", "sleepwalkers", "--format", "csv"])
+    assert result.exit_code != 0
+
+
 def test_show_help_mentions_subjects():
     result = CliRunner().invoke(leek, ["show", "--help"])
     assert "--tracks" in result.output

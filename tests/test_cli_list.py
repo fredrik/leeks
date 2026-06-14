@@ -341,6 +341,50 @@ def test_format_human_matches_the_default(shelve):
     assert explicit.stdout == default.stdout
 
 
+def test_format_csv_has_a_header_and_rows(shelve):
+    import csv as csvmod
+    import io
+
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "csv"])
+    assert result.exit_code == 0
+    rows = list(csvmod.reader(io.StringIO(result.stdout)))
+    assert rows[0] == ["artist", "year", "title"]  # the spreadsheet header
+    assert rows[1] == ["Tin Hatch Choir", "2021", "Salt Meridian"]
+
+
+def test_format_csv_quotes_embedded_commas(shelve):
+    import csv as csvmod
+    import io
+
+    shelve("Comma, Comma, Down", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "csv"])
+    # The csv module quotes the comma'd title; it parses back intact, unsplit.
+    title = list(csvmod.reader(io.StringIO(result.stdout)))[1][2]
+    assert title == "Comma, Comma, Down"
+
+
+def test_format_csv_leaves_absence_blank_not_the_bucket(shelve):
+    import csv as csvmod
+    import io
+
+    shelve("Mystery Tape")  # no artist, no year
+    result = CliRunner().invoke(leek, ["list", "--format", "csv"])
+    row = list(csvmod.reader(io.StringIO(result.stdout)))[1]
+    assert row[0] == ""  # absent artist is blank, not "Unknown Artist" (ADR 0019)
+    assert "Unknown Artist" not in result.stdout
+
+
+def test_format_tsv_omits_the_header_for_cut(shelve):
+    shelve("Salt Meridian", artist="Tin Hatch Choir", year=2021)
+    result = CliRunner().invoke(leek, ["list", "--format", "tsv"])
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    # No header: the first line is data, so cut -f reads pure values.
+    assert lines[0].split("\t") == ["Tin Hatch Choir", "2021", "Salt Meridian"]
+    assert "artist\t" not in result.stdout
+
+
 def test_format_appears_in_help():
     result = CliRunner().invoke(leek, ["list", "--help"])
     assert "--format" in result.output
