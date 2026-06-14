@@ -220,6 +220,32 @@ class QueryError(Exception):
     """A query term names an unknown field or a malformed value (ADR 0029)."""
 
 
+# Singular spellings a qualified term may use, mapped to the canonical field
+# name the namespace exposes (ADR 0029). `genre:folk` reads as a membership
+# test; `genres` is the name `leek fields` lists and `--fields` selects.
+_FIELD_ALIASES = {"genre": "genres"}
+
+
+def _substr(column):
+    """A matcher: value -> a folded substring test on `column` (ADR 0021)."""
+    return lambda value: column.icontains(value, autoescape=True)
+
+
+def _album_has_genre(value: str):
+    """A matcher: the album has a genre whose name contains `value`.
+
+    Genre is relational — a set via the AlbumGenre junction (ADR 0022), not a
+    column — so it filters by membership (an EXISTS over the junction), not a
+    substring on a column. The reach to the genre table is a query-time join,
+    like every other reach (ADR 0029); storage stays normalised.
+    """
+    return Album.id.in_(
+        select(AlbumGenre.album_id)
+        .join(Genre, AlbumGenre.genre_id == Genre.id)
+        .where(Genre.name.icontains(value, autoescape=True))
+    )
+
+
 def _apply_terms(statement, terms: Sequence[str], *, fields, bare, pk):
     """Narrow a statement by query terms, ANDed (ADRs 0011, 0029).
 
@@ -227,10 +253,11 @@ def _apply_terms(statement, terms: Sequence[str], *, fields, bare, pk):
     — the subject's descriptive fields, which reach up the tree over the
     statement's own joins (a track's `bare` includes its album's artist and
     title, so `leek list --tracks radiohead computer` finds OK Computer). A
-    qualified `field:value` substring-matches the one named field in `fields`;
-    `id:N` matches the primary key `pk` exactly, the lone non-substring term
-    (ADR 0020). Substring matching folds case and accents through SQLite's
-    overridden LIKE (ADR 0021).
+    qualified `field:value` applies the named field's matcher in `fields` (a
+    substring on a column, or a membership test for a set-valued field like
+    genres); `id:N` matches the primary key `pk` exactly, the lone exact term
+    (ADR 0020). Matching folds case and accents through SQLite's overridden
+    LIKE (ADR 0021).
 
     A term naming a field outside the namespace, or an `id:` value that is not
     a whole number, raises QueryError — loud, never silent: a stray colon
@@ -238,6 +265,7 @@ def _apply_terms(statement, terms: Sequence[str], *, fields, bare, pk):
     """
     for term in terms:
         field, sep, value = term.partition(":")
+        field = _FIELD_ALIASES.get(field, field)
         if not sep:
             statement = statement.where(
                 or_(*(column.icontains(term, autoescape=True) for column in bare))
@@ -247,7 +275,7 @@ def _apply_terms(statement, terms: Sequence[str], *, fields, bare, pk):
                 raise QueryError(f"id: takes a whole number, not {value!r}")
             statement = statement.where(pk == int(value))
         elif field in fields:
-            statement = statement.where(fields[field].icontains(value, autoescape=True))
+            statement = statement.where(fields[field](value))
         else:
             valid = ", ".join((*fields, "id"))
             raise QueryError(f"no field called {field!r}; choose from {valid}")
@@ -279,16 +307,18 @@ def _apply_album_terms(statement, terms: Sequence[str]):
     """Narrow an album query by terms over the shelf statement (ADR 0029).
 
     A bare term reaches the album's artist, title, and year; the same names
-    qualify a term, and `id:N` selects one album exactly. Shared by
-    `list_albums` and `show_albums`, which both build on `_shelf_statement`
-    (so its single `Artist` join is in scope).
+    qualify a term, `genre:`/`genres:` filters by genre membership (ADR 0023),
+    and `id:N` selects one album exactly. Shared by `list_albums` and
+    `show_albums`, which both build on `_shelf_statement` (so its single
+    `Artist` join is in scope).
     """
     fields = {
-        "artist": Artist.name,
-        "title": Album.title,
-        "year": cast(Album.year, String),
+        "artist": _substr(Artist.name),
+        "title": _substr(Album.title),
+        "year": _substr(cast(Album.year, String)),
+        "genres": _album_has_genre,
     }
-    bare = [fields["artist"], fields["title"], fields["year"]]
+    bare = [Artist.name, Album.title, cast(Album.year, String)]
     return _apply_terms(statement, terms, fields=fields, bare=bare, pk=Album.id)
 
 
@@ -302,18 +332,18 @@ def _apply_track_terms(statement, terms: Sequence[str], effective_artist):
     caller's joins resolve it.
     """
     fields = {
-        "artist": effective_artist,
-        "album": Album.title,
-        "title": Track.title,
-        "number": cast(Track.track, String),
+        "artist": _substr(effective_artist),
+        "album": _substr(Album.title),
+        "title": _substr(Track.title),
+        "number": _substr(cast(Track.track, String)),
     }
-    bare = [fields["artist"], fields["album"], fields["title"]]
+    bare = [effective_artist, Album.title, Track.title]
     return _apply_terms(statement, terms, fields=fields, bare=bare, pk=Track.id)
 
 
 def _apply_artist_terms(statement, terms: Sequence[str]):
     """Narrow an artist query by name, or by `id:N` exactly (ADR 0029)."""
-    fields = {"name": Artist.name}
+    fields = {"name": _substr(Artist.name)}
     return _apply_terms(
         statement, terms, fields=fields, bare=[Artist.name], pk=Artist.id
     )

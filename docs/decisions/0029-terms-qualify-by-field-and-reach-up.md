@@ -11,7 +11,7 @@ terms**. The grammar, in one rule:
 > subject's descriptive fields. **Qualified** (`title:karma`) matches the one named field. Terms still AND together (ADR
 > 0011). `id:N` stays the one *exact* selector it already is (ADR 0020).
 
-Three things this settles, each a question ADRs 0012 and 0013 deferred to "the slice that builds them":
+This settles, in turn, several questions ADRs 0012 and 0013 deferred to "the slice that builds them":
 
 **Qualified terms name a field from the subject's own namespace.** The names a term may qualify by are exactly the names
 `leek fields` lists and `--fields` selects (ADRs 0016, 0018) — one set of names, now three uses: discover it, select it,
@@ -41,20 +41,22 @@ deferred (below); a plain `year:1999` needs nothing more than the substring rule
 contact, *that* is the moment year earns a typed comparison — not before. `id:N` is the sole exception: it is identity
 selection (ADR 0020), so it compares the integer primary key exactly, and bare terms never fan across it.
 
+**A set-valued field filters by membership.** `genre:folk` filters albums by genre. Genre entered the *listable*
+namespace in ADR 0023 (`genres`, a set held through the AlbumGenre junction), so the one-namespace rule requires it be
+*filterable* too — so it is, rather than left as a gap. Both `genre:` and `genres:` work: the singular is an alias,
+while `genres` stays the one name `leek fields` shows and `--fields` selects. Because genre is relational, the qualifier
+is a *membership* test — an EXISTS over the junction, not a substring on a column — but the reach to the genre table is
+still a query-time join, storage untouched. It is scoped to albums, where genre is listable; giving *tracks* a genre —
+reaching up to the album's, and listing it — is the natural next step, deferred until wanted.
+
 ### Deferred, still on contact (ADR 0012)
 
 Ranges (`year:1990..1999`), comparisons (`>`, `<`), negation (`-live`), alternation (OR), sort terms, and absence
 queries (`year:` for "missing a year") are all unbuilt. None is needed by the queries that forced this slice
-(`year:1999`, `title:karma`, and the cross-entity `--tracks radiohead computer`). Each arrives when a real query reaches
-for it, and the grammar is extended deliberately, written down — it does not accumulate in the parser (ADR 0012). The
-substring grammar is a forward-compatible subset of every one of these: `radiohead` and `title:karma` mean the same
-thing under any of them.
-
-`genre:folk` is the immediate next step, but it needs `genre` to *enter* the namespace first. Under the one-namespace
-rule that also makes genre listable, and an album's genres are a set rather than a scalar column — so genre is its own
-small effort, not this one. (This record was written before ADR 0023, which has since added `genres` to the *listable*
-namespace; making it *filterable* — wiring `genre:` into the resolver — is now the open consistency gap that closes the
-one-namespace principle, deferred to its own effort.)
+(`year:1999`, `title:karma`, the cross-entity `--tracks radiohead computer`, and `genre:folk`). Each arrives when a real
+query reaches for it, and the grammar is extended deliberately, written down — it does not accumulate in the parser (ADR
+0012). The substring grammar is a forward-compatible subset of every one of these: `radiohead` and `title:karma` mean
+the same thing under any of them.
 
 ## Context
 

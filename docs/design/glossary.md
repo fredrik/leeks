@@ -61,8 +61,9 @@ Coining a new term of art means adding it here in the same change.
   case-insensitively, folding accents (ADR 0021), against data only — never display fallbacks (ADR 0011). A **bare**
   term substring-matches the subject's descriptive fields, reaching up the tree over the real foreign keys (ADR 0029):
   an album by its artist, title, or year; a track by its title and its album's artist and title; an artist by its name.
-  A **qualified** `field:value` substring-matches the one named field, drawn from the subject's namespace — the names
-  `leek fields` lists and `--fields` selects. `id:N` is the lone exact selector, naming one row by primary key (ADR
+  A **qualified** `field:value` matches the one named field, drawn from the subject's namespace — the names
+  `leek fields` lists and `--fields` selects; usually a substring, but a *membership* test for a set-valued field
+  (`genre:`/`genres:` on an album, ADR 0023). `id:N` is the lone exact selector, naming one row by primary key (ADR
   0020). The reach is a query-time join, never denormalised storage (ADR 0029).
 
 ## On disk

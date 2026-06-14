@@ -343,3 +343,38 @@ def test_a_non_numeric_id_is_a_loud_error(corpus, materialise):
     add_corpus(corpus, materialise)
     with pytest.raises(library.QueryError):
         library.list_albums(["id:abc"])
+
+
+# --- genre: a set-valued field, filtered by membership (ADR 0023/0029) ---
+
+
+def test_genre_filters_albums_by_membership(corpus, materialise):
+    add_corpus(corpus, materialise)
+    # Substring and folded: "folk" matches both "Folk" and "Nordic Folk".
+    assert {a.title for a in library.list_albums(["genre:folk"])} == {
+        "Paper Lung Atlas",
+        "Vägen åter till sjön",
+    }
+    # A multi-genre album matches on any one of its genres (the set, ADR 0022).
+    assert {a.title for a in library.list_albums(["genre:techno"])} == {
+        "Genrezvous Telemetry"
+    }
+
+
+def test_genre_and_genres_are_the_same_filter(corpus, materialise):
+    # The singular is an alias; genres is the canonical name (ADR 0029).
+    add_corpus(corpus, materialise)
+    assert [a.title for a in library.list_albums(["genres:rock"])] == [
+        "Cartography for Sleepwalkers"
+    ]
+    assert [a.title for a in library.list_albums(["genre:rock"])] == [
+        a.title for a in library.list_albums(["genres:rock"])
+    ]
+
+
+def test_genre_ands_with_other_terms(corpus, materialise):
+    add_corpus(corpus, materialise)
+    # "folk" alone matches two albums; ANDed with the artist, just the one.
+    assert [a.title for a in library.list_albums(["genre:folk", "holloway"])] == [
+        "Paper Lung Atlas"
+    ]
