@@ -105,6 +105,31 @@ def test_show_is_plain_when_not_a_terminal(corpus, materialise):
     assert "\x1b[" not in result.stdout
 
 
+def test_show_summarises_what_it_shows_on_stderr(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Cartography for Sleepwalkers")))
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    # No terms: the whole shelf, with a count so a glance warns of a flood.
+    all_albums = CliRunner().invoke(leek, ["show"])
+    assert "showing all 2 albums" in all_albums.stderr
+    # Terms: how many matched. The summary rides stderr, stdout stays clean.
+    matched = CliRunner().invoke(leek, ["show", "salt"])
+    assert "showing 1 matching album" in matched.stderr
+    assert "showing" not in matched.stdout
+
+
+def test_show_summary_is_silent_for_json(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    result = CliRunner().invoke(leek, ["show", "--format", "json"])
+    assert "showing" not in result.stderr
+
+
+def test_show_has_no_sources_shorthand(corpus, materialise):
+    library.add(materialise(by_title(corpus, "Salt Meridian")))
+    # -s is not a flag: --sources stands alone (no other option is abbreviated).
+    result = CliRunner().invoke(leek, ["show", "-s", "salt"])
+    assert result.exit_code != 0
+
+
 def test_show_appears_in_help():
     result = CliRunner().invoke(leek, ["help"])
     assert "show" in result.output

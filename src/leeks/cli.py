@@ -508,11 +508,24 @@ def _show_json(albums: "Sequence[ShownAlbum]") -> None:
     click.echo(json.dumps([asdict(album) for album in albums], indent=2))
 
 
+def _showing_summary(count: int, *, filtered: bool) -> str:
+    """The human-mode header: what `show` is about to print, and how much of it.
+
+    A count on stderr so a glance warns when a bare `show` is about to pour
+    out the whole shelf, without touching the readable stdout (ADR 0019).
+    """
+    if filtered:
+        albums = "album" if count == 1 else "albums"
+        return f"showing {count} matching {albums}"
+    if count == 1:
+        return "showing 1 album"
+    return f"showing all {count} albums"
+
+
 @leek.command(name="show")
 @click.argument("terms", nargs=-1)
 @click.option(
     "--sources",
-    "-s",
     "with_sources",
     is_flag=True,
     help="Show where each field came from: the source behind every value.",
@@ -550,6 +563,8 @@ def show_command(
         )
         Console(stderr=True).print(Text(note, style=theme.SUBTEXT0))
         return
+    summary = _showing_summary(len(albums), filtered=bool(terms))
+    Console(stderr=True).print(Text(summary, style=theme.SUBTEXT0))
     console = Console()
     for index, album in enumerate(albums):
         if index:
