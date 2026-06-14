@@ -16,7 +16,7 @@ import shutil
 from collections import defaultdict
 from collections.abc import Sequence
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -69,9 +69,10 @@ class Listed:
     artist: str | None
     year: int | None
     title: str
-    # The album's genres, a set (ADR 0022) — empty when none is claimed.
+    # The album's genres, a set (ADR 0022) — empty when none is claimed, which
+    # is also the default: absent and empty are the same state for a genre set.
     # Opt-in via --fields, not a default shelf column.
-    genres: list[str]
+    genres: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -767,8 +768,8 @@ def _record_claims(
                 )
             )
 
-    for field in ("title", "artist", "year", "tracktotal"):
-        claim("album", album.id, field, getattr(info, field))
+    for name in ("title", "artist", "year", "tracktotal"):
+        claim("album", album.id, name, getattr(info, name))
     # Genre is set-valued: one claim row per genre (ADR 0022).
     for genre in info.genres:
         claim("album", album.id, "genre", genre)
