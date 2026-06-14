@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Claim the next decision-record number from the shared registry and scaffold it.
+#
+# Decision-record numbers are one monotonic sequence, but records are written on
+# parallel effort branches that never see each other until they land — so two
+# branches that each grab "the next number" collide on main. The registry is the
+# one place they can all see: it lives in the shared common git dir
+# ($GIT_COMMON_DIR/info/adr-numbers/), which every worktree of this clone shares
+# and which is never committed, so it never shows in a diff or merge-conflicts.
+# Allocating writes a file there named for the number, recording the branch and
+# slug that took it. The file stays for good: the registry is a permanent
+# high-water mark, so a number is never handed out twice. Allocation consults the
+# registry alone — never other branches' trees — which makes it the single source
+# of truth. It is authoritative within this clone, and that is enough: the
+# parallel efforts share one filesystem. (See ADR 0030 for the reasoning.)
+#
+# Usage: just adr-new <slug>   e.g. just adr-new claim-record-numbers-from-a-bureau
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+decisions="$root/docs/decisions"
+template="$decisions/0000-template.md"
+registry="$(git rev-parse --git-common-dir)/info/adr-numbers"
+
+slug="${1:-}"
+case "$slug" in
+"")
+    echo "usage: just adr-new <slug>" >&2
+    exit 1
+    ;;
+-* | *- | *--* | *[!a-z0-9-]*)
+    echo "adr-new: slug must be kebab-case — lower-case words joined by single dashes: $slug" >&2
+    exit 1
+    ;;
+esac
+
+branch="$(git branch --show-current)"
+if [ "$branch" = "main" ] || [ -z "$branch" ]; then
+    echo "adr-new: write decision records on an effort branch, not main" >&2
+    exit 1
+fi
+
+mkdir -p "$registry"
+
+# The registry is the source of truth for what has been allocated. The one time
+# it is empty — a fresh clone — seed the high-water mark from the records this
+# checkout already has, so we never reissue a landed number. That reads our own
+# tree, once; it is never a substitute for the registry and never sees another
+# branch.
+floor="$(ls "$registry" 2>/dev/null | grep -oE '^[0-9]{4}$' | sort -n | tail -1 || true)"
+if [ -z "$floor" ]; then
+    floor="$(ls "$decisions" 2>/dev/null | grep -oE '^[0-9]{4}' | sort -n | tail -1 || true)"
+fi
+
+# Allocate above the high-water mark — numbers are never reused — and record it
+# atomically with noclobber, so two concurrent runs can't take the same one; the
+# loser just steps to the next.
+n=$((10#${floor:-0} + 1))
+while :; do
+    num="$(printf '%04d' "$n")"
+    if (
+        set -o noclobber
+        printf 'branch: %s\nslug: %s\n' "$branch" "$slug" >"$registry/$num"
+    ) 2>/dev/null; then
+        break
+    fi
+    n=$((n + 1))
+done
+
+dest="$decisions/$num-$slug.md"
+today="$(date +%F)"
+# Seed the heading from the slug; the author refines the words and the mood.
+title="$(echo "$slug" | tr '-' ' ')"
+sed -e "s/^# NNNN — .*/# $num — $title/" \
+    -e "s/Status: Proposed (YYYY-MM-DD)/Status: Proposed ($today)/" \
+    "$template" >"$dest"
+
+echo "Allocated $num to $branch."
+echo "Scaffolded ${dest#"$root"/} — fill in the title and the body."
