@@ -16,6 +16,10 @@ This is the human, on-a-terminal view only. The pipe stays bare and uncoloured, 
 carry no styling at all ([ADR 0019](0019-the-default-output-is-for-humans-not-parsers.md)); colour is presentation, not
 data.
 
+Because the hue belongs to the field and not the view, `--fields` honours it too: a selected column renders exactly as
+it does in the default view. This supersedes [ADR 0016](0016-select-fields-with-fields.md)'s note that the `--fields`
+table was plain and unstyled — that rested on colour being a curated-view property, which this record reverses.
+
 ## Context
 
 The theme was named early ([ADR 0002](0002-catppuccin-mocha-theme.md)) but spent sparingly: the listing and depth views

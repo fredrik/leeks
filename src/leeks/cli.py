@@ -171,6 +171,22 @@ _SELECTABLE_EXTRAS: dict[str, tuple[str, ...]] = {
     "artists": ("id",),
 }
 
+# Each field's hue, keyed by the name --fields and the default columns share, so
+# a selected field keeps its vocabulary colour (ADR 0023) — the field's look
+# follows the field, not the view, so a --fields table renders each column
+# exactly as the curated default does. artist and name (the artist's own name)
+# are the mauve that pops; id stays a muted handle. A field with no entry here
+# renders plain. The artist field's Unknown fallback is handled per-cell (it
+# wears its own dim italic, ADR 0010), so it is absent from this column map.
+_FIELD_STYLES: dict[str, str] = {
+    "name": theme.ARTIST,
+    "title": theme.TITLE,
+    "album": theme.ALBUM,
+    "year": theme.YEAR,
+    "number": theme.NUMBER,
+    "id": theme.NUMBER,
+}
+
 
 def _field_names(subject: str) -> tuple[str, ...]:
     """The full field namespace for a subject: default columns then extras."""
@@ -271,19 +287,29 @@ def _parse_fields(subject: str, spec: str) -> tuple[str, ...]:
 
 
 def _plain_table(rows: Sequence[Any], fields: Sequence[str]) -> Table:
-    """A utilitarian table for `--fields`: one column per selected field.
+    """The `--fields` table: one column per selected field, in the field vocabulary.
 
-    No per-field styling (ADR 0016) — the curated styled tables (the
-    italic Unknown bucket, bold titles) are only the default view. This
-    matches the headerless house style; a header row is a deferred
-    question (ADR 0016). Values come off the typed projection via getattr
-    and `_display_cell`, the same seam the pipe reads (ADR 0014).
+    Each column wears its field's hue (ADR 0023), so a selected field looks
+    exactly as it does in the curated default view — colour follows the field,
+    not the view (this supersedes ADR 0016's plain-table note). The artist field
+    is rendered per-cell by `_artist_cell` so its Unknown fallback keeps its own
+    dim italic (ADR 0010); every other value comes off the typed projection via
+    getattr and `_display_cell`, the same seam the pipe reads (ADR 0014).
+    Headerless still, matching the house style; a header row stays deferred (ADR 0016).
     """
     table = Table(box=None, show_header=False, pad_edge=False)
-    for _ in fields:
-        table.add_column(style=theme.TEXT)
+    for name in fields:
+        # The artist column is left unstyled; its cell carries the hue (or the
+        # Unknown look) itself, so the fallback never renders mauve.
+        table.add_column(style=None if name == "artist" else _FIELD_STYLES.get(name))
     for row in rows:
-        table.add_row(*(_display_cell(name, getattr(row, name)) for name in fields))
+        cells = (
+            _artist_cell(getattr(row, name))
+            if name == "artist"
+            else _display_cell(name, getattr(row, name))
+            for name in fields
+        )
+        table.add_row(*cells)
     return table
 
 

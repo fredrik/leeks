@@ -15,10 +15,13 @@ What this record settles:
   entity's real, typed value; a duration stays a duration, an absence stays null. `--fields` chooses keys off the
   projection, it does not pre-stringify.
 - **Field order is column order.** `--fields title,artist` prints title then artist.
-- **It replaces the curated default columns, not extends them.** You asked for exactly these; you get exactly these,
-  plain — the per-field styling of the default view (the italic unknown-artist bucket,
-  [ADR 0010](0010-the-library-tree-is-for-humans.md)) belongs to the curated view, not to this utilitarian one. If the
-  *default* columns feel wrong, that is a default-columns decision, not a reason to type `--fields` every time.
+- **It replaces the curated default columns, not extends them.** You asked for exactly these; you get exactly these.
+  What changes is *which* fields and *what order*, not how each looks: a selected field wears its vocabulary colour
+  ([ADR 0023](0023-a-field-colour-vocabulary.md)), the same it has in the default view, the italic unknown-artist bucket
+  ([ADR 0010](0010-the-library-tree-is-for-humans.md)) included. (This record first called the `--fields` table plain
+  and utilitarian; ADR 0023 made colour a property of the field, not the view, and superseded that point — colour now
+  follows the field wherever it appears.) If the *default* columns feel wrong, that is a default-columns decision, not a
+  reason to type `--fields` every time.
 - **The namespace is per subject.** `--fields` means something only alongside a subject
   ([ADR 0013](0013-list-selects-its-entity-by-option.md)): a track has `bitrate`, an artist has almost nothing. What
   names are valid for each subject is discoverable on its own ([ADR 0018](0018-discover-fields-with-leek-fields.md)).

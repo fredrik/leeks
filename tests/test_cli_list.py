@@ -509,6 +509,40 @@ def test_unknown_artist_is_not_mauve_but_dim_italic():
     assert "38;2;203;166;247" not in out  # no mauve on the fallback
 
 
+def test_fields_table_keeps_each_field_in_the_vocabulary():
+    # --fields is not a plain table: a selected field keeps its hue (ADR 0023),
+    # the same it wears in the default view — artist mauve, title bold text.
+    from rich.console import Console
+
+    from leeks.cli import _plain_table
+    from leeks.library import Listed
+
+    rows = [Listed(id=1, artist="Tin Hatch Choir", year=2019, title="Salt Meridian")]
+    console = Console(width=80, force_terminal=True, color_system="truecolor")
+    with console.capture() as capture:
+        console.print(_plain_table(rows, ("artist", "title")))
+    out = capture.get()
+    assert "38;2;203;166;247" in out  # artist still mauve under --fields
+    assert "1;38;2;205;214;244" in out  # title still bold text
+
+
+def test_fields_table_unknown_artist_stays_dim_not_mauve():
+    # The Unknown bucket keeps its own look under --fields too (ADR 0023/0010):
+    # the artist hue lands on real artists, never on the fallback.
+    from rich.console import Console
+
+    from leeks.cli import _plain_table
+    from leeks.library import Listed
+
+    rows = [Listed(id=1, artist=None, year=None, title="Mystery Tape")]
+    console = Console(width=80, force_terminal=True, color_system="truecolor")
+    with console.capture() as capture:
+        console.print(_plain_table(rows, ("artist", "title")))
+    out = capture.get()
+    assert "Unknown Artist" in out
+    assert "38;2;203;166;247" not in out  # no mauve on the fallback
+
+
 def test_plain_table_renders_selected_columns():
     # The --fields TTY table: a direct render, because CliRunner's stdout is
     # never a tty, so the table branch is unreachable from the CLI surface.
