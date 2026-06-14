@@ -23,7 +23,7 @@ from pathlib import Path
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
-from leeks import db, tags
+from leeks import db, path_source, tags
 from leeks.detect import detect
 from leeks.fields import CLAIMS, merged_fields
 from leeks.models import AlbumInfo
@@ -684,21 +684,27 @@ def show_artists(terms: Sequence[str] = ()) -> list[ShownArtist]:
 
 
 def merge(session: Session, entity_type: str, entity_id: int, row: object) -> None:
-    """Recompute merged columns from the entity's source_values.
+    """Recompute merged columns from claims, by source priority (ADR 0031).
 
-    Identity while file_tags is the only source; real merge strategies
-    slot in here when a second source exists.
+    Each merged column takes the value of the highest-priority source that
+    claims it; confidence is recorded but does not yet enter the contest.
+    Collapses to identity while one source claims a field — the file_tags-only
+    case — and resolves the contest once the path source claims it too.
     """
-    claims = session.scalars(
-        select(SourceValue).where(
+    casts = MERGED_FIELDS[entity_type]
+    best: dict[str, tuple[int, str]] = {}
+    for name, value, priority in session.execute(
+        select(SourceValue.field, SourceValue.value, Source.priority)
+        .join(Source, SourceValue.source_id == Source.id)
+        .where(
             SourceValue.entity_type == entity_type,
             SourceValue.entity_id == entity_id,
         )
-    )
-    for claim in claims:
-        cast = MERGED_FIELDS[entity_type].get(claim.field)
-        if cast is not None:
-            setattr(row, claim.field, cast(claim.value))
+    ):
+        if name in casts and (name not in best or priority > best[name][0]):
+            best[name] = (priority, value)
+    for name, (_priority, value) in best.items():
+        setattr(row, name, casts[name](value))
 
 
 def add(directory: Path) -> Added:
@@ -724,6 +730,8 @@ def add(directory: Path) -> Added:
         tracks = _create_tracks(session, info, album, now)
 
         claims = _record_claims(session, info, album, tracks, file_tags, now)
+        path = session.scalars(select(Source).where(Source.name == "path")).one()
+        _record_path_claims(session, directory, album, path, now)
         merge(session, "album", album.id, album)
         for row in tracks:
             merge(session, "track", row.id, row)
@@ -833,6 +841,32 @@ def _record_claims(
     record("album", album.id, info)
     for track, row in zip(info.tracks, tracks):
         record("track", row.id, track)
+    session.add_all(claimed)
+    return len(claimed)
+
+
+def _record_path_claims(
+    session: Session, directory: Path, album: Album, source: Source, now: datetime
+) -> int:
+    """Record the path source's claims about the album (ADR 0008/0031).
+
+    The directory name is parsed for what it asserts — slice 3, the year —
+    and each becomes a claim carrying the parser's confidence. Unlike a
+    fallback, an empty parse records nothing (ADR 0008): the path claims only
+    what its name actually says.
+    """
+    claimed = [
+        SourceValue(
+            source_id=source.id,
+            entity_type="album",
+            entity_id=album.id,
+            field=claim.field,
+            value=claim.value,
+            confidence=claim.confidence,
+            added=now,
+        )
+        for claim in path_source.parse(directory.name)
+    ]
     session.add_all(claimed)
     return len(claimed)
 

@@ -246,3 +246,62 @@ def test_readd_is_refused(corpus, materialise):
     with db.session() as session:
         after = {m: len(rows(session, m)) for m in (orm.Album, orm.Track, orm.File)}
     assert after == before
+
+
+def _album_named(directory, *, year_tag=None):
+    """One tagged FLAC under a directory whose name the path source will parse."""
+    import shutil
+
+    from fixtures.materialise import AUDIO
+    from mediafile import MediaFile
+
+    directory.mkdir(parents=True)
+    track = directory / "track.flac"
+    shutil.copyfile(AUDIO / "tone-000.flac", track)
+    media = MediaFile(str(track))
+    media.album = "Phantom Atlas"
+    media.artist = "Cordel Vane"
+    media.title = "Opening"
+    if year_tag is not None:
+        media.year = year_tag
+    media.save()
+    return directory
+
+
+def test_path_fills_a_missing_year_from_the_directory_name(tmp_path, leeks_root):
+    from leeks import path_source
+
+    source = _album_named(tmp_path / "Cordel Vane - Phantom Atlas (2001)")
+    added = library.add(source)
+
+    assert added.year == 2001  # recovered from the folder, no year tag
+    with db.session() as session:
+        (album,) = rows(session, orm.Album)
+        assert album.year == 2001
+        path_src = session.scalar(select(orm.Source).where(orm.Source.name == "path"))
+        assert path_src is not None
+        years = [c for c in rows(session, orm.SourceValue) if c.field == "year"]
+        # Only the path claimed a year, and it carries the parser's confidence.
+        assert len(years) == 1
+        assert years[0].source_id == path_src.id
+        assert years[0].confidence == pytest.approx(path_source.YEAR_CONFIDENCE)
+    # The recovered year reaches the shelf location (ADR 0010).
+    assert added.destination == leeks_root / "Cordel Vane" / "2001 Phantom Atlas"
+
+
+def test_file_tags_year_outranks_the_path(tmp_path, leeks_root):
+    # Both sources claim a year; file_tags has the higher priority, so it wins
+    # and the path's folder-year stays a recorded-but-beaten claim (ADR 0031).
+    source = _album_named(
+        tmp_path / "Cordel Vane - Phantom Atlas (1999)", year_tag=2019
+    )
+    added = library.add(source)
+
+    assert added.year == 2019
+    with db.session() as session:
+        years = {
+            c.source.name: c.value
+            for c in rows(session, orm.SourceValue)
+            if c.field == "year"
+        }
+        assert years == {"file_tags": "2019", "path": "1999"}

@@ -130,12 +130,15 @@ class AlbumGenre(Base):
 
 
 class Source(Base):
-    """A registered metadata source. Priority arrives with the second one."""
+    """A registered metadata source, ranked by priority (higher wins a merge)."""
 
     __tablename__ = "sources"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(unique=True)
+    # Higher wins when two sources claim the same merged column (ADR 0031):
+    # file_tags outranks path, so tags win when present and the path fills gaps.
+    priority: Mapped[int]
 
 
 class SourceValue(Base):
@@ -168,6 +171,9 @@ class SourceValue(Base):
     entity_id: Mapped[int]
     field: Mapped[str]
     value: Mapped[str]
+    # An analyzer's confidence in this claim (ADR 0007); NULL for a source like
+    # file_tags that reads rather than infers. Recorded, not yet decisive (0031).
+    confidence: Mapped[float | None]
     added: Mapped[datetime]
 
     source: Mapped[Source] = relationship()

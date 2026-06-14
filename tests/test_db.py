@@ -24,14 +24,21 @@ def test_migrate_creates_the_library(leeks_root):
     with db.session() as session:
         assert (leeks_root / "leeks.db").exists()
         assert TABLES <= set(inspect(session.get_bind()).get_table_names())
-        assert session.scalars(select(orm.Source.name)).all() == ["file_tags"]
+        # The two sources every library starts with, file_tags outranking path.
+        sources = session.scalars(
+            select(orm.Source).order_by(orm.Source.priority.desc())
+        ).all()
+        assert [(s.name, s.priority) for s in sources] == [
+            ("file_tags", 100),
+            ("path", 50),
+        ]
 
 
 def test_migrate_is_idempotent(leeks_root):
     db.migrate(leeks_root)
     db.migrate(leeks_root)
     with db.session() as session:
-        assert len(session.scalars(select(orm.Source)).all()) == 1
+        assert len(session.scalars(select(orm.Source)).all()) == 2
 
 
 def test_foreign_keys_are_enforced():
