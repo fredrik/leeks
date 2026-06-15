@@ -73,6 +73,17 @@ claims = [
     { field = "medium", value = "Cassette" },
 ]
 
+# The medium is a controlled vocabulary, so its casing is normalised to the
+# canonical spelling (ADR 0034): "vinyl" and "cd" mean one medium each, claimed
+# as "Vinyl" and "CD" regardless of how the directory wrote them.
+[[cases]]
+name = "Pixies - Doolittle (vinyl)"
+claims = [
+    { field = "artist", value = "Pixies" },
+    { field = "title", value = "Doolittle" },
+    { field = "medium", value = "Vinyl" },
+]
+
 # Region: a closed vocabulary of unambiguous tokens, silent on the rest.
 [[cases]]
 name = "Bo Hansson - Sagan om ringen (1972) {Scandinavia}"

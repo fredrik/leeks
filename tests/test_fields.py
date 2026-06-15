@@ -7,7 +7,8 @@ from leeks.models import AlbumInfo, TrackInfo
 def test_merged_fields_are_the_cast_carrying_claims():
     # A merged column is exactly a claim field with a cast (ADR 0025); the
     # relational and column-less fields (artist, genre, tracktotal) are absent.
-    assert merged_fields("album") == {"title": str, "year": int}
+    # medium is a merged column now that `leek show` reads it (ADR 0034).
+    assert merged_fields("album") == {"title": str, "year": int, "medium": str}
     assert merged_fields("track") == {"title": str, "track": int}
 
 
@@ -27,8 +28,13 @@ def test_every_tagged_field_reads_a_real_model_attribute():
 
 
 def test_untagged_fields_are_the_path_only_release_facts():
-    # The facts only the path asserts (ADR 0033): no tag reads them, and being
-    # cast-less they are claim-only, so none is a merged column.
+    # The facts only the path asserts (ADR 0033): no tag reads any of them.
     untagged = {f.name for f in CLAIMS if not f.tagged}
     assert untagged == {"medium", "region", "catalogue"}
-    assert all(f.cast is None for f in CLAIMS if not f.tagged)
+
+
+def test_only_medium_among_the_path_facts_earns_a_column():
+    # medium has a reader (`leek show`) so it casts to a merged column; region
+    # and catalogue have none yet, so they stay claim-only (ADR 0034).
+    casts = {f.name: f.cast for f in CLAIMS if not f.tagged}
+    assert casts == {"medium": str, "region": None, "catalogue": None}

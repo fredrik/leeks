@@ -8,7 +8,9 @@ Coining a new term of art means adding it here in the same change.
 
 - **Claim** — an assertion by a source about the music: `title = "Karma Police"`, `year = 1997`. Stored verbatim as a
   `source_values` row. A claim records only what the source actually said: disagreement and absence produce no claim
-  (ADR 0008). Most fields are single-valued, but a field may be **set-valued** — genre, today — and a source then claims
+  (ADR 0008). The exception is a controlled vocabulary an analyzer recognises rather than reads: the path claims the
+  canonical medium (`Vinyl`, not the directory's `vinyl`), because the medium it recognised is the claim, not the casing
+  (ADR 0034). Most fields are single-valued, but a field may be **set-valued** — genre, today — and a source then claims
   each value as its own row (ADR 0022). The schema enforces the difference: single-valued fields get one row per source,
   set-valued fields may repeat (ADR 0025).
 - **Claim field** — a field a source can claim, declared once in the registry (`leeks/fields.py`) with its arity, the
@@ -34,9 +36,10 @@ Coining a new term of art means adding it here in the same change.
   assigning a winning claim (ADR 0031); relational fields are merged by reconciling the winning claim to a row. The
   artist foreign key does this now (ADR 0032); genre, a junction, waits for a second source to claim it.
 - **Merged column** — a scalar column in the merged view whose value `merge()` computes from the entity's claims (album
-  title and year; track title and number). A relational field is not a merged column: the artist foreign key is resolved
-  by `merge()` to a row (ADR 0032), and genre is still linked at write time until a source other than file_tags claims
-  it.
+  title, year, and medium; track title and number). A field earns one when a reader consumes it: medium became a merged
+  column when `leek show` displayed it, while region and catalogue stay claim-only until a reader of their own (ADR
+  0033/0034). A relational field is not a merged column: the artist foreign key is resolved by `merge()` to a row (ADR
+  0032), and genre is still linked at write time until a source other than file_tags claims it.
 - **Merge** — recomputing merged columns from claims: each column takes the value of the highest-priority source that
   claims it (ADR 0031). **Identity merge** is the degenerate case where one source claims a field — the value copies
   through. Claim **confidence** is recorded but does not yet enter resolution; richer strategies and the review queue

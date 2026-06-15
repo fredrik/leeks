@@ -2,6 +2,9 @@
 
 Status: Decided (2026-06-14)
 
+Amended by [0034](0034-show-medium.md) (2026-06-14): medium gained a reader, so it graduated to a merged column; region
+and catalogue stay claim-only.
+
 ## Decision
 
 The path source claims three release facts a directory name carries that file tags do not: medium (the release's

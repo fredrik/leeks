@@ -34,9 +34,11 @@ _SEPARATOR = " - "
 
 # A release's medium — its physical form, what MusicBrainz calls its "format".
 # Distinct from the encoding ([FLAC]), which is read from the bytes (ADR 0007)
-# and never claimed. A small closed vocabulary, matched case-folded; it grows
-# with the harness, like the grammar itself.
-_MEDIA = frozenset({"vinyl", "cd", "cassette", "digital"})
+# and never claimed. A small closed vocabulary mapping the case-folded token to
+# its canonical spelling: "vinyl"/"ViNyL" mean one medium, so the claim is the
+# canonical "Vinyl" (ADR 0034), not the directory's casing. Grows with the
+# harness, like the grammar itself.
+_MEDIA = {"vinyl": "Vinyl", "cd": "CD", "cassette": "Cassette", "digital": "Digital"}
 
 # Regions appear unreliably and open-endedly, so a closed set catches the
 # unambiguous tokens and stays silent on the rest. Also grows with the harness.
@@ -79,7 +81,7 @@ def _fact(opener: str, content: str) -> PathClaim | None:
     text = _clean(content)
     folded = text.casefold()
     if folded in _MEDIA:
-        return PathClaim("medium", text, FACT_CONFIDENCE)
+        return PathClaim("medium", _MEDIA[folded], FACT_CONFIDENCE)
     if folded in _REGIONS:
         return PathClaim("region", text, FACT_CONFIDENCE)
     # The label–catalogue brace, "{Label - Cat#}": the label leads, the

@@ -54,3 +54,13 @@ def test_encoding_is_measured_not_claimed():
     # a release fact. The path strips it and claims nothing from it (ADR 0033).
     parsed = path_source.parse("Artist - Album (2000) [FLAC]")
     assert {c.field for c in parsed} == {"artist", "title", "year"}
+
+
+def test_the_medium_casing_is_normalised_to_the_canonical_spelling():
+    # The medium vocabulary is controlled, so any casing claims the one
+    # canonical spelling (ADR 0034) — and "CD" is not title-cased to "Cd".
+    media = {
+        path_source.parse(f"A - B ({token})")[-1].value
+        for token in ("vinyl", "ViNyL", "VINYL", "cd", "Cd")
+    }
+    assert media == {"Vinyl", "CD"}

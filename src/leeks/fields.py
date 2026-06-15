@@ -53,9 +53,11 @@ CLAIMS: tuple[ClaimField, ...] = (
     ClaimField("tracktotal", "album"),
     ClaimField("genre", "album", multi=True, attr="genres"),
     # Release facts only the path asserts (ADR 0033): no file_tags attribute
-    # backs them, and no consumer yet earns a merged column, so they are
-    # claim-only — recorded in the source layer, cast to no column.
-    ClaimField("medium", "album", tagged=False),
+    # backs them, so each is untagged. medium has a reader — `leek show`
+    # displays it — so it earns a merged column and casts back to a string
+    # (ADR 0034); region and catalogue have none yet, so they stay claim-only,
+    # recorded in the source layer and cast to no column.
+    ClaimField("medium", "album", cast=str, tagged=False),
     ClaimField("region", "album", tagged=False),
     ClaimField("catalogue", "album", tagged=False),
     ClaimField("title", "track", cast=str),
