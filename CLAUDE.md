@@ -49,7 +49,7 @@ branch, runs `just check`, and leaves the branch unmerged — integrating into m
 done, declare 'effort at branch `fix-bug` is ready to land'.
 
 EnterWorktree prepends `worktree-` to the branch it creates; immediately rename it to a bare kebab-case name describing
-the change (`leek-list`, `add-journal-entry`, `fix-integration-tests`) — the worktree's location already says it's a
+the change (`leek-list`, `add-fixtures`, `fix-integration-tests`) — the worktree's location already says it's a
 worktree, so the prefix is noise.
 
 main's history is semi-linear: branches are rebased onto main, then landed by Fredrik using `just land`. The merge
