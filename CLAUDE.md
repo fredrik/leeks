@@ -37,8 +37,9 @@ Don't add when you can delete.
 
 Documentation lives in `docs/` — see `docs/README.md` for the directory taxonomy and lifecycles.
 
-Claude should religiously document design decisions and notable events in `docs`, keep existing documentation updated as
-code and design change, and archive what is outdated or implemented.
+Document decisions, designs, and the details that matter in `docs`, so a future agent can recover *why* we did
+something, *how*, and in *what* context — the parts the code can't tell them itself. Keep a document current when its
+*why* or *how* changes, and archive it once it's outdated or implemented.
 
 ## Workflow
 
