@@ -19,8 +19,9 @@ implement and verify in one session, and is archived when implemented. Never pla
 **Verification comes first in the plan.** A slice plan states how the work will be verified before it states what gets
 built. New behaviour requires new tests; risky behaviour requires a harness.
 
-**Decisions that outlive a slice go to ADRs.** Plans get archived; rationale that must survive lives in
-[docs/decisions](../decisions/).
+**Rationale outlives its plan.** Plans get archived; the rationale that must survive lives in a design doc, or — for the
+few decisions weighty enough that reversing one unknowingly would cause harm — a record in
+[docs/decisions](../decisions/). Most design choices are not records; the test is in CLAUDE.md.
 
 **teebs is precedent, not blueprint.** The teebs record ([docs/research/teebs](../research/teebs/)) preserves
 *decisions* and their reasons — the source layer, import-everything, non-destructive defaults. Its schemas, models, and
