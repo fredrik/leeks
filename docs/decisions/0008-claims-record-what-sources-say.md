@@ -37,8 +37,8 @@ the directory name's real information is captured rather than laundered through 
 
 ## Alternatives considered
 
-- **Fallbacks recorded as `file_tags` claims** — the twin's shape for track titles; the twin itself conceded the
-  overstatement. Cheap today, phantom review conflicts tomorrow.
+- **Fallbacks recorded as `file_tags` claims** — the twin's shape for track titles; rejected because it overstates what
+  the tag said. Cheap today, phantom review conflicts tomorrow.
 - **Refusing untagged albums** — the twin's shape for albums; contradicts the founding purpose.
 - **Building the path source inside slice 1** — rejected: the data is available but the machinery is not. A second
   source needs priorities and merge rules, which slice-by-data-availability assigns later. Deciding now and implementing
