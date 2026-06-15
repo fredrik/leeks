@@ -31,7 +31,7 @@ a future engineer in a hurry, not a student, and the decision is already made, s
 - State, don't persuade. Write the decision as standing fact, present tense ("leek lists albums by default"). Don't
   argue the reader around.
 - State the settled truth, not how it got there. When a decision was settled in stages, fold the settled facts in as
-  present-tense truth; don't stack dated "resolved on contact" addenda. Git and the journal hold *when* each was
+  present-tense truth; don't stack dated "resolved on contact" addenda. Git history holds *when* each was
   decided; the record holds *what is true*. A deferral that still stands is the exception — it is a live consequence.
 - Reasoning once, flat. Context is the forcing function that made a choice necessary, not the full intellectual
   history. Say what was decisive and stop.
