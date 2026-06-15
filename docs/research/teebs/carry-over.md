@@ -34,7 +34,7 @@ taught.
 The raw triple drafts (superseded by the canonical merges, preserved in teebs history), the teebs workspace CLAUDE.md,
 `plugins.analysed` (raw data behind the plugin inventory), and the research summary.
 
-## Lessons, recorded in [project-principles](../design/project-principles.md)
+## Lessons, recorded in [project-principles](../../design/project-principles.md)
 
 The teebs implementation sprint (~5,200 lines, one evening) taught the two lessons the principles now encode: the risk
 assessment outlived the detailed plan by twenty minutes, and risk didn't modulate pace — the highest-risk work (the

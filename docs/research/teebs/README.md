@@ -3,7 +3,8 @@
 The complete documentary record of teebs, leeks' predecessor. Everything in this directory was carried over from
 [the teebs repo](https://github.com/fredrik/teebs); leeks' [core positions](../../design/core-positions.md) and
 [project principles](../../design/project-principles.md) descend from this material. The factual research about beets
-that grounds it lives in [research/beets](../beets/).
+that grounds it lives in [research/beets](../beets/). The carry-over itself — commit by commit, what was kept and what
+was left behind — is recorded in [carry-over.md](carry-over.md).
 
 **How to use this material: precedent, not blueprint.** These documents preserve decisions and their reasons. The
 schemas, models, and plans in them are speculative maximalist design written in one evening, before contact with
