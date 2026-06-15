@@ -37,8 +37,9 @@ Don't add when you can delete.
 
 Documentation lives in `docs/` — see `docs/README.md` for the directory taxonomy and lifecycles.
 
-Claude should religiously document design decisions and notable events in `docs`, keep existing documentation updated as
-code and design change, and archive what is outdated or implemented.
+Document decisions, designs, and the details that matter in `docs`, so a future agent can recover *why* we did
+something, *how*, and in *what* context — the parts the code can't tell them itself. Keep a document current when its
+*why* or *how* changes, and archive it once it's outdated or implemented.
 
 ## Workflow
 
@@ -48,7 +49,7 @@ branch, runs `just check`, and leaves the branch unmerged — integrating into m
 done, declare 'effort at branch `fix-bug` is ready to land'.
 
 EnterWorktree prepends `worktree-` to the branch it creates; immediately rename it to a bare kebab-case name describing
-the change (`leek-list`, `add-journal-entry`, `fix-integration-tests`) — the worktree's location already says it's a
+the change (`leek-list`, `add-fixtures`, `fix-integration-tests`) — the worktree's location already says it's a
 worktree, so the prefix is noise.
 
 main's history is semi-linear: branches are rebased onto main, then landed by Fredrik using `just land`. The merge
@@ -119,11 +120,13 @@ Markdown is formatted with mdformat (120-column wrap, configured in `.mdformat.t
 - teebs is precedent, not blueprint: learn from its decisions and lessons, never copy its schemas, models, or plans —
   they were speculative design written before contact. Design from local information (see project-principles)
 - Planning and slicing principles live in `docs/design/project-principles.md`. Read it before planning work
-- Decision records live in `docs/decisions/` (template: `0000-template.md`); decisions that outlive a slice get one.
-  Before writing one, apply two tests, both must pass: *is it non-obvious from the code?* (if a reader could re-derive
-  it from the source, it's a comment, not an ADR) and *is it stable?* (if you can already see what supersedes it, wait).
-  Scaffold one with `just adr-new <slug>`, which claims the next number from a shared bureau so parallel branches don't
-  collide (ADR 0030)
+- Decision records live in `docs/decisions/` (template: `0000-template.md`). Most design choices are not records:
+  default to a design-doc edit or a code comment, and write an ADR only when a decision is weighty enough that a future
+  engineer would otherwise reverse it by accident. Before writing one, three tests must all pass: *is it significant?*
+  (would undoing it unknowingly cause real harm — if not, it's a comment or a design-doc line), *is it non-obvious from
+  the code?* (if a reader could re-derive the rationale from the source, it's a comment), and *is it stable?* (if you
+  can already see what supersedes it, wait). Scaffold one with `just adr-new <slug>`, which claims the next number from
+  a shared bureau so parallel branches don't collide (ADR 0030)
 - CLI: click. Entry point is `leek` (singular). The verbs are the user interface, curated in `docs/design/verbs.md` —
   adding a verb is a design decision
 - Pydantic v2 models (TrackInfo, AlbumInfo) are the pipeline lingua franca; SQLAlchemy ORM models are persistence only.

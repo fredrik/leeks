@@ -26,19 +26,19 @@ then, the fallbacks above stand as its placeholder.
 
 ## Context
 
-The slice 1 parity experiment (journal, 2026-06-12) forked here: the zero-context twin recorded file stems as
-`file_tags` title claims and refused albums with no album tag. Both carry costs this record avoids. A fabricated claim
-manufactures conflict later — when MusicBrainz disagrees with a `file_tags` claim no tag made, the review queue stages a
-real source against a fiction. Refusing untagged albums gates out precisely the music the project exists to manage, the
-files with the worst metadata.
+The slice 1 parity experiment forked here: the zero-context twin recorded file stems as `file_tags` title claims and
+refused albums with no album tag. Both carry costs this record avoids. A fabricated claim manufactures conflict later —
+when MusicBrainz disagrees with a `file_tags` claim no tag made, the review queue stages a real source against a
+fiction. Refusing untagged albums gates out precisely the music the project exists to manage, the files with the worst
+metadata.
 
 Naming the path a source keeps every position intact: imports never block, sources are layers, claims stay honest, and
 the directory name's real information is captured rather than laundered through a fallback or discarded.
 
 ## Alternatives considered
 
-- **Fallbacks recorded as `file_tags` claims** — the twin's shape for track titles; its own journal conceded the
-  overstatement. Cheap today, phantom review conflicts tomorrow.
+- **Fallbacks recorded as `file_tags` claims** — the twin's shape for track titles; rejected because it overstates what
+  the tag said. Cheap today, phantom review conflicts tomorrow.
 - **Refusing untagged albums** — the twin's shape for albums; contradicts the founding purpose.
 - **Building the path source inside slice 1** — rejected: the data is available but the machinery is not. A second
   source needs priorities and merge rules, which slice-by-data-availability assigns later. Deciding now and implementing

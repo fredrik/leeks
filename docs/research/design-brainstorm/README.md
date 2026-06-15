@@ -4,11 +4,10 @@ The output of an agent-run design brainstorm, 2026-06-10, written against an emp
 (`design-notes`, commit `27e81e1`) forked from `uv init`. It is the project's own teebs in miniature: speculative design
 written before implementation contact, preserved as precedent, never blueprint.
 
-Reviewed idea by idea on 2026-06-12, filed on 2026-06-13 (journal,
-[design-notes distilled](../../journal/2026-06-13-design-notes-distilled.md)). Everything adopted was distilled into the
-design docs; this directory preserves the full material and records the disposition of all of it. The two ADR-shaped
-files were never adopted and their numbering predates `docs/decisions/` — their `0001`/`0003` collide with real records
-and mean nothing.
+Reviewed idea by idea on 2026-06-12, filed on 2026-06-13 (the [distillation record](distillation.md)). Everything
+adopted was distilled into the design docs; this directory preserves the full material and records the disposition of
+all of it. The two ADR-shaped files were never adopted and their numbering predates `docs/decisions/` — their
+`0001`/`0003` collide with real records and mean nothing.
 
 ## Files
 
