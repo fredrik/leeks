@@ -8,7 +8,9 @@ Coining a new term of art means adding it here in the same change.
 
 - **Claim** — an assertion by a source about the music: `title = "Karma Police"`, `year = 1997`. Stored verbatim as a
   `source_values` row. A claim records only what the source actually said: disagreement and absence produce no claim
-  (ADR 0008). Most fields are single-valued, but a field may be **set-valued** — genre, today — and a source then claims
+  (ADR 0008). The exception is a controlled vocabulary an analyzer recognises rather than reads: the path claims the
+  canonical medium (`Vinyl`, not the directory's `vinyl`), because the medium it recognised is the claim, not the casing
+  (ADR 0034). Most fields are single-valued, but a field may be **set-valued** — genre, today — and a source then claims
   each value as its own row (ADR 0022). The schema enforces the difference: single-valued fields get one row per source,
   set-valued fields may repeat (ADR 0025).
 - **Claim field** — a field a source can claim, declared once in the registry (`leeks/fields.py`) with its arity, the

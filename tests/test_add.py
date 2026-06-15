@@ -410,6 +410,24 @@ def test_path_claims_release_facts_tags_never_carry(tmp_path, leeks_root):
     assert shown.medium == "Vinyl"
 
 
+def test_list_filters_and_projects_by_medium(tmp_path, leeks_root):
+    # medium is a queryable, selectable merged column like the year (ADR 0034):
+    # `medium:vinyl` narrows the shelf, folding case (ADR 0021), and the value
+    # rides the Listed projection a --fields column reads.
+    library.add(_album_named(tmp_path / "Cordel Vane - Phantom Atlas (2001) (Vinyl)"))
+    library.add(
+        _album_named(
+            tmp_path / "Polder Arcade - Salt Mine (2003) [CD]",
+            album_tag="Salt Mine",
+            artist_tag="Polder Arcade",
+        )
+    )
+    [vinyl] = library.list_albums(["medium:vinyl"])
+    assert (vinyl.title, vinyl.medium) == ("Phantom Atlas", "Vinyl")
+    [cd] = library.list_albums(["medium:cd"])
+    assert (cd.title, cd.medium) == ("Salt Mine", "CD")
+
+
 def test_file_tags_year_outranks_the_path(tmp_path, leeks_root):
     # Both sources claim a year; file_tags has the higher priority, so it wins
     # and the path's folder-year stays a recorded-but-beaten claim (ADR 0031).

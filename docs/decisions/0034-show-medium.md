@@ -8,10 +8,14 @@ Status: Decided (2026-06-14)
 `<artist> — <title> (<year> · <medium>)`. An absent fact drops out, so an album with neither year nor medium gets no
 parens.
 
-Because a reader now consumes it, medium graduates from claim-only to a merged column (ADR 0033 anticipated this): it
-carries a `str` cast in the registry, gets a nullable `albums.medium` column, and `merge()` fills it from the
-highest-priority medium claim — the path's, today. It stays untagged: file_tags has no attribute for it, so only the
-path claims it.
+Because a reader now consumes it, medium graduates from claim-only to a merged column (ADR 0033): it carries a `str`
+cast in the registry, gets a nullable `albums.medium` column, and `merge()` fills it from the highest-priority medium
+claim — the path's, today. It stays untagged: file_tags has no attribute for it, so only the path claims it. As a merged
+column it joins the album query namespace: `medium:vinyl` narrows the shelf and `leek fields` lists it, like the year
+(ADR 0029).
+
+The medium is a controlled vocabulary, so the path source claims its canonical spelling — `vinyl`, `ViNyL`, and `VINYL`
+all claim `Vinyl`, and `cd` claims `CD`. This is the one place a claim is not stored verbatim.
 
 region and catalogue have no reader, so they remain claim-only — recorded in the source layer, visible to
 `leek show --sources`, with no column. They graduate the same way if a reader arrives.

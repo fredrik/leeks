@@ -166,7 +166,7 @@ _DEFAULT_COLUMNS: dict[str, tuple[str, ...]] = {
 # discoverable here, not shelf furniture. Every subject has one. The namespace
 # grows (bitrate, path, …) as slices surface those facts (ADR 0018).
 _SELECTABLE_EXTRAS: dict[str, tuple[str, ...]] = {
-    "albums": ("id", "genres"),
+    "albums": ("id", "genres", "medium"),
     "tracks": ("id",),
     "artists": ("id",),
 }
@@ -183,6 +183,7 @@ _FIELD_STYLES: dict[str, str] = {
     "title": theme.TITLE,
     "album": theme.ALBUM,
     "year": theme.YEAR,
+    "medium": theme.MEASURE,
     "number": theme.NUMBER,
     "id": theme.NUMBER,
 }

@@ -71,6 +71,9 @@ class Listed:
     artist: str | None
     year: int | None
     title: str
+    # The release's medium (vinyl/CD/cassette), a merged column (ADR 0034);
+    # None when no source claims it. Opt-in via --fields, not a shelf default.
+    medium: str | None = None
     # The album's genres, a set (ADR 0022) — empty when none is claimed, which
     # is also the default: absent and empty are the same state for a genre set.
     # Opt-in via --fields, not a default shelf column.
@@ -319,6 +322,7 @@ def _apply_album_terms(statement, terms: Sequence[str]):
         "artist": _substr(Artist.name),
         "title": _substr(Album.title),
         "year": _substr(cast(Album.year, String)),
+        "medium": _substr(Album.medium),
         "genres": _album_has_genre,
     }
     bare = [Artist.name, Album.title, cast(Album.year, String)]
@@ -389,6 +393,7 @@ def list_albums(terms: Sequence[str] = ()) -> list[Listed]:
                 artist=artist,
                 year=album.year,
                 title=album.title,
+                medium=album.medium,
                 genres=genres[album.id],
             )
             for album, artist in rows
