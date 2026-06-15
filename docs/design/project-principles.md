@@ -19,6 +19,11 @@ implement and verify in one session, and is archived when implemented. Never pla
 **Verification comes first in the plan.** A slice plan states how the work will be verified before it states what gets
 built. New behaviour requires new tests; risky behaviour requires a harness.
 
+**Assert properties, not snapshots.** A test frozen to an exact expected output breaks when an unrelated fixture is
+added — and a test that breaks on unrelated change is a chore, which is a bug. Assert the property that must hold (every
+corpus album present; order equals the reference shelf-sort), so the test survives corpus growth and still fails on real
+regressions.
+
 **Rationale outlives its plan.** Plans get archived; the rationale that must survive lives in a design doc, or — for the
 few decisions weighty enough that reversing one unknowingly would cause harm — a record in
 [docs/decisions](../decisions/). Most design choices are not records; the test is in CLAUDE.md.
